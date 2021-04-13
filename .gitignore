@@ -1,6 +1,15 @@
 .vs
 x64
-TrainEngine/Debug
 *.user
-data
+
+libavcodec/
+libavformat/
+libavutil/
+libswresample/
+
+avcodec*
+avformat*
+avutil*
+nvEncodeApi*
+swresample*
 
