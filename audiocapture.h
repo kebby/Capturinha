@@ -12,6 +12,7 @@ struct AudioInfo
     AudioFormat Format;
     uint Channels;
     uint SampleRate;
+    uint BytesPerSample;
 };
 
 class IAudioCapture
@@ -21,7 +22,7 @@ public:
 
     virtual AudioInfo GetInfo() const = 0;
 
-    virtual uint Read(uint8* dest, uint size) = 0; // size in bytes
+    virtual uint Read(uint8* dest, uint size, double &time) = 0; // size in bytes
 
     virtual void Flush() = 0;
 };

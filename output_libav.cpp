@@ -10,6 +10,8 @@ extern "C"
 #include <libswresample\swresample.h>
 }
 
+#include <math.h>
+
 #if _DEBUG
 static char averrbuf[1024];
 #define AVERR(x) { auto _ret=(x); if(_ret<0) { Fatal("%s(%d): libav call failed: %s\nCall: %s\n",__FILE__,__LINE__,av_make_error_string(averrbuf, 1024, _ret),#x); } }
@@ -35,6 +37,7 @@ private:
     SwrContext* Resample = nullptr;
     uint ResampleBufferSize = 0;
     uint8* ResampleBuffer = nullptr;
+    uint SkipAudio = 0; // bytes
 
     int FrameNo = 0;
     int AudioWritten = 0;
@@ -164,21 +167,35 @@ public:
         FrameNo++;
     }
 
+    void SetAudioDelay(double delaySec)
+    {
+        uint samples = (uint)fabs(delaySec * Para.Audio.SampleRate);
+        uint size = samples * Para.Audio.BytesPerSample;
+        if (delaySec > 0)
+        {
+            uint8* zeroes = new uint8[size];
+            memset(zeroes, 0, size);
+            SubmitAudio(zeroes, size);
+            delete[] zeroes;
+        }
+        else
+        {
+            SkipAudio = size;
+        }
+    }
+
     void SubmitAudio(const uint8* data, uint size) override
     {
         if (!AudioContext) return;
 
+        uint skip = Min(SkipAudio, size);
+        data += skip;
+        size -= skip;
+        SkipAudio -= skip;
+        if (!size) return;
+
         AVRational tb = { .num = 1, .den = (int)Para.Audio.SampleRate, };
-
-        int bps = 0;        
-        switch (Para.Audio.Format)
-        {
-        case AudioFormat::I16: bps = 2; break;
-        case AudioFormat::F32: bps = 4; break;
-        }
-        bps *= Para.Audio.Channels;
-
-        int samples = size / bps;
+        int samples = size / Para.Audio.BytesPerSample;
         AudioFrame->nb_samples = samples;
         AudioFrame->pts = av_rescale_q(AudioWritten, tb, AudioContext->time_base);
 

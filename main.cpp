@@ -35,22 +35,41 @@ void ProcessThreadFunc(Thread& thread)
     const uint audioSize = 768000;
     uint8* audioData = new uint8[audioSize];
 
-    bool first = true;
+    bool firstVideo = true;
+    bool firstAudio = true;
+
+    double firstVideoTime = 0;
+
     audioCapture->Flush();
     while (thread.IsRunning())
     {
         uint8* data;
         uint size;
-        while (encoder->BeginGetPacket(data, size, 2))
+        
+        double videoTime;
+        while (encoder->BeginGetPacket(data, size, 2, videoTime))
         {
             output->SubmitVideoPacket(data, size);
             encoder->EndGetPacket();
 
-            uint audio = audioCapture->Read(audioData, audioSize);
-            if (audio)
-                output->SubmitAudio(audioData, audio);
+            if (firstVideo)
+            {
+                firstVideoTime = videoTime;
+                firstVideo = false;
+            }
 
-            first = false;
+            double audioTime = 0;
+            uint audio = audioCapture->Read(audioData, audioSize, audioTime);
+            if (audio)                       
+            {
+                if (firstAudio)
+                {
+                    output->SetAudioDelay(audioTime - firstVideoTime);
+                    firstAudio = false;
+                }
+                output->SubmitAudio(audioData, audio);
+            }
+
         }
     }
 
@@ -109,7 +128,7 @@ int main(int argc, char** argv)
                             encoder->DuplicateFrame();
                     }
                 }
-                encoder->SubmitFrame(info.tex);
+                encoder->SubmitFrame(info.tex, info.time);
 
                 printf("got frame\n");
 

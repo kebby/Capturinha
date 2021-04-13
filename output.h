@@ -10,6 +10,8 @@ public:
     virtual ~IOutput() {}
 
     virtual void SubmitVideoPacket(const uint8* data, uint size) = 0;
+
+    virtual void SetAudioDelay(double delaySec) = 0;
     virtual void SubmitAudio(const uint8* data, uint size) = 0;
 };
 

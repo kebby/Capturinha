@@ -29,6 +29,8 @@ class AudioCapture_WASAPI : public IAudioCapture
     uint RingSize = 0;
     uint RingRead = 0;
     uint RingWrite = 0;
+    uint RingTimePos = 0;
+    double RingTimeValue = 0;
     ThreadLock RingLock;
 
     uint BytesPerSample = 0;
@@ -47,7 +49,9 @@ class AudioCapture_WASAPI : public IAudioCapture
                 uint8* data = nullptr;
                 uint samples = 0;
                 DWORD flags = 0;
-                CHECK(CaptureClient->GetBuffer(&data, &samples, &flags, nullptr, nullptr));
+                uint64 qpctime;
+                CHECK(CaptureClient->GetBuffer(&data, &samples, &flags, nullptr, &qpctime));
+                double time = (double)qpctime / REFPERSEC;
 
                 uint bytes = samples * BytesPerSample;
                 uint pos;
@@ -56,6 +60,10 @@ class AudioCapture_WASAPI : public IAudioCapture
                     uint avail = RingSize - (RingWrite - RingRead);
                     if (bytes > avail)
                         RingRead += bytes-avail;
+
+                    RingTimePos = RingWrite;
+                    RingTimeValue = time;
+
                     pos = RingWrite % RingSize;
                     RingWrite += bytes;
 
@@ -151,12 +159,15 @@ public:
             .Format = AudioFormat::F32,
             .Channels = Format->Format.nChannels,
             .SampleRate = Format->Format.nSamplesPerSec,
+            .BytesPerSample = BytesPerSample,
         };
     }
 
-    uint Read(uint8* dest, uint size) override
+    uint Read(uint8* dest, uint size, double &time) override
     {
         ScopeLock lock(RingLock);
+
+        time = RingTimeValue + ((double)RingRead - RingTimePos) / (double)(BytesPerSample * Format->Format.nSamplesPerSec);
 
         size = Min(size, RingWrite - RingRead);
         uint pos = RingRead % RingSize;

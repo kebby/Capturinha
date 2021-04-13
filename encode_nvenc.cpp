@@ -23,16 +23,13 @@ static NV_ENCODE_API_FUNCTION_LIST API;
 
 class Encode_NVENC : public IEncode
 {
-    int bc = 0;
-    int fc = 0;
-
     struct Frame
     {
         uint Used = 0;
         CUdeviceptr Buffer;
+        double Time;
 
         NV_ENC_MAP_INPUT_RESOURCE Map = {};
-        int id;
     };
 
     struct OutBuffer
@@ -40,7 +37,6 @@ class Encode_NVENC : public IEncode
         Frame* frame = nullptr;
         ThreadEvent event;
         NV_ENC_OUTPUT_PTR buffer = nullptr;
-        int id;
     };
 
     Queue<Frame*, 32> FreeFrames;
@@ -74,7 +70,6 @@ class Encode_NVENC : public IEncode
             frame = new Frame
             {
                 .Used = 1,
-                .id = fc++,
             };
 
             uint pitch = SizeX * 4;
@@ -131,7 +126,6 @@ class Encode_NVENC : public IEncode
             buffer = new OutBuffer
             {
                 .buffer = create.bitstreamBuffer,
-                .id = bc++,
             };
 
         }
@@ -332,13 +326,14 @@ public:
         }
     }
 
-    void SubmitFrame(RCPtr<Texture> tex) override
+    void SubmitFrame(RCPtr<Texture> tex, double time) override
     {
         ReleaseFrame(CurrentFrame);
 
         // get a frame        
         CurrentFrame = AcquireFrame();
         CurrentFrame->Used = 1;
+        CurrentFrame->Time = time;
 
         // copy to intermediate texture
         RT->CopyFrom(tex);
@@ -377,7 +372,7 @@ public:
             Sleep(1);
     }
 
-    bool BeginGetPacket(uint8*& data, uint& size, uint timeoutMs) override
+    bool BeginGetPacket(uint8*& data, uint& size, uint timeoutMs, double &time) override
     {
         ASSERT(!CurrentBuffer);
         if (EncodingBuffers.IsEmpty() && !EncodeEvent.Wait(timeoutMs))
@@ -399,6 +394,7 @@ public:
             NVERR(API.nvEncLockBitstream(Encoder, &lock));
             data = (uint8*)lock.bitstreamBufferPtr;
             size = lock.bitstreamSizeInBytes;
+            time = CurrentBuffer->frame->Time;
             return true;
         }
 
