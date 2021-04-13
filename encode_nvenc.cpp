@@ -1,0 +1,420 @@
+#include "encode.h"
+#include "graphics.h"
+
+#include <d3d11.h>
+#include "nvEncodeAPI.h"
+#include <stdio.h>
+#pragma comment (lib, "cuda.lib")
+#pragma comment (lib, "cudart.lib")
+
+#include <cuda.h>
+#include <cudaD3D11.h>
+
+static bool Inited = false;
+static NV_ENCODE_API_FUNCTION_LIST API;
+
+#if _DEBUG
+#define CUDAERR(x) { auto ret = (x); if(ret != CUDA_SUCCESS) { const char *err; cuGetErrorString(ret, &err); Fatal("%s(%d): CUDA call failed: %s\nCall: %s\n",__FILE__,__LINE__,err,#x); } }
+#define NVERR(x) { if((x)!= NV_ENC_SUCCESS) Fatal("%s(%d): NVENC call failed: %s\nCall: %s\n",__FILE__,__LINE__,API.nvEncGetLastErrorString(Encoder),#x); }
+#else
+#define CUDAERR(x) { auto ret = (x);  if(ret != CUDA_SUCCESS) { const char *err; cuGetErrorString(x, &err); Fatal("%s(%d): CUDA call failed (%08x)",__FILE__,__LINE__,ret); } }
+#define NVERR(x) { auto ret=(x);  if(ret != NV_ENC_SUCCESS) Fatal("%s(%d): NVENC call failed (%08x)",__FILE__,__LINE__,ret); }
+#endif
+
+class Encode_NVENC : public IEncode
+{
+    int bc = 0;
+    int fc = 0;
+
+    struct Frame
+    {
+        uint Used = 0;
+        CUdeviceptr Buffer;
+
+        NV_ENC_MAP_INPUT_RESOURCE Map = {};
+        int id;
+    };
+
+    struct OutBuffer
+    {
+        Frame* frame = nullptr;
+        ThreadEvent event;
+        NV_ENC_OUTPUT_PTR buffer = nullptr;
+        int id;
+    };
+
+    Queue<Frame*, 32> FreeFrames;
+    Queue<OutBuffer*, 32> FreeBuffers;
+    Queue<OutBuffer*, 32> EncodingBuffers;
+
+    Frame* CurrentFrame = nullptr;
+    OutBuffer* CurrentBuffer = nullptr;
+    uint BuffersInFlight = 0;
+
+    void* Encoder = nullptr;
+    NV_ENC_BUFFER_FORMAT EncodeFormat = NV_ENC_BUFFER_FORMAT_ARGB;
+    ThreadEvent EncodeEvent;
+
+    uint SizeX = 0;
+    uint SizeY = 0;
+    uint FrameNo = 0;
+
+    // intermediate texture (needed bc CUDA won't register shared textures)
+    RCPtr<RenderTarget> RT;
+
+    CUgraphicsResource TexResource = nullptr;
+    CUcontext CudaContext = nullptr;
+
+    Frame *AcquireFrame()
+    {
+        Frame* frame = nullptr;
+        if (!FreeFrames.Dequeue(frame))
+        {
+
+            frame = new Frame
+            {
+                .Used = 1,
+                .id = fc++,
+            };
+
+            uint pitch = SizeX * 4;
+            CUDAERR(cuMemAlloc(&frame->Buffer, pitch * SizeY));
+
+            NV_ENC_REGISTER_RESOURCE reg =
+            {
+                .version = NV_ENC_REGISTER_RESOURCE_VER,
+                .resourceType = NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR,
+                .width = SizeX,
+                .height = SizeY,
+                .pitch = pitch,
+                .resourceToRegister = (void*)frame->Buffer,
+                .bufferFormat = NV_ENC_BUFFER_FORMAT_ARGB,
+                .bufferUsage = NV_ENC_INPUT_IMAGE,
+            };
+            NVERR(API.nvEncRegisterResource(Encoder, &reg));
+
+            frame->Map.version = NV_ENC_MAP_INPUT_RESOURCE_VER;
+            frame->Map.registeredResource = reg.registeredResource;
+        }
+
+        if (frame->Map.mappedResource)
+        {
+            NVERR(API.nvEncUnmapInputResource(Encoder, frame->Map.mappedResource));
+            frame->Map.mappedResource = nullptr;
+        }
+
+        return frame;
+    }
+
+    void ReleaseFrame(Frame*& frame)
+    {
+        if (!frame) return;
+
+        if (!AtomicDec(frame->Used))
+        {
+            FreeFrames.Enqueue(frame);
+        }
+        frame = nullptr;
+    }
+
+    OutBuffer* AcquireOutBuffer()
+    {
+        OutBuffer* buffer;
+        if (!FreeBuffers.Dequeue(buffer))
+        {           
+            NV_ENC_CREATE_BITSTREAM_BUFFER create
+            {
+                .version = NV_ENC_CREATE_BITSTREAM_BUFFER_VER,
+            };
+            NVERR(API.nvEncCreateBitstreamBuffer(Encoder, &create));
+
+            buffer = new OutBuffer
+            {
+                .buffer = create.bitstreamBuffer,
+                .id = bc++,
+            };
+
+        }
+        return buffer;
+    }
+
+    void ReleaseOutBuffer(OutBuffer*& buffer)
+    {
+        if (!buffer) return;
+        FreeBuffers.Enqueue(buffer);
+        buffer = nullptr;
+    }
+
+    void EncodeFrame()
+    {
+        OutBuffer* ob = nullptr;
+
+        if (!CurrentFrame) return;
+
+        ob = AcquireOutBuffer();
+        ob->frame = CurrentFrame;
+        AtomicInc(CurrentFrame->Used);
+
+        NV_ENC_PIC_PARAMS pic =
+        {
+            .version = NV_ENC_PIC_PARAMS_VER,
+            .inputWidth = SizeX,
+            .inputHeight = SizeY,
+            .inputPitch = SizeX,
+            .encodePicFlags = 0, // NV_ENC_PIC_FLAG_FORCEIDR | NV_ENC_PIC_FLAG_OUTPUT_SPSPPS
+            .frameIdx = FrameNo,
+            .inputTimeStamp = FrameNo,
+            .inputDuration = 1,
+            .inputBuffer = CurrentFrame->Map.mappedResource,
+            .outputBitstream = ob->buffer,
+            .completionEvent = ob->event.GetRawEvent(),
+            .bufferFmt = EncodeFormat,
+            .pictureStruct = NV_ENC_PIC_STRUCT_FRAME,
+            .pictureType = NV_ENC_PIC_TYPE_UNKNOWN,
+        };
+
+        for (;;)
+        {
+            auto ret = API.nvEncEncodePicture(Encoder, &pic);
+            if (ret == NV_ENC_ERR_ENCODER_BUSY)
+            {
+                Sleep(1);
+                continue;
+            }
+
+            NVERR(ret);
+            break;
+        }
+
+        AtomicInc(BuffersInFlight);
+        EncodingBuffers.Enqueue(ob);
+        EncodeEvent.Fire();
+        FrameNo++;       
+    }
+
+
+public:
+
+    Encode_NVENC()
+    {
+        //Dev = GetDevice();
+
+        // init cuda/nvenc api on first run
+        if (!Inited)
+        {
+            // init CUDA
+            CUDAERR(cuInit(0));
+
+            CUdevice cudaDevice = 0;
+            CUDAERR(cuD3D11GetDevice(&cudaDevice, (IDXGIAdapter*)GetAdapter()));
+            CUDAERR(cuCtxCreate_v2(&CudaContext, 0, cudaDevice));
+
+            // init NVENC API
+            auto nvenclib = LoadLibrary("nvEncodeAPI64.dll");
+
+            typedef NVENCSTATUS(NVENCAPI* NvEncodeAPIGetMaxSupportedVersion_Type)(uint32_t*);
+            typedef NVENCSTATUS(NVENCAPI* NvEncodeAPICreateInstance_Type)(NV_ENCODE_API_FUNCTION_LIST* functionList);
+            auto NvEncodeAPIGetMaxSupportedVersion = (NvEncodeAPIGetMaxSupportedVersion_Type)GetProcAddress(nvenclib, "NvEncodeAPIGetMaxSupportedVersion");
+            auto NvEncodeAPICreateInstance = (NvEncodeAPICreateInstance_Type)GetProcAddress(nvenclib, "NvEncodeAPICreateInstance");
+           
+            Clear(API);
+            API.version = NV_ENCODE_API_FUNCTION_LIST_VER;
+            NVERR(NvEncodeAPICreateInstance(&API));
+
+            Inited = true;
+        }
+
+
+        // Create encoder session
+        NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS openparams = {
+            .version = NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER,
+            .deviceType = NV_ENC_DEVICE_TYPE_CUDA,
+            .device = (void*)CudaContext,
+            .apiVersion = NVENCAPI_VERSION,
+        };
+       
+        NVERR(API.nvEncOpenEncodeSessionEx(&openparams, &Encoder));
+
+        //PacketThread = new Thread(Bind(this, &Encode_NVENC::PacketThreadFunc));
+    }
+
+    void PacketThreadFunc(Thread&t)
+    {
+
+    }
+
+    ~Encode_NVENC()
+    {
+        NVERR(API.nvEncDestroyEncoder(Encoder));        
+
+        Flush();
+
+        //delete PacketThread;
+
+        cuCtxDestroy_v2(CudaContext);
+    }
+
+
+    void Init(uint sizeX, uint sizeY, uint rateNum, uint rateDen) override
+    {
+        SizeX = sizeX;
+        SizeY = sizeY;
+
+        // create intermediate surface
+        RT = AcquireRenderTarget(TexturePara {
+            .sizeX = SizeX,
+            .sizeY = SizeY,
+            .format = PixelFormat::BGRA8,
+        });
+
+        CUDAERR(cuGraphicsD3D11RegisterResource(&TexResource, (ID3D11Texture2D*)RT->GetTex2D(), CU_GRAPHICS_REGISTER_FLAGS_NONE));
+        CUDAERR(cuGraphicsResourceSetMapFlags(TexResource, CU_GRAPHICS_MAP_RESOURCE_FLAGS_READ_ONLY));
+
+        GUID encodeGuid = NV_ENC_CODEC_H264_GUID;
+        GUID presetGuid = NV_ENC_PRESET_P3_GUID; // TODO: make selectable
+
+        uint codecGuidCount;
+        NVERR(API.nvEncGetEncodeGUIDCount(Encoder, &codecGuidCount));
+
+        GUID guids[50];
+        NVERR(API.nvEncGetEncodeGUIDs(Encoder, guids, codecGuidCount, &codecGuidCount));
+        // TODO: check if our encodeGuid is in there
+
+        uint presetGuidCount;
+        NVERR(API.nvEncGetEncodePresetCount(Encoder, encodeGuid, &presetGuidCount));       
+        NVERR(API.nvEncGetEncodePresetGUIDs(Encoder, encodeGuid, guids, 50, &presetGuidCount));
+        // TODO: select proper preset
+        presetGuid = guids[0];
+      
+        // get preset config
+        NV_ENC_PRESET_CONFIG presetConfig = 
+        {
+            .version = NV_ENC_PRESET_CONFIG_VER,
+        };
+
+        auto& config = presetConfig.presetCfg;
+        config.version = NV_ENC_CONFIG_VER;
+        NVERR(API.nvEncGetEncodePresetConfig(Encoder, encodeGuid, presetGuid, &presetConfig));
+
+        // configure
+        config.encodeCodecConfig.h264Config.idrPeriod = config.gopLength = 60;
+        config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP;
+        config.rcParams.constQP.qpIntra = config.rcParams.constQP.qpInterB = config.rcParams.constQP.qpInterP = 20;
+        //config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CBR_HQ;
+        //config.rcParams.averageBitRate = 20 * 1000 * 1000;
+
+        // initialize encoder
+        NV_ENC_INITIALIZE_PARAMS params =
+        {
+            .version = NV_ENC_INITIALIZE_PARAMS_VER,
+            .encodeGUID = encodeGuid,
+            .presetGUID = presetGuid,
+            .encodeWidth = SizeX,
+            .encodeHeight = SizeY,
+            .darWidth = SizeX,
+            .darHeight = SizeY,
+            .frameRateNum = rateNum,
+            .frameRateDen = rateDen,
+            .enableEncodeAsync = 1,
+            .enablePTD = 1,
+            .encodeConfig = &config,
+        };
+
+        NVERR(API.nvEncInitializeEncoder(Encoder, &params));
+
+        // prealloc a few frames and buffers
+        for (int i = 0; i < 3; i++)
+        {
+            auto frame = AcquireFrame();
+            ReleaseFrame(frame);
+            auto buffer = AcquireOutBuffer();
+            ReleaseOutBuffer(buffer);
+        }
+    }
+
+    void SubmitFrame(RCPtr<Texture> tex) override
+    {
+        ReleaseFrame(CurrentFrame);
+
+        // get a frame        
+        CurrentFrame = AcquireFrame();
+        CurrentFrame->Used = 1;
+
+        // copy to intermediate texture
+        RT->CopyFrom(tex);
+
+        // copy intermediate texture -> frame
+        CUDA_MEMCPY2D copy = 
+        { 
+            .srcMemoryType = CU_MEMORYTYPE_ARRAY,
+            .dstMemoryType = CU_MEMORYTYPE_DEVICE,
+            .dstDevice = CurrentFrame->Buffer,
+            .dstPitch = SizeX * 4,
+            .WidthInBytes = SizeX * 4,
+            .Height = SizeY,
+        };
+
+        CUDAERR(cuGraphicsMapResources(1, &TexResource, nullptr));
+        CUDAERR(cuGraphicsSubResourceGetMappedArray(&copy.srcArray, TexResource, 0, 0));
+        CUDAERR(cuMemcpy2DAsync(&copy, nullptr));
+        CUDAERR(cuGraphicsUnmapResources(1, &TexResource, nullptr));
+
+        // submit frame
+        NVERR(API.nvEncMapInputResource(Encoder, &CurrentFrame->Map));
+
+        EncodeFrame();
+    }
+
+    void DuplicateFrame() override
+    {
+        EncodeFrame();
+    }
+
+    void Flush() override
+    {
+        ReleaseFrame(CurrentFrame);
+        while (BuffersInFlight)
+            Sleep(1);
+    }
+
+    bool BeginGetPacket(uint8*& data, uint& size, uint timeoutMs) override
+    {
+        ASSERT(!CurrentBuffer);
+        if (EncodingBuffers.IsEmpty() && !EncodeEvent.Wait(timeoutMs))
+            return false;
+
+        EncodeEvent.Wait(0);
+
+        OutBuffer* ob = nullptr;
+        if (EncodingBuffers.Peek(ob) && ob->event.Wait(timeoutMs))
+        {
+            EncodingBuffers.Dequeue(CurrentBuffer);
+
+            NV_ENC_LOCK_BITSTREAM lock
+            {
+                .version = NV_ENC_LOCK_BITSTREAM_VER,
+                .outputBitstream = CurrentBuffer->buffer,
+            };
+
+            NVERR(API.nvEncLockBitstream(Encoder, &lock));
+            data = (uint8*)lock.bitstreamBufferPtr;
+            size = lock.bitstreamSizeInBytes;
+            return true;
+        }
+
+        return false;
+    }
+
+    void EndGetPacket() override
+    {
+        if (!CurrentBuffer) return;
+
+        ReleaseFrame(CurrentBuffer->frame);
+        NVERR(API.nvEncUnlockBitstream(Encoder, CurrentBuffer->buffer));
+        ReleaseOutBuffer(CurrentBuffer);
+        AtomicDec(BuffersInFlight);
+    }
+
+};
+
+IEncode* CreateEncodeNVENC() { return new Encode_NVENC(); }

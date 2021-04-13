@@ -1,0 +1,379 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="graphics.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="system.cpp" />
+    <ClCompile Include="encode_nvenc.cpp" />
+    <ClCompile Include="output_libav.cpp" />
+    <ClCompile Include="audiocapture_wasapi.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="graphics.h" />
+    <ClInclude Include="math3d.h" />
+    <ClInclude Include="system.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="types.h" />
+    <ClInclude Include="encode.h" />
+    <ClInclude Include="output.h" />
+    <ClInclude Include="nvEncodeAPI.h">
+      <Filter>libs\nvEncodeAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="libavformat\avformat.h">
+      <Filter>libs\libavformat</Filter>
+    </ClInclude>
+    <ClInclude Include="libavformat\avio.h">
+      <Filter>libs\libavformat</Filter>
+    </ClInclude>
+    <ClInclude Include="libavformat\version.h">
+      <Filter>libs\libavformat</Filter>
+    </ClInclude>
+    <ClInclude Include="libavcodec\ac3_parser.h">
+      <Filter>libs\libavcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="libavcodec\adts_parser.h">
+      <Filter>libs\libavcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="libavcodec\avcodec.h">
+      <Filter>libs\libavcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="libavcodec\avdct.h">
+      <Filter>libs\libavcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="libavcodec\avfft.h">
+      <Filter>libs\libavcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="libavcodec\d3d11va.h">
+      <Filter>libs\libavcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="libavcodec\dirac.h">
+      <Filter>libs\libavcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="libavcodec\dv_profile.h">
+      <Filter>libs\libavcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="libavcodec\dxva2.h">
+      <Filter>libs\libavcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="libavcodec\jni.h">
+      <Filter>libs\libavcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="libavcodec\mediacodec.h">
+      <Filter>libs\libavcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="libavcodec\qsv.h">
+      <Filter>libs\libavcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="libavcodec\vaapi.h">
+      <Filter>libs\libavcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="libavcodec\vdpau.h">
+      <Filter>libs\libavcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="libavcodec\version.h">
+      <Filter>libs\libavcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="libavcodec\videotoolbox.h">
+      <Filter>libs\libavcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="libavcodec\vorbis_parser.h">
+      <Filter>libs\libavcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="libavcodec\xvmc.h">
+      <Filter>libs\libavcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\adler32.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\aes.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\aes_ctr.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\attributes.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\audio_fifo.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\avassert.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\avconfig.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\avstring.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\avutil.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\base64.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\blowfish.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\bprint.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\bswap.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\buffer.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\camellia.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\cast5.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\channel_layout.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\common.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\cpu.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\crc.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\des.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\dict.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\display.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\downmix_info.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\encryption_info.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\error.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\eval.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\ffversion.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\fifo.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\file.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\frame.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\hash.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\hdr_dynamic_metadata.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\hmac.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\hwcontext.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\hwcontext_cuda.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\hwcontext_d3d11va.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\hwcontext_drm.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\hwcontext_dxva2.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\hwcontext_mediacodec.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\hwcontext_qsv.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\hwcontext_vaapi.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\hwcontext_vdpau.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\hwcontext_videotoolbox.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\imgutils.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\intfloat.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\intreadwrite.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\lfg.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\log.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\lzo.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\macros.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\mastering_display_metadata.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\mathematics.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\md5.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\mem.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\motion_vector.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\murmur3.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\opt.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\parseutils.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\pixdesc.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\pixelutils.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\pixfmt.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\random_seed.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\rational.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\rc4.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\replaygain.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\ripemd.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\samplefmt.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\sha.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\sha512.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\spherical.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\stereo3d.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\tea.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\threadmessage.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\time.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\timecode.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\timestamp.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\tree.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\twofish.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\tx.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\version.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\xtea.h">
+      <Filter>libs\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="audiocapture.h" />
+    <ClInclude Include="libswresample\swresample.h">
+      <Filter>libs\libswresample</Filter>
+    </ClInclude>
+    <ClInclude Include="libswresample\version.h">
+      <Filter>libs\libswresample</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="libs">
+      <UniqueIdentifier>{0c582e1b-c35c-41fb-94d3-e5f4b8faca83}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\nvEncodeAPI">
+      <UniqueIdentifier>{f5c65b73-0158-461b-ac49-96c63a9aa6e9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\libavformat">
+      <UniqueIdentifier>{557d6496-6565-40d9-9532-9d42fb4c466b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\libavcodec">
+      <UniqueIdentifier>{4819159d-f755-4346-be77-373333093b1a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\libavutil">
+      <UniqueIdentifier>{f9c65180-ff8b-461d-a31a-d15242b24ff5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\libswresample">
+      <UniqueIdentifier>{54cb704c-8e4a-4930-a483-c91dce6c7aa2}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="nvencodeapi.lib">
+      <Filter>libs</Filter>
+    </Library>
+    <Library Include="avcodec.lib">
+      <Filter>libs</Filter>
+    </Library>
+    <Library Include="avformat.lib">
+      <Filter>libs</Filter>
+    </Library>
+    <Library Include="avutil.lib">
+      <Filter>libs</Filter>
+    </Library>
+    <Library Include="swresample.lib">
+      <Filter>libs</Filter>
+    </Library>
+  </ItemGroup>
+  <ItemGroup>
+    <Manifest Include="app.manifest" />
+  </ItemGroup>
+</Project>

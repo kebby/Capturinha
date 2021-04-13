@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="audiocapture_wasapi.cpp" />
+    <ClCompile Include="encode_nvenc.cpp" />
+    <ClCompile Include="graphics.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="output_libav.cpp" />
+    <ClCompile Include="system.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="audiocapture.h" />
+    <ClInclude Include="encode.h" />
+    <ClInclude Include="graphics.h" />
+    <ClInclude Include="libavcodec\ac3_parser.h" />
+    <ClInclude Include="libavcodec\adts_parser.h" />
+    <ClInclude Include="libavcodec\avcodec.h" />
+    <ClInclude Include="libavcodec\avdct.h" />
+    <ClInclude Include="libavcodec\avfft.h" />
+    <ClInclude Include="libavcodec\d3d11va.h" />
+    <ClInclude Include="libavcodec\dirac.h" />
+    <ClInclude Include="libavcodec\dv_profile.h" />
+    <ClInclude Include="libavcodec\dxva2.h" />
+    <ClInclude Include="libavcodec\jni.h" />
+    <ClInclude Include="libavcodec\mediacodec.h" />
+    <ClInclude Include="libavcodec\qsv.h" />
+    <ClInclude Include="libavcodec\vaapi.h" />
+    <ClInclude Include="libavcodec\vdpau.h" />
+    <ClInclude Include="libavcodec\version.h" />
+    <ClInclude Include="libavcodec\videotoolbox.h" />
+    <ClInclude Include="libavcodec\vorbis_parser.h" />
+    <ClInclude Include="libavcodec\xvmc.h" />
+    <ClInclude Include="libavformat\avformat.h" />
+    <ClInclude Include="libavformat\avio.h" />
+    <ClInclude Include="libavformat\version.h" />
+    <ClInclude Include="libavutil\adler32.h" />
+    <ClInclude Include="libavutil\aes.h" />
+    <ClInclude Include="libavutil\aes_ctr.h" />
+    <ClInclude Include="libavutil\attributes.h" />
+    <ClInclude Include="libavutil\audio_fifo.h" />
+    <ClInclude Include="libavutil\avassert.h" />
+    <ClInclude Include="libavutil\avconfig.h" />
+    <ClInclude Include="libavutil\avstring.h" />
+    <ClInclude Include="libavutil\avutil.h" />
+    <ClInclude Include="libavutil\base64.h" />
+    <ClInclude Include="libavutil\blowfish.h" />
+    <ClInclude Include="libavutil\bprint.h" />
+    <ClInclude Include="libavutil\bswap.h" />
+    <ClInclude Include="libavutil\buffer.h" />
+    <ClInclude Include="libavutil\camellia.h" />
+    <ClInclude Include="libavutil\cast5.h" />
+    <ClInclude Include="libavutil\channel_layout.h" />
+    <ClInclude Include="libavutil\common.h" />
+    <ClInclude Include="libavutil\cpu.h" />
+    <ClInclude Include="libavutil\crc.h" />
+    <ClInclude Include="libavutil\des.h" />
+    <ClInclude Include="libavutil\dict.h" />
+    <ClInclude Include="libavutil\display.h" />
+    <ClInclude Include="libavutil\downmix_info.h" />
+    <ClInclude Include="libavutil\encryption_info.h" />
+    <ClInclude Include="libavutil\error.h" />
+    <ClInclude Include="libavutil\eval.h" />
+    <ClInclude Include="libavutil\ffversion.h" />
+    <ClInclude Include="libavutil\fifo.h" />
+    <ClInclude Include="libavutil\file.h" />
+    <ClInclude Include="libavutil\frame.h" />
+    <ClInclude Include="libavutil\hash.h" />
+    <ClInclude Include="libavutil\hdr_dynamic_metadata.h" />
+    <ClInclude Include="libavutil\hmac.h" />
+    <ClInclude Include="libavutil\hwcontext.h" />
+    <ClInclude Include="libavutil\hwcontext_cuda.h" />
+    <ClInclude Include="libavutil\hwcontext_d3d11va.h" />
+    <ClInclude Include="libavutil\hwcontext_drm.h" />
+    <ClInclude Include="libavutil\hwcontext_dxva2.h" />
+    <ClInclude Include="libavutil\hwcontext_mediacodec.h" />
+    <ClInclude Include="libavutil\hwcontext_qsv.h" />
+    <ClInclude Include="libavutil\hwcontext_vaapi.h" />
+    <ClInclude Include="libavutil\hwcontext_vdpau.h" />
+    <ClInclude Include="libavutil\hwcontext_videotoolbox.h" />
+    <ClInclude Include="libavutil\imgutils.h" />
+    <ClInclude Include="libavutil\intfloat.h" />
+    <ClInclude Include="libavutil\intreadwrite.h" />
+    <ClInclude Include="libavutil\lfg.h" />
+    <ClInclude Include="libavutil\log.h" />
+    <ClInclude Include="libavutil\lzo.h" />
+    <ClInclude Include="libavutil\macros.h" />
+    <ClInclude Include="libavutil\mastering_display_metadata.h" />
+    <ClInclude Include="libavutil\mathematics.h" />
+    <ClInclude Include="libavutil\md5.h" />
+    <ClInclude Include="libavutil\mem.h" />
+    <ClInclude Include="libavutil\motion_vector.h" />
+    <ClInclude Include="libavutil\murmur3.h" />
+    <ClInclude Include="libavutil\opt.h" />
+    <ClInclude Include="libavutil\parseutils.h" />
+    <ClInclude Include="libavutil\pixdesc.h" />
+    <ClInclude Include="libavutil\pixelutils.h" />
+    <ClInclude Include="libavutil\pixfmt.h" />
+    <ClInclude Include="libavutil\random_seed.h" />
+    <ClInclude Include="libavutil\rational.h" />
+    <ClInclude Include="libavutil\rc4.h" />
+    <ClInclude Include="libavutil\replaygain.h" />
+    <ClInclude Include="libavutil\ripemd.h" />
+    <ClInclude Include="libavutil\samplefmt.h" />
+    <ClInclude Include="libavutil\sha.h" />
+    <ClInclude Include="libavutil\sha512.h" />
+    <ClInclude Include="libavutil\spherical.h" />
+    <ClInclude Include="libavutil\stereo3d.h" />
+    <ClInclude Include="libavutil\tea.h" />
+    <ClInclude Include="libavutil\threadmessage.h" />
+    <ClInclude Include="libavutil\time.h" />
+    <ClInclude Include="libavutil\timecode.h" />
+    <ClInclude Include="libavutil\timestamp.h" />
+    <ClInclude Include="libavutil\tree.h" />
+    <ClInclude Include="libavutil\twofish.h" />
+    <ClInclude Include="libavutil\tx.h" />
+    <ClInclude Include="libavutil\version.h" />
+    <ClInclude Include="libavutil\xtea.h" />
+    <ClInclude Include="libswresample\swresample.h" />
+    <ClInclude Include="libswresample\version.h" />
+    <ClInclude Include="math3d.h" />
+    <ClInclude Include="nvEncodeAPI.h" />
+    <ClInclude Include="output.h" />
+    <ClInclude Include="system.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="types.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="avcodec.lib" />
+    <Library Include="avformat.lib" />
+    <Library Include="avutil.lib" />
+    <Library Include="nvencodeapi.lib" />
+    <Library Include="swresample.lib" />
+  </ItemGroup>
+  <ItemGroup>
+    <Manifest Include="app.manifest" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{0a33dbd9-e866-4cf7-8403-b3906423355d}</ProjectGuid>
+    <RootNamespace>ScreenCap</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath);C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.2\include</IncludePath>
+    <LibraryPath>$(ProjectDir);$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.2\lib\x64</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath);C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.2\include</IncludePath>
+    <LibraryPath>$(ProjectDir);$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.2\lib\x64</LibraryPath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <Manifest>
+      <AdditionalManifestFiles>app.manifest</AdditionalManifestFiles>
+    </Manifest>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <Manifest>
+      <AdditionalManifestFiles>app.manifest</AdditionalManifestFiles>
+    </Manifest>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

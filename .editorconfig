@@ -1,0 +1,10 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = false
+
+[*.{cpp,cc,h,hpp}]
+indent_style = space
+indent_size = 4

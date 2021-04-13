@@ -1,0 +1,6 @@
+.vs
+x64
+TrainEngine/Debug
+*.user
+data
+
