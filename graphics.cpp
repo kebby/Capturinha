@@ -806,9 +806,7 @@ void InitD3D()
     Dev = dev0;
     Ctx = ctx0;
 
-    // get output duplication
-    DXERR(Output->DuplicateOutput(Dev, Dupl));
-
+    
     /*
     // window description
     DXGI_SWAP_CHAIN_DESC1 sd = 
@@ -864,12 +862,25 @@ static RCPtr<Texture> capTex;
 bool CaptureFrame(int timeoutMs, CaptureInfo &ci)
 {
     RCPtr<IDXGIResource> frame;
-    DXGI_OUTDUPL_FRAME_INFO info;
-    Clear(info);
-    auto res = Dupl->AcquireNextFrame(timeoutMs, &info, frame);
-    if (res == DXGI_ERROR_WAIT_TIMEOUT)
-        return false;
-    DXERR(res);
+    DXGI_OUTDUPL_FRAME_INFO info = {};
+    for (;;)
+    {
+        // get output duplication
+        if (!Dupl.IsValid())
+            DXERR(Output->DuplicateOutput(Dev, Dupl));
+
+        auto res = Dupl->AcquireNextFrame(timeoutMs, &info, frame);
+        if (res == DXGI_ERROR_WAIT_TIMEOUT)
+            return false;
+        if (res == DXGI_ERROR_ACCESS_LOST)
+        {
+            capTex.Clear();
+            Dupl.Clear();
+            continue;
+        }
+        DXERR(res);
+        break;
+    }
 
     if (info.LastPresentTime.QuadPart)
     {
