@@ -6,6 +6,7 @@ extern "C"
 #include <libavformat/avformat.h>
 #include <libavformat/avio.h>
 #include <libavutil/avutil.h>
+#include <libavutil/samplefmt.h>
 #include <libavutil/error.h>
 #include <libswresample\swresample.h>
 }
@@ -32,15 +33,84 @@ private:
     AVCodec* AudioCodec = nullptr;
     AVStream* AudioStream = nullptr;
     AVCodecContext* AudioContext = nullptr;
-    AVFrame* AudioFrame = nullptr;
 
     SwrContext* Resample = nullptr;
     uint ResampleBufferSize = 0;
     uint8* ResampleBuffer = nullptr;
+    uint ResampleBytesPerSample = 0;
+    uint ResampleFill = 0;
     uint SkipAudio = 0; // bytes
 
     int FrameNo = 0;
     int AudioWritten = 0;
+
+    void InitAudio()
+    {
+        if (Para.Audio.Format == AudioFormat::None)
+            return;
+
+        static const AVSampleFormat sampleFmts[] = { AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE };
+
+        AudioCodec = avcodec_find_encoder(AV_CODEC_ID_AAC);
+        if (!AudioCodec)
+            return;
+
+        // find suitable sample format
+        const AVSampleFormat sampleFmt = AudioCodec->sample_fmts[0];
+
+        // init audio stream and codec
+        if (sampleFmt != AV_SAMPLE_FMT_NONE)
+        {
+            AudioContext = avcodec_alloc_context3(AudioCodec);
+            AudioContext->sample_fmt = sampleFmt;
+            AudioContext->bit_rate = 320000; // Para.Audio.SampleRate * 4; //3200000;
+            AudioContext->sample_rate = Para.Audio.SampleRate;
+            AudioContext->channels = Para.Audio.Channels;
+            AudioContext->channel_layout = av_get_default_channel_layout(Para.Audio.Channels);
+
+            AVERR(avcodec_open2(AudioContext, AudioCodec, 0));
+
+            AudioStream = avformat_new_stream(Context, AudioCodec);
+            AudioStream->id = 1;
+            AVERR(avcodec_parameters_from_context(AudioStream->codecpar, AudioContext));
+          
+            AVSampleFormat sourceFmt = AV_SAMPLE_FMT_NONE;
+            switch (Para.Audio.Format)
+            {
+            case AudioFormat::I16: sourceFmt = AV_SAMPLE_FMT_S16; break;
+            case AudioFormat::F32: sourceFmt = AV_SAMPLE_FMT_FLT; break;
+            }
+
+            int bps = av_get_bytes_per_sample(sampleFmt);
+            int linesize;
+            int bufsize = av_samples_get_buffer_size(&linesize, AudioContext->channels, Para.Audio.SampleRate,
+                sampleFmt, 0);
+
+            Resample = swr_alloc_set_opts(nullptr, AudioContext->channel_layout, sampleFmt, Para.Audio.SampleRate, AudioContext->channel_layout, sourceFmt, Para.Audio.SampleRate, 0, nullptr);
+            ResampleBufferSize = Para.Audio.SampleRate;
+            ResampleBuffer = new uint8[ResampleBufferSize * bps * AudioContext->channels];
+            ResampleBytesPerSample = av_get_bytes_per_sample(sampleFmt);
+               
+            AVERR(swr_init(Resample));
+
+        }
+    }
+
+    void WriteAudio()
+    {
+        AVPacket packet = { };
+        av_init_packet(&packet);
+        while (!avcodec_receive_packet(AudioContext, &packet))
+        {
+            packet.pts = av_rescale_q(packet.pts, AudioContext->time_base, AudioStream->time_base);
+            packet.dts = av_rescale_q(packet.dts, AudioContext->time_base, AudioStream->time_base);
+            packet.duration = (int)av_rescale_q(packet.duration, AudioContext->time_base, AudioStream->time_base);
+            packet.stream_index = AudioStream->index;
+
+            // Write the compressed frame to the media file.
+            AVERR(av_interleaved_write_frame(Context, &packet));
+        }
+    }
 
 public:
 
@@ -70,72 +140,20 @@ public:
         codecpar->sample_aspect_ratio.num = codecpar->sample_aspect_ratio.den = 1;
         codecpar->field_order = AV_FIELD_PROGRESSIVE;
 
-        if (Para.Audio.Format != AudioFormat::None)
-        {
-            static const AVSampleFormat sampleFmts[] = { AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE };
-
-            AudioCodec = avcodec_find_encoder(AV_CODEC_ID_PCM_S16LE);
-
-            // find suitable sample format
-            const AVSampleFormat* sampleFmt;
-            for (sampleFmt = sampleFmts; *sampleFmt != AV_SAMPLE_FMT_NONE; sampleFmt++)
-            {
-                bool found = false;
-                for (const AVSampleFormat* cFmt = AudioCodec->sample_fmts; *cFmt != AV_SAMPLE_FMT_NONE; cFmt++)
-                {
-                    if (*cFmt == *sampleFmt)
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-                if (found)
-                    break;
-            }
-            if (*sampleFmt == AV_SAMPLE_FMT_NONE) sampleFmt = AudioCodec->sample_fmts;
-
-            // init audio stream and codec
-            if (*sampleFmt != AV_SAMPLE_FMT_NONE)
-            {
-                AudioContext = avcodec_alloc_context3(AudioCodec);
-                AudioContext->sample_fmt = *sampleFmt;
-                //AudioContext->bit_rate = Para.AudioBitrate;
-                AudioContext->sample_rate = Para.Audio.SampleRate;
-                AudioContext->channels = Para.Audio.Channels;
-                AudioContext->channel_layout = av_get_default_channel_layout(Para.Audio.Channels);
-
-                AudioStream = avformat_new_stream(Context, AudioCodec);
-                AudioStream->id = 1;
-                AVERR(avcodec_parameters_from_context(AudioStream->codecpar, AudioContext));
-
-                AudioFrame = av_frame_alloc();
-
-                AVSampleFormat sourceFmt = AV_SAMPLE_FMT_NONE;
-                switch (Para.Audio.Format)
-                {
-                case AudioFormat::I16: sourceFmt = AV_SAMPLE_FMT_S16; break;
-                case AudioFormat::F32: sourceFmt = AV_SAMPLE_FMT_FLT; break;
-                }
-
-                if (sourceFmt != *sampleFmt)
-                {
-                    Resample = swr_alloc_set_opts(nullptr, AudioContext->channel_layout, *sampleFmt, Para.Audio.SampleRate, AudioContext->channel_layout, sourceFmt, Para.Audio.SampleRate, 0, nullptr);
-                    ResampleBufferSize = Para.Audio.Channels * Para.Audio.SampleRate * 4;
-                    ResampleBuffer = new uint8[ResampleBufferSize];
-
-                    AVERR(swr_init(Resample));
-                }
-
-                AVERR(avcodec_open2(AudioContext, AudioCodec, 0));
-            }
-
-        }
+        InitAudio();
 
         AVERR(avformat_write_header(Context, nullptr));
     }
 
     ~Output_LibAV()
     {
+        if (AudioContext)
+        {
+            AVERR(avcodec_send_frame(AudioContext, nullptr));
+            WriteAudio();
+        }
+
+       
         delete[] ResampleBuffer;
         swr_free(&Resample);
 
@@ -169,6 +187,8 @@ public:
 
     void SetAudioDelay(double delaySec)
     {
+        // turn the delay into samples and then either push some silence
+        // or tell SubmitAudio to skip some input
         uint samples = (uint)fabs(delaySec * Para.Audio.SampleRate);
         uint size = samples * Para.Audio.BytesPerSample;
         if (delaySec > 0)
@@ -195,37 +215,89 @@ public:
         if (!size) return;
 
         AVRational tb = { .num = 1, .den = (int)Para.Audio.SampleRate, };
-        int samples = size / Para.Audio.BytesPerSample;
-        AudioFrame->nb_samples = samples;
-        AudioFrame->pts = av_rescale_q(AudioWritten, tb, AudioContext->time_base);
+        uint samples = size / Para.Audio.BytesPerSample;       
+        int planar = av_sample_fmt_is_planar(AudioContext->sample_fmt);
+        uint bytesPerChannel = ResampleBufferSize * ResampleBytesPerSample;
+        uint rbsize = Para.Audio.Channels * bytesPerChannel;
 
-        if (Resample)
-        {            
-            AudioFrame->nb_samples = swr_convert(Resample, &ResampleBuffer, ResampleBufferSize, &data, samples);
-            AVERR(avcodec_fill_audio_frame(AudioFrame, Para.Audio.Channels, AudioContext->sample_fmt, ResampleBuffer, ResampleBufferSize, 0));
-        }
-        else
+        while (samples)
         {
-            AudioFrame->nb_samples = samples;
-            AVERR(avcodec_fill_audio_frame(AudioFrame, Para.Audio.Channels, AudioContext->sample_fmt, data, size, 0));
+            // fill up resample buffer
+            uint avail =  ResampleBufferSize-ResampleFill;
+
+            uint in = Min(samples, avail); // TODO: add sample rate conversion
+
+            uint rbpos = ResampleFill * ResampleBytesPerSample;
+            if (!planar)
+                rbpos *= Para.Audio.Channels;
+
+            uint8* buffers[8];
+            for (int i = 0; i < 8; i++)
+                buffers[i] = ResampleBuffer + rbpos + i * bytesPerChannel;
+
+            int samplesOut = swr_convert(Resample, buffers, avail, &data, in);
+            ResampleFill += in;
+            samples -= in;
+            data += in * Para.Audio.BytesPerSample;
+
+            // cut buffer into frames and send
+            uint frame = AudioContext->frame_size;
+            if (!frame) frame = ResampleFill;
+            uint written = 0;
+            while ((ResampleFill-written) >= frame)
+            {
+                // make frame
+                AVFrame* audioFrame = av_frame_alloc();
+                audioFrame->pts = av_rescale_q(AudioWritten + written, tb, AudioContext->time_base);
+                audioFrame->nb_samples = frame;
+                AVERR(avcodec_fill_audio_frame(audioFrame, Para.Audio.Channels, AudioContext->sample_fmt, ResampleBuffer, rbsize, 0));
+
+                // avcodec_fill_audio_frame doesn't do inter-channel stride correctly, so fix up the pointers
+                rbpos = written * ResampleBytesPerSample;
+                if (!planar)
+                    rbpos *= Para.Audio.Channels;
+                for (int i = 0; i < 8; i++)
+                {
+                    audioFrame->data[i] = ResampleBuffer + rbpos + i * bytesPerChannel;
+                    audioFrame->linesize[i] = audioFrame->linesize[0];
+                }
+
+                // encode and send
+                AVERR(avcodec_send_frame(AudioContext, audioFrame));
+                WriteAudio();
+
+                written += frame;
+
+                av_frame_free(&audioFrame);
+            }
+
+            // move remainder of resample buffer back to start
+            if (written)
+            {
+                if (written < ResampleFill)
+                {
+                    if (planar)
+                    {
+                        for (uint i = 0; i < Para.Audio.Channels; i++)
+                        {
+                            uint8* buf = ResampleBuffer + i * bytesPerChannel;
+                            memcpy(buf, buf + written * ResampleBytesPerSample, (ResampleFill - written) * ResampleBytesPerSample);
+                        }
+
+                    }
+                    else
+                    {
+                        uint bps = ResampleBytesPerSample * Para.Audio.Channels;
+                        memcpy(ResampleBuffer, ResampleBuffer + written * bps, (ResampleFill - written) * bps);
+                    }
+                }
+                ResampleFill -= written;
+            }
+
+            AudioWritten += written;
         }
 
-        AVERR(avcodec_send_frame(AudioContext, AudioFrame));
 
-        AVPacket packet = { };
-        av_init_packet(&packet);
-        while (!avcodec_receive_packet(AudioContext, &packet))
-        {
-            packet.pts = av_rescale_q(packet.pts, AudioContext->time_base, AudioStream->time_base);
-            packet.dts = av_rescale_q(packet.dts, AudioContext->time_base, AudioStream->time_base);
-            packet.duration = (int)av_rescale_q(packet.duration, AudioContext->time_base, AudioStream->time_base);
-            packet.stream_index = AudioStream->index;
-
-            // Write the compressed frame to the media file.
-            AVERR(av_interleaved_write_frame(Context, &packet));
-
-            av_packet_unref(&packet);
-        }
     }
 };
 
