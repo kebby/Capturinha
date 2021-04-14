@@ -335,6 +335,12 @@
     <ClInclude Include="libswresample\version.h">
       <Filter>libs\libswresample</Filter>
     </ClInclude>
+    <ClInclude Include="libswscale\swscale.h">
+      <Filter>libs\libswscale</Filter>
+    </ClInclude>
+    <ClInclude Include="libswscale\version.h">
+      <Filter>libs\libswscale</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="libs">
@@ -355,6 +361,9 @@
     <Filter Include="libs\libswresample">
       <UniqueIdentifier>{54cb704c-8e4a-4930-a483-c91dce6c7aa2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="libs\libswscale">
+      <UniqueIdentifier>{4fbb0e3c-4c7a-4500-ac44-d147ab376414}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Library Include="nvencodeapi.lib">
@@ -370,6 +379,9 @@
       <Filter>libs</Filter>
     </Library>
     <Library Include="swresample.lib">
+      <Filter>libs</Filter>
+    </Library>
+    <Library Include="swscale.lib">
       <Filter>libs</Filter>
     </Library>
   </ItemGroup>

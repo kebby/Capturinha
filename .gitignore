@@ -6,10 +6,12 @@ libavcodec/
 libavformat/
 libavutil/
 libswresample/
+libswscale/
 
 avcodec*
 avformat*
 avutil*
 nvEncodeApi*
 swresample*
+swscale*
 

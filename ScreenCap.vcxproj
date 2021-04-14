@@ -127,6 +127,8 @@
     <ClInclude Include="libavutil\xtea.h" />
     <ClInclude Include="libswresample\swresample.h" />
     <ClInclude Include="libswresample\version.h" />
+    <ClInclude Include="libswscale\swscale.h" />
+    <ClInclude Include="libswscale\version.h" />
     <ClInclude Include="math3d.h" />
     <ClInclude Include="nvEncodeAPI.h" />
     <ClInclude Include="output.h" />
@@ -140,6 +142,7 @@
     <Library Include="avutil.lib" />
     <Library Include="nvencodeapi.lib" />
     <Library Include="swresample.lib" />
+    <Library Include="swscale.lib" />
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="app.manifest" />

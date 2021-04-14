@@ -143,7 +143,7 @@ int main(int argc, char** argv)
         {
             // if more than half a frame has passed without a new image, assume a skipped frame
             double time = GetTime();
-            while (time - lastFrameTime > 1.5 * frameDuration)
+            while (time - lastFrameTime > 2.5 * frameDuration)
             {
                 printf("dup\n");
                 encoder->DuplicateFrame();
