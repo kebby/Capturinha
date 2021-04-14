@@ -145,6 +145,8 @@ public:
 
     void Terminate() { ExitEv.Fire(); }
 
+    static void Sleep(int ms);
+
 private:
     struct Priv;
     Priv* P = nullptr;

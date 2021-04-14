@@ -44,19 +44,43 @@ private:
     int FrameNo = 0;
     int AudioWritten = 0;
 
+    void InitVideo()
+    {
+        VideoStream = avformat_new_stream(Context, 0);
+        VideoStream->id = 0;
+        VideoStream->time_base.den = VideoStream->avg_frame_rate.num = Para.RateNum;
+        VideoStream->time_base.num = VideoStream->avg_frame_rate.den = Para.RateDen;
+
+        auto codecpar = VideoStream->codecpar;
+        codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+        codecpar->codec_id = AV_CODEC_ID_H264;
+        codecpar->bit_rate = 0;
+        codecpar->width = Para.SizeX;
+        codecpar->height = Para.SizeY;
+        codecpar->bits_per_coded_sample = 24;
+        codecpar->color_range = AVCOL_RANGE_MPEG;
+        codecpar->color_primaries = AVCOL_PRI_BT709;
+        codecpar->color_trc = AVCOL_TRC_BT709;
+        codecpar->color_space = AVCOL_SPC_BT709;
+        codecpar->chroma_location = AVCHROMA_LOC_UNSPECIFIED;
+        codecpar->sample_aspect_ratio.num = codecpar->sample_aspect_ratio.den = 1;
+        codecpar->field_order = AV_FIELD_PROGRESSIVE;
+    }
+
     void InitAudio()
     {
         if (Para.Audio.Format == AudioFormat::None)
             return;
 
-        static const AVSampleFormat sampleFmts[] = { AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE };
-
+        // find the audio codec
         AudioCodec = avcodec_find_encoder(AV_CODEC_ID_AAC);
         if (!AudioCodec)
             return;
 
         // find suitable sample format
         const AVSampleFormat sampleFmt = AudioCodec->sample_fmts[0];
+        if (sampleFmt == AV_SAMPLE_FMT_NONE)
+            return;
 
         // init audio stream and codec
         if (sampleFmt != AV_SAMPLE_FMT_NONE)
@@ -67,7 +91,6 @@ private:
             AudioContext->sample_rate = Para.Audio.SampleRate;
             AudioContext->channels = Para.Audio.Channels;
             AudioContext->channel_layout = av_get_default_channel_layout(Para.Audio.Channels);
-
             AVERR(avcodec_open2(AudioContext, AudioCodec, 0));
 
             AudioStream = avformat_new_stream(Context, AudioCodec);
@@ -81,18 +104,11 @@ private:
             case AudioFormat::F32: sourceFmt = AV_SAMPLE_FMT_FLT; break;
             }
 
-            int bps = av_get_bytes_per_sample(sampleFmt);
-            int linesize;
-            int bufsize = av_samples_get_buffer_size(&linesize, AudioContext->channels, Para.Audio.SampleRate,
-                sampleFmt, 0);
-
             Resample = swr_alloc_set_opts(nullptr, AudioContext->channel_layout, sampleFmt, Para.Audio.SampleRate, AudioContext->channel_layout, sourceFmt, Para.Audio.SampleRate, 0, nullptr);
             ResampleBufferSize = Para.Audio.SampleRate;
-            ResampleBuffer = new uint8[ResampleBufferSize * bps * AudioContext->channels];
             ResampleBytesPerSample = av_get_bytes_per_sample(sampleFmt);
-               
+            ResampleBuffer = new uint8[ResampleBufferSize * ResampleBytesPerSample * AudioContext->channels];
             AVERR(swr_init(Resample));
-
         }
     }
 
@@ -120,26 +136,7 @@ public:
 
         AVERR(avio_open(&Context->pb, Para.filename, AVIO_FLAG_WRITE));
 
-        VideoStream = avformat_new_stream(Context, 0);
-        VideoStream->id = 0;
-        VideoStream->time_base.den = VideoStream->avg_frame_rate.num = Para.RateNum; 
-        VideoStream->time_base.num = VideoStream->avg_frame_rate.den = Para.RateDen;
-
-        auto codecpar = VideoStream->codecpar;
-        codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
-        codecpar->codec_id = AV_CODEC_ID_H264;
-        codecpar->bit_rate = 0;
-        codecpar->width = Para.SizeX;
-        codecpar->height = Para.SizeY;
-        codecpar->bits_per_coded_sample = 24;
-        codecpar->color_range = AVCOL_RANGE_MPEG;
-        codecpar->color_primaries = AVCOL_PRI_BT709;
-        codecpar->color_trc = AVCOL_TRC_BT709;
-        codecpar->color_space = AVCOL_SPC_BT709;
-        codecpar->chroma_location = AVCHROMA_LOC_UNSPECIFIED;
-        codecpar->sample_aspect_ratio.num = codecpar->sample_aspect_ratio.den = 1;
-        codecpar->field_order = AV_FIELD_PROGRESSIVE;
-
+        InitVideo();
         InitAudio();
 
         AVERR(avformat_write_header(Context, nullptr));
@@ -151,19 +148,14 @@ public:
         {
             AVERR(avcodec_send_frame(AudioContext, nullptr));
             WriteAudio();
+            delete[] ResampleBuffer;
+            swr_free(&Resample);
         }
-
        
-        delete[] ResampleBuffer;
-        swr_free(&Resample);
-
-        //AVERR(avformat_flush(Context));
         AVERR(av_write_trailer(Context));
 
         avformat_free_context(Context);
-
         avcodec_free_context(&AudioContext);
-
     }
 
     void SubmitVideoPacket(const uint8* data, uint size) override
@@ -270,6 +262,7 @@ public:
 
                 av_frame_free(&audioFrame);
             }
+            AudioWritten += written;
 
             // move remainder of resample buffer back to start
             if (written)
@@ -283,7 +276,6 @@ public:
                             uint8* buf = ResampleBuffer + i * bytesPerChannel;
                             memcpy(buf, buf + written * ResampleBytesPerSample, (ResampleFill - written) * ResampleBytesPerSample);
                         }
-
                     }
                     else
                     {
@@ -293,12 +285,9 @@ public:
                 }
                 ResampleFill -= written;
             }
-
-            AudioWritten += written;
         }
-
-
     }
+
 };
 
 IOutput* CreateOutputLibAV(const OutputPara& para) { return new Output_LibAV(para); }

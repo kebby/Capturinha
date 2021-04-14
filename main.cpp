@@ -13,155 +13,201 @@
 #include <stdio.h>
 #include <conio.h>
 
-IEncode* encoder = nullptr;
-IAudioCapture* audioCapture = nullptr;
-Thread* processThread = nullptr;
-uint sizeX = 0, sizeY = 0, rateNum = 0, rateDen = 0;
-
-void ProcessThreadFunc(Thread& thread)
+class ScreenCapture
 {
-    OutputPara para =
+    IEncode* encoder = nullptr;
+    IAudioCapture* audioCapture = nullptr;
+    Thread* processThread = nullptr;
+    Thread* captureThread = nullptr;
+    uint sizeX = 0, sizeY = 0, rateNum = 0, rateDen = 0;
+
+    void ProcessThreadFunc(Thread& thread)
     {
-        .filename = "C:\\temp\\test.mov",
-        .SizeX = sizeX,
-        .SizeY = sizeY,
-        .RateNum = rateNum,
-        .RateDen = rateDen,
-        .Audio = audioCapture->GetInfo(),
-    };
-
-    IOutput* output = CreateOutputLibAV(para);
-
-    const uint audioSize = 768000;
-    uint8* audioData = new uint8[audioSize];
-
-    bool firstVideo = true;
-    bool firstAudio = true;
-
-    double firstVideoTime = 0;
-
-    audioCapture->Flush();
-    while (thread.IsRunning())
-    {
-        uint8* data;
-        uint size;
-        
-        double videoTime;
-        while (encoder->BeginGetPacket(data, size, 2, videoTime))
+        OutputPara para =
         {
-            output->SubmitVideoPacket(data, size);
-            encoder->EndGetPacket();
+            .filename = "C:\\temp\\test.mov",
+            .SizeX = sizeX,
+            .SizeY = sizeY,
+            .RateNum = rateNum,
+            .RateDen = rateDen,
+            .Audio = audioCapture->GetInfo(),
+        };
 
-            if (firstVideo)
-            {
-                firstVideoTime = videoTime;
-                firstVideo = false;
-            }
+        IOutput* output = CreateOutputLibAV(para);
 
-            double audioTime = 0;
-            uint audio = audioCapture->Read(audioData, audioSize, audioTime);
-            if (audio)                       
-            {
-                if (firstAudio)
+        const uint audioSize = para.Audio.BytesPerSample*para.Audio.SampleRate;
+        uint8* audioData = new uint8[audioSize];
+
+        bool firstVideo = true;
+        bool firstAudio = true;
+
+        double firstVideoTime = 0;
+
+        double vTimeSent = 0;
+        double aTimeSent = 0;
+
+        audioCapture->Flush();
+        while (thread.IsRunning())
+        {
+            uint8* data;
+            uint size;
+
+            double videoTime;
+            while (encoder->BeginGetPacket(data, size, 2, videoTime))
+            {                    
+                AVSkew += 0.01 * (aTimeSent - vTimeSent - AVSkew);
+
+                output->SubmitVideoPacket(data, size);
+                encoder->EndGetPacket();
+                vTimeSent += (double)rateDen / rateNum;
+
+                if (firstVideo)
                 {
-                    output->SetAudioDelay(audioTime - firstVideoTime);
-                    firstAudio = false;
+                    firstVideoTime = videoTime;
+                    firstVideo = false;
                 }
-                output->SubmitAudio(audioData, audio);
+
+                double audioTime = 0;
+                uint audio = audioCapture->Read(audioData, audioSize, audioTime);
+                if (audio)
+                {
+                    if (firstAudio)
+                    {
+                        output->SetAudioDelay(audioTime - firstVideoTime);
+                        aTimeSent += audioTime - firstVideoTime;
+                        firstAudio = false;
+                    }
+                    output->SubmitAudio(audioData, audio);
+                    aTimeSent += (double)audio / (para.Audio.BytesPerSample * para.Audio.SampleRate);
+                }
             }
 
         }
+
+        delete output;
     }
 
-    delete output;
-}
+public:
 
-int main(int argc, char** argv)
-{   
-    InitD3D();
-
-    audioCapture = CreateAudioCaptureWASAPI();
-   
-    printf("Go\n");
-    bool first = true;
-    int duplicated = 0;
-    double lastFrameTime = GetTime();
-    double frameDuration = 0;
-    while (!_kbhit())
+    uint FramesCaptured = 0;
+    uint FramesDuplicated = 0;
+    float FPS = 0;
+    double AVSkew = 0;
+ 
+    ScreenCapture()
     {
-        CaptureInfo info;
-        if (CaptureFrame(2, info))
+        InitD3D();
+        audioCapture = CreateAudioCaptureWASAPI();
+        captureThread = new Thread(Bind(this, &ScreenCapture::CaptureThreadFunc));
+    }
+
+    ~ScreenCapture()
+    {
+        delete captureThread;
+        delete audioCapture;
+        ExitD3D();
+    }
+
+    void CaptureThreadFunc(Thread &thread)
+    {
+        bool first = true;
+        int duplicated = 0;
+        double lastFrameTime = GetTime();
+        double frameDuration = 0;
+        while (thread.IsRunning())
         {
-            lastFrameTime = GetTime();
-
-            if (sizeX != info.sizeX || sizeY != info.sizeY || rateNum != info.rateNum || rateDen != info.rateDen)
+            CaptureInfo info;
+            if (CaptureFrame(2, info))
             {
-                // (re)init encoder and processing thread, starts new output file
-                sizeX = info.sizeX;
-                sizeY = info.sizeY;
-                rateNum = info.rateNum;
-                rateDen = info.rateDen;
-                frameDuration = (double)info.rateDen / info.rateNum;
+                lastFrameTime = GetTime();
 
-                delete processThread;
-                delete encoder;
-
-                encoder = CreateEncodeNVENC();
-                encoder->Init(sizeX, sizeY, rateNum, rateDen);
-                first = true;
-            }
-            else
-            {
-                // Encode frame
-                if (first)
+                if (sizeX != info.sizeX || sizeY != info.sizeY || rateNum != info.rateNum || rateDen != info.rateDen)
                 {
-                    first = false;
-                    processThread = new Thread(ProcessThreadFunc);
+                    // (re)init encoder and processing thread, starts new output file
+                    sizeX = info.sizeX;
+                    sizeY = info.sizeY;
+                    rateNum = info.rateNum;
+                    rateDen = info.rateDen;
+                    frameDuration = (double)info.rateDen / info.rateNum;
+
+                    delete processThread;
+                    processThread = nullptr;
+                    delete encoder;
+
+                    encoder = CreateEncodeNVENC();
+                    encoder->Init(sizeX, sizeY, rateNum, rateDen);
+                    first = true;
                 }
                 else
                 {
-                    int todup = Max(0, (int)info.deltaFrames - duplicated - 1);
-                    if (todup)
+                    // Encode frame
+                    if (first)
                     {
-                        printf("dup2 %d\n", todup);
-                        for (int i = 0; i < todup; i++)
-                            encoder->DuplicateFrame();
+                        first = false;
+                        processThread = new Thread(Bind(this, &ScreenCapture::ProcessThreadFunc));
                     }
+                    else
+                    {
+                        int todup = Max(0, (int)info.deltaFrames - duplicated - 1);
+                        for (int i = 0; i < todup; i++)
+                        {
+                            encoder->DuplicateFrame();
+                            AtomicInc(FramesDuplicated);
+                        }
+
+                        float curfps = (float)info.rateNum / (info.rateDen * info.deltaFrames);
+                        if (!FPS) FPS = curfps;
+                        FPS += 0.03 * (curfps - FPS);
+                    }
+
+                    encoder->SubmitFrame(info.tex, info.time);
+                    AtomicInc(FramesCaptured);
                 }
-                encoder->SubmitFrame(info.tex, info.time);
+                ReleaseFrame();
 
-                printf("got frame\n");
-
+                // (it's that easy)
+                duplicated = 0;
             }
-            ReleaseFrame();
 
-            // (it's that easy)
-            duplicated = 0;
-        }
-
-        if (encoder && !first)
-        {
-            // if more than half a frame has passed without a new image, assume a skipped frame
-            double time = GetTime();
-            while (time - lastFrameTime > 2.5 * frameDuration)
+            if (encoder && !first)
             {
-                printf("dup\n");
-                encoder->DuplicateFrame();
-                lastFrameTime += frameDuration;
-                duplicated++;
+                // if more than a certain time has passed without a new image, assume a skipped frame
+                double time = GetTime();
+                while (time - lastFrameTime > 2.5 * frameDuration)
+                {
+                    encoder->DuplicateFrame();
+                    AtomicInc(FramesDuplicated);
+                    lastFrameTime += frameDuration;
+                    duplicated++;
+                    float curfps = (float)info.rateNum / (info.rateDen * duplicated);
+                    FPS = FPS + 0.03 * (curfps - FPS);
+                }
             }
         }
 
-       
+        if (encoder)
+            encoder->Flush();
+
+        delete processThread;
+        delete encoder;
+        
+    }
+};
+
+
+int main(int argc, char** argv)
+{   
+    
+    auto capture = new ScreenCapture();
+
+    while (!_kbhit())
+    {
+        printf("recd %5d frames, dupl %5d frames, %5.2f FPS, skew %6.2f ms\r", capture->FramesCaptured, capture->FramesDuplicated, capture->FPS, capture->AVSkew*1000);
+        Thread::Sleep(10);
     }
     _getch();
 
-    if (encoder)
-        encoder->Flush();
-  
-    delete processThread;
-    delete encoder;
-    delete audioCapture;
+    delete capture;
 
     ExitD3D();
     return 0;
