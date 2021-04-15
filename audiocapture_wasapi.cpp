@@ -20,6 +20,8 @@ class AudioCapture_WASAPI : public IAudioCapture
     RCPtr<IAudioClient> Client;
     RCPtr<IAudioCaptureClient> CaptureClient;
 
+    RCPtr<IAudioClient> PlaybackClient;
+
     WAVEFORMATEXTENSIBLE* Format = nullptr;
     uint BufferSize = 0;
 
@@ -96,6 +98,8 @@ class AudioCapture_WASAPI : public IAudioCapture
 public:
     AudioCapture_WASAPI()
     {
+        const REFERENCE_TIME duration = REFERENCE_TIME(0.02 * REFPERSEC);
+
         // init COM
         CHECK(CoInitializeEx(NULL, COINIT_MULTITHREADED));
 
@@ -107,31 +111,34 @@ public:
         RCPtr<IMMDevice> device;
         CHECK(enumerator->GetDefaultAudioEndpoint(eRender, eConsole, device));
 
-        // Acquire audio client
-        CHECK(device->Activate(__uuidof(IAudioClient), CLSCTX_ALL, NULL, Client));
+        // initialize dummy playback client to keep the device running
+        WAVEFORMATEX* outFormat = nullptr;
+        uint outBufferSize = 0;
+        BYTE* outBuffer;
+        CHECK(device->Activate(__uuidof(IAudioClient), CLSCTX_ALL, NULL, PlaybackClient));
+        CHECK(PlaybackClient->GetMixFormat(&outFormat));
+        CHECK(PlaybackClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, duration, 0, outFormat, NULL));
+        CHECK(PlaybackClient->GetBufferSize(&outBufferSize));
+        RCPtr<IAudioRenderClient> renderClient;
+        CHECK(PlaybackClient->GetService(__uuidof(IAudioRenderClient), renderClient));
+        CHECK(renderClient->GetBuffer(outBufferSize, &outBuffer));
+        memset(outBuffer, 0, outBufferSize * outFormat->nBlockAlign);
+        CHECK(PlaybackClient->Start());
 
-        // Get used format
+        //  initialize client for loopback recording
+        CHECK(device->Activate(__uuidof(IAudioClient), CLSCTX_ALL, NULL, Client));
         CHECK(Client->GetMixFormat((WAVEFORMATEX**)&Format));
 
         // TODO? support for non-float samples and other channel configs than stereo
         ASSERT(Format->Format.wFormatTag == WAVE_FORMAT_EXTENSIBLE && Format->Format.nChannels == 2 && Format->SubFormat == KSDATAFORMAT_SUBTYPE_IEEE_FLOAT);
         
-        // initialize ring buffer
         BytesPerSample = Format->Format.nChannels * Format->Format.wBitsPerSample / 8;
         RingSize = Format->Format.nSamplesPerSec * BytesPerSample; // 1 second for now
         Ring = new uint8[RingSize];
 
-        // Initialize audio client
-        REFERENCE_TIME duration = REFERENCE_TIME(0.01 * REFPERSEC);
         CHECK(Client->Initialize(AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_LOOPBACK, duration, 0, (WAVEFORMATEX*)Format, NULL));
-
-        // Get buffer size
         CHECK(Client->GetBufferSize(&BufferSize));
-
-        // Acquire capture client
         CHECK(Client->GetService(__uuidof(IAudioCaptureClient), CaptureClient));
-
-        // start capture
         CHECK(Client->Start());
 
         // ... and run the thread
@@ -142,9 +149,11 @@ public:
     {
         delete CaptureThread;
         Client->Stop();
+        PlaybackClient->Stop();
 
         CaptureClient.Clear();
         Client.Clear();
+        PlaybackClient.Clear();
 
         delete[] Ring;
 
