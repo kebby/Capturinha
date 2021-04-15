@@ -179,7 +179,7 @@ public:
                     AtomicInc(FramesDuplicated);
                     lastFrameTime += frameDuration;
                     duplicated++;
-                    float curfps = (float)info.rateNum / (info.rateDen * duplicated);
+                    float curfps = (float)info.rateNum / (info.rateDen * (duplicated+1));
                     FPS = FPS + 0.03 * (curfps - FPS);
                 }
             }
