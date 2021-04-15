@@ -199,10 +199,6 @@ public:
             // init CUDA
             CUDAERR(cuInit(0));
 
-            CUdevice cudaDevice = 0;
-            CUDAERR(cuD3D11GetDevice(&cudaDevice, (IDXGIAdapter*)GetAdapter()));
-            CUDAERR(cuCtxCreate_v2(&CudaContext, 0, cudaDevice));
-
             // init NVENC API
             auto nvenclib = LoadLibrary("nvEncodeAPI64.dll");
 
@@ -218,6 +214,10 @@ public:
             Inited = true;
         }
 
+        // init CUDA
+        CUdevice cudaDevice = 0;
+        CUDAERR(cuD3D11GetDevice(&cudaDevice, (IDXGIAdapter*)GetAdapter()));
+        CUDAERR(cuCtxCreate_v2(&CudaContext, 0, cudaDevice));
 
         // Create encoder session
         NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS openparams = {

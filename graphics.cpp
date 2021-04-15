@@ -858,35 +858,47 @@ RCPtr<IDXGIAdapter> GetAdapter() { return Adapter; }
 
 static int64 lastFrameTime;
 static RCPtr<Texture> capTex;
+static DXGI_OUTDUPL_DESC odd;
 
 bool CaptureFrame(int timeoutMs, CaptureInfo &ci)
 {
     RCPtr<IDXGIResource> frame;
     DXGI_OUTDUPL_FRAME_INFO info = {};
-    for (;;)
-    {
-        // get output duplication
-        if (!Dupl.IsValid())
-            DXERR(Output->DuplicateOutput(Dev, Dupl));
+    HRESULT hr;
 
-        auto res = Dupl->AcquireNextFrame(timeoutMs, &info, frame);
-        if (res == DXGI_ERROR_WAIT_TIMEOUT)
-            return false;
-        if (res == DXGI_ERROR_ACCESS_LOST)
+    // get output duplication object
+    if (!Dupl.IsValid())
+    {
+        hr = Output->DuplicateOutput(Dev, Dupl);
+        if (hr == E_ACCESSDENIED)
         {
-            capTex.Clear();
-            Dupl.Clear();
-            continue;
+            // so far this only happens in the middle of a mode switch, try again later
+            Sleep(timeoutMs);
+            return false;
         }
-        DXERR(res);
-        break;
+        DXERR(hr);
+
+        Dupl->GetDesc(&odd);
+        //printf("new dupl %dx%d @ %d:%d\n", odd.ModeDesc.Width, odd.ModeDesc.Height, odd.ModeDesc.RefreshRate.Numerator, odd.ModeDesc.RefreshRate.Denominator);
     }
 
+    // try to get next frame
+    hr = Dupl->AcquireNextFrame(timeoutMs, &info, frame);
+    if (hr == DXGI_ERROR_WAIT_TIMEOUT)
+        return false;
+    if (hr == DXGI_ERROR_ACCESS_LOST || hr == DXGI_ERROR_INVALID_CALL)
+    {
+        // we lost the interface or it has somehow become invalid, bail and try again next time
+        capTex.Clear();
+        Dupl.Clear();
+        Sleep(timeoutMs);
+        return false;
+    }
+    DXERR(hr);
+
+    // have we got a frame?
     if (info.LastPresentTime.QuadPart)
     {
-        DXGI_OUTDUPL_DESC odd;
-        Dupl->GetDesc(&odd);
-
         LARGE_INTEGER qpf;
         QueryPerformanceFrequency(&qpf);
         if (!lastFrameTime)
@@ -896,13 +908,13 @@ bool CaptureFrame(int timeoutMs, CaptureInfo &ci)
 
         int deltaframes = (int)round(delta * odd.ModeDesc.RefreshRate.Numerator / odd.ModeDesc.RefreshRate.Denominator);
 
+        // create/invalidate texture object
         RCPtr<ID3D11Texture2D> tex = frame;
-
+        if (tex.IsValid() && capTex.IsValid() && (ID3D11Texture2D*)tex != (ID3D11Texture2D*)capTex->P->tex)
+            capTex.Clear();
         if (!capTex.IsValid())
             capTex = CreateTexture(tex);
 
-        // we assume the texture doesn't ever change
-        ASSERT((&tex.Ref()) == (&capTex->P->tex.Ref()));
         ci.tex = capTex;
         ci.sizeX = ci.tex->para.sizeX;
         ci.sizeY = ci.tex->para.sizeY;
@@ -910,9 +922,9 @@ bool CaptureFrame(int timeoutMs, CaptureInfo &ci)
         ci.rateDen = odd.ModeDesc.RefreshRate.Denominator;
         ci.deltaFrames = deltaframes;
         ci.time = (double)info.LastPresentTime.QuadPart / (double)qpf.QuadPart;
-
         return true;
     }
+
     ReleaseFrame();
     return false;
 }

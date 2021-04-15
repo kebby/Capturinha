@@ -25,7 +25,7 @@ class ScreenCapture
     {
         OutputPara para =
         {
-            .filename = "C:\\temp\\test.mov",
+            .filename = "C:\\temp\\capture",
             .SizeX = sizeX,
             .SizeY = sizeY,
             .RateNum = rateNum,
@@ -130,6 +130,9 @@ public:
                     rateDen = info.rateDen;
                     frameDuration = (double)info.rateDen / info.rateNum;
 
+                    if (encoder)
+                        encoder->Flush();
+
                     delete processThread;
                     processThread = nullptr;
                     delete encoder;
@@ -137,6 +140,11 @@ public:
                     encoder = CreateEncodeNVENC();
                     encoder->Init(sizeX, sizeY, rateNum, rateDen);
                     first = true;
+
+                    FramesCaptured = 0;
+                    FramesDuplicated = 0;
+                    FPS = 0;
+                    AVSkew = 0;
                 }
                 else
                 {
@@ -155,9 +163,12 @@ public:
                             AtomicInc(FramesDuplicated);
                         }
 
-                        float curfps = (float)info.rateNum / (info.rateDen * info.deltaFrames);
-                        if (!FPS) FPS = curfps;
-                        FPS += 0.03 * (curfps - FPS);
+                        if (info.deltaFrames)
+                        {
+                            float curfps = (float)info.rateNum / (info.rateDen * info.deltaFrames);
+                            if (!FPS) FPS = curfps;
+                            FPS += 0.03 * (curfps - FPS);
+                        }
                     }
 
                     encoder->SubmitFrame(info.tex, info.time);
@@ -202,7 +213,7 @@ int main(int argc, char** argv)
 
     while (!_kbhit())
     {
-        printf("recd %5d frames, dupl %5d frames, %5.2f FPS, skew %6.2f ms\r", capture->FramesCaptured, capture->FramesDuplicated, capture->FPS, capture->AVSkew*1000);
+        printf("recd %5d frames, dupl %5d frames, %5.2f FPS, skew %6.2f ms\r", capture->FramesCaptured + capture->FramesDuplicated, capture->FramesDuplicated, capture->FPS, capture->AVSkew*1000);
         Thread::Sleep(10);
     }
     _getch();

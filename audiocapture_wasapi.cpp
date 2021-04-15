@@ -139,10 +139,10 @@ public:
         CHECK(Client->Initialize(AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_LOOPBACK, duration, 0, (WAVEFORMATEX*)Format, NULL));
         CHECK(Client->GetBufferSize(&BufferSize));
         CHECK(Client->GetService(__uuidof(IAudioCaptureClient), CaptureClient));
-        CHECK(Client->Start());
 
-        // ... and run the thread
+        // ... and go
         CaptureThread = new Thread(Bind(this, &AudioCapture_WASAPI::CaptureThreadFunc));
+        CHECK(Client->Start());
     }
 
     ~AudioCapture_WASAPI()
