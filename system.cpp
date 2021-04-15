@@ -79,6 +79,24 @@ double GetTime()
     return (double)curTicks * invPerfFreq;
 }
 
+SystemTime GetSystemTime()
+{
+    SYSTEMTIME st = {};
+    GetSystemTime(&st);
+
+    return SystemTime 
+    {
+        .year = st.wYear,
+        .month = st.wMonth,
+        .dayOfWeek = st.wDayOfWeek,
+        .day = st.wDay,
+        .hour = st.wHour,
+        .minute = st.wMinute,
+        .second = st.wSecond,
+        .milliseconds = st.wMilliseconds,
+    };
+}
+
 // buffers
 // -------------------------------------------------------------------------------
 

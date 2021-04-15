@@ -17,6 +17,19 @@ struct ScreenMode
 int64 GetTicks(); // raw timer ticks
 double GetTime(); // time since program start in seconds
 
+struct SystemTime {
+    uint year;
+    uint month;
+    uint dayOfWeek;
+    uint day;
+    uint hour;
+    uint minute;
+    uint second;
+    uint milliseconds;
+};
+
+SystemTime GetSystemTime(); // wall-clock time
+
 // streams / files
 // -------------------------------------------------------------------------------
 

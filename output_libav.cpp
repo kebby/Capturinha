@@ -12,6 +12,7 @@ extern "C"
 }
 
 #include <math.h>
+#include <stdio.h>
 
 #if _DEBUG
 static char averrbuf[1024];
@@ -43,6 +44,8 @@ private:
 
     int FrameNo = 0;
     int AudioWritten = 0;
+
+    char Filename[2048] = {};
 
     void InitVideo()
     {
@@ -132,9 +135,20 @@ public:
 
     Output_LibAV(const OutputPara& para) : Para(para)
     {
-        AVERR(avformat_alloc_output_context2(&Context, nullptr, "mov", Para.filename));
+        auto systime = GetSystemTime();
 
-        AVERR(avio_open(&Context->pb, Para.filename, AVIO_FLAG_WRITE));
+        sprintf_s(Filename, "%s_%04d-%02d-%02d_%02d.%02d.%02d_%dx%d_%.4gfps.%s",
+            para.filename,
+            systime.year, systime.month, systime.day, systime.hour, systime.minute, systime.second,
+            para.SizeX, para.SizeY, (double)para.RateNum/para.RateDen,
+            "mp4"
+            );
+
+        printf("Starting file %s\n", Filename);
+
+        AVERR(avformat_alloc_output_context2(&Context, nullptr, "mp4", Filename));
+
+        AVERR(avio_open(&Context->pb, Filename, AVIO_FLAG_WRITE));
 
         InitVideo();
         InitAudio();
