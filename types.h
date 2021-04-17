@@ -44,6 +44,8 @@ template<typename a1, typename ... args> constexpr int NumArgs(a1, args... a) { 
 
 template<typename T> void Clear(T& t) { memset(&t, 0, sizeof(T)); }
 
+template<typename T> void Delete(T*& ptr) { delete ptr; ptr = nullptr; }
+
 // containers
 // -------------------------------------------------------------------------------
 

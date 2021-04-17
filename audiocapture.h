@@ -24,6 +24,7 @@ public:
 
     virtual uint Read(uint8* dest, uint size, double &time) = 0; // size in bytes
 
+    virtual void JumpToTime(double time) = 0;
     virtual void Flush() = 0;
 };
 

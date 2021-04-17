@@ -39,9 +39,14 @@ struct Stream
 
     virtual ~Stream() {};
 
-    virtual uint64 Read(void* ptr, uint64 len) = 0;
-
+    virtual bool CanRead() const { return false; }
+    virtual bool CanWrite() const { return false; }
     virtual bool CanSeek() const { return false; }
+
+    virtual uint64 Read(void* ptr, uint64 len) = 0;
+    virtual uint64 Write(const void* ptr, uint64 len) = 0;
+
+
     virtual uint64 Length() const { return 0; }
     virtual uint64 Seek(int64, From) { return 0; }
     virtual uint64 Pos() { return (uint64)Seek(0, From::Current); }
@@ -49,7 +54,15 @@ struct Stream
     virtual RCPtr<Buffer> Map() { return RCPtr<Buffer>(); }
 };
 
-Stream* OpenFile(const char* path);
+enum OpenFileMode
+{
+    Read,
+    Create,
+    Append,
+    RandomAccess,
+};
+
+Stream* OpenFile(const char* path, OpenFileMode mode = OpenFileMode::Read);
 RCPtr<Buffer> LoadFile(const char* path);
 
 RCPtr<Buffer> LoadResource(int name, int type);
@@ -60,10 +73,13 @@ RCPtr<Buffer> LoadResource(int name, int type);
 #if _DEBUG
 void DPrintF(const char* format, ...);
 #else
-inline void DPrintF(const wchar*, ...) {}
+inline void DPrintF(const char*, ...) {}
 #endif
 [[ noreturn ]]
 void Fatal(const char* format, ...);
+
+void DbgOpenLog(const char* filename);
+void DbgCloseLog();
 
 
 class Random

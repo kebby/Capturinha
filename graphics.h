@@ -276,7 +276,7 @@ struct CaptureInfo
     uint sizeY;
     uint rateNum;
     uint rateDen;
-    uint deltaFrames;
+    uint64 frameCount;
     double time;
 };
 

@@ -781,7 +781,7 @@ void InitD3D()
             DXGI_OUTPUT_DESC1 od1;
             Output->GetDesc1(&od1);
             wprintf(L"- %s\n", od1.DeviceName);
-            //break;
+            break;
         }
         break;
     }
@@ -856,9 +856,10 @@ void ExitD3D()
 RCPtr<ID3D11Device> GetDevice() { return Dev; }
 RCPtr<IDXGIAdapter> GetAdapter() { return Adapter; }
 
-static int64 lastFrameTime;
+static int64 lastFrameTime = 0;
 static RCPtr<Texture> capTex;
 static DXGI_OUTDUPL_DESC odd;
+static double frameCount = 0;
 
 bool CaptureFrame(int timeoutMs, CaptureInfo &ci)
 {
@@ -883,50 +884,57 @@ bool CaptureFrame(int timeoutMs, CaptureInfo &ci)
     }
 
     // try to get next frame
-    hr = Dupl->AcquireNextFrame(timeoutMs, &info, frame);
-    if (hr == DXGI_ERROR_WAIT_TIMEOUT)
-        return false;
-    if (hr == DXGI_ERROR_ACCESS_LOST || hr == DXGI_ERROR_INVALID_CALL)
-    {
-        // we lost the interface or it has somehow become invalid, bail and try again next time
-        capTex.Clear();
-        Dupl.Clear();
-        Sleep(timeoutMs);
-        return false;
-    }
-    DXERR(hr);
-
-    // have we got a frame?
-    if (info.LastPresentTime.QuadPart)
-    {
-        LARGE_INTEGER qpf;
-        QueryPerformanceFrequency(&qpf);
-        if (!lastFrameTime)
-            lastFrameTime = info.LastPresentTime.QuadPart;
-        double delta = (double)(info.LastPresentTime.QuadPart - lastFrameTime) / (double)qpf.QuadPart;
-        lastFrameTime = info.LastPresentTime.QuadPart;
-
-        int deltaframes = (int)round(delta * odd.ModeDesc.RefreshRate.Numerator / odd.ModeDesc.RefreshRate.Denominator);
-
-        // create/invalidate texture object
-        RCPtr<ID3D11Texture2D> tex = frame;
-        if (tex.IsValid() && capTex.IsValid() && (ID3D11Texture2D*)tex != (ID3D11Texture2D*)capTex->P->tex)
+    for (;;)
+    { 
+        hr = Dupl->AcquireNextFrame(timeoutMs, &info, frame);
+        if (hr == DXGI_ERROR_WAIT_TIMEOUT)
+            return false;
+        if (hr == DXGI_ERROR_ACCESS_LOST || hr == DXGI_ERROR_INVALID_CALL)
+        {
+            // we lost the interface or it has somehow become invalid, bail and try again next time
             capTex.Clear();
-        if (!capTex.IsValid())
-            capTex = CreateTexture(tex);
+            Dupl.Clear();
+            Sleep(timeoutMs);
+            return false;
+        }
+        DXERR(hr);
 
-        ci.tex = capTex;
-        ci.sizeX = ci.tex->para.sizeX;
-        ci.sizeY = ci.tex->para.sizeY;
-        ci.rateNum = odd.ModeDesc.RefreshRate.Numerator;
-        ci.rateDen = odd.ModeDesc.RefreshRate.Denominator;
-        ci.deltaFrames = deltaframes;
-        ci.time = (double)info.LastPresentTime.QuadPart / (double)qpf.QuadPart;
-        return true;
+        // have we got a frame?
+        if (info.LastPresentTime.QuadPart)
+            break;
+
+        ReleaseFrame();
     }
 
-    ReleaseFrame();
-    return false;
+    LARGE_INTEGER qpf;
+    QueryPerformanceFrequency(&qpf);
+    if (!lastFrameTime)
+        lastFrameTime = info.LastPresentTime.QuadPart;
+    double delta = (double)(info.LastPresentTime.QuadPart - lastFrameTime) / (double)qpf.QuadPart;
+    lastFrameTime = info.LastPresentTime.QuadPart;
+    if (delta < 0)
+    {
+        ReleaseFrame();
+        return false;
+    }
+
+    frameCount += delta * odd.ModeDesc.RefreshRate.Numerator / odd.ModeDesc.RefreshRate.Denominator;
+
+    // create/invalidate texture object
+    RCPtr<ID3D11Texture2D> tex = frame;
+    if (tex.IsValid() && capTex.IsValid() && (ID3D11Texture2D*)tex != (ID3D11Texture2D*)capTex->P->tex)
+        capTex.Clear();
+    if (!capTex.IsValid())
+        capTex = CreateTexture(tex);
+
+    ci.tex = capTex;
+    ci.sizeX = ci.tex->para.sizeX;
+    ci.sizeY = ci.tex->para.sizeY;
+    ci.rateNum = odd.ModeDesc.RefreshRate.Numerator;
+    ci.rateDen = odd.ModeDesc.RefreshRate.Denominator;
+    ci.frameCount = (uint64)round(frameCount);
+    ci.time = (double)info.LastPresentTime.QuadPart / (double)qpf.QuadPart;
+    return true;
 }
 
 void ReleaseFrame()

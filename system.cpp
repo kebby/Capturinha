@@ -132,6 +132,29 @@ RCPtr<Buffer> Buffer::Part(const RCPtr<Buffer> buffer, uint64 offset, uint64 siz
 // debug output
 // -------------------------------------------------------------------------------
 
+static Stream* LogFile = nullptr;
+static ThreadLock LogLock;
+
+void DbgOpenLog(const char* filename)
+{
+    LogFile = OpenFile(filename, OpenFileMode::Create);
+}
+
+void DbgCloseLog()
+{
+    Delete(LogFile);
+}
+
+static void Dbg(const char* message)
+{
+    ScopeLock lock(LogLock);
+    OutputDebugString(message);
+    if (LogFile)
+    {
+        LogFile->Write(message, strlen(message));
+    }
+}
+
 #define PRINTF_INTERNAL() { \
     va_list args; \
     va_start(args, format); \
@@ -141,14 +164,13 @@ RCPtr<Buffer> Buffer::Part(const RCPtr<Buffer> buffer, uint64 offset, uint64 siz
     buf[len] = 0; \
 }
 
-
 #ifdef _DEBUG
 void DPrintF(const char* format, ...)
 {
     constexpr size_t size = 2048;
     char buf[size];
     PRINTF_INTERNAL();
-    OutputDebugString(buf);
+    Dbg(buf);
 }
 #endif
 
@@ -158,9 +180,11 @@ void Fatal(const char* format, ...)
     constexpr int size = 4096;
     char buf[size];
     PRINTF_INTERNAL();
-    OutputDebugString("\n");
-    OutputDebugString(buf);
-    OutputDebugString("\n");
+    Dbg("\n");
+    Dbg(buf);
+    Dbg("\n");
+    DbgCloseLog();
+
     MessageBox(hWnd, buf, "Train Engine", MB_OK | MB_ICONERROR);
     ExitProcess(1);
 }
@@ -184,11 +208,22 @@ struct BufferStream : Stream
     uint64 Read(void* ptr, uint64 len) override
     {
         len = Min(len, buffer->size - pos);
-        memcpy(ptr, buffer->ptr, len);
+        memcpy(ptr, buffer->ptr + pos, len);
+        pos += len;
+        return len;
+    };
+
+    uint64 Write(const void* ptr, uint64 len) override
+    {
+        len = Min(len, buffer->size - pos);
+        memcpy(buffer->ptr + pos, ptr, len);
+        pos += len;
         return len;
     };
 
     bool CanSeek() const override { return true; }
+    bool CanRead() const override { return true; }
+    bool CanWrite() const override { return true; }
     uint64 Length() const override { return buffer->size; }
 
     uint64 Seek(int64 p, From from) override
@@ -209,8 +244,10 @@ struct FileStream : Stream
 {
     HANDLE hf;
     uint64 size;
+    bool canRead;
+    bool canWrite;
 
-    explicit FileStream(HANDLE h) : hf(h)
+    explicit FileStream(HANDLE h, bool cr, bool cw) : hf(h), canRead(cr), canWrite(cw)
     {
         LARGE_INTEGER lis;
         GetFileSizeEx(hf, &lis);
@@ -227,9 +264,19 @@ struct FileStream : Stream
         len = Min(len, 0xffffffffull);
         DWORD read = 0;
         ReadFile(hf, ptr, (DWORD)len, &read, nullptr);
-        return len;
+        return read;
     };
 
+    uint64 Write(const void* ptr, uint64 len) override
+    {
+        len = Min(len, 0xffffffffull);
+        DWORD written = 0;
+        WriteFile(hf, ptr, (DWORD)len, &written, nullptr);
+        return written;
+    };
+
+    bool CanRead() const override { return canRead; }
+    bool CanWrite() const override { return canWrite; }
     bool CanSeek() const override { return true; }
     uint64 Length() const override { return size; }
 
@@ -250,16 +297,39 @@ struct FileStream : Stream
     }
 };
 
-Stream *OpenFile(const char* path)
+Stream *OpenFile(const char* path, OpenFileMode mode)
 {
-    HANDLE h = CreateFile(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+    HANDLE h = INVALID_HANDLE_VALUE;
+    bool cr, cw;
+    switch (mode)
+    {
+    case OpenFileMode::Read:
+        h = CreateFile(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+        cr = true; cw = false;
+        break;
+    case OpenFileMode::Append:
+        h = CreateFile(path, GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_ALWAYS, 0, NULL);
+        if (h != INVALID_HANDLE_VALUE)
+            SetFilePointer(h, 0, 0, FILE_END);
+        cw = true; cr = false;
+        break;
+    case OpenFileMode::Create:
+        h = CreateFile(path, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, 0, NULL);
+        cw = true; cr = false;
+        break;
+    case OpenFileMode::RandomAccess:
+        h = CreateFile(path, GENERIC_WRITE | GENERIC_READ, 0, NULL, OPEN_ALWAYS, 0, NULL);
+        cw = true; cr = true;
+        break;
+    }
     if (h == INVALID_HANDLE_VALUE)
     {
         Fatal("could not open %s: %s\n", path, LastErrorString());
     }
     DPrintF("Opening %s\n", path);
-    return new FileStream(h);
+    return new FileStream(h, cr, cw);
 }
+
 
 RCPtr<Buffer> LoadFile(const char* path)
 {

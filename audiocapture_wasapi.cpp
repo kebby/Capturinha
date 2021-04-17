@@ -73,6 +73,7 @@ class AudioCapture_WASAPI : public IAudioCapture
                     {
                         RingWrite -= RingSize;
                         RingRead -= RingSize;
+                        RingTimePos -= RingSize;
                     }
                 }
 
@@ -175,7 +176,6 @@ public:
     uint Read(uint8* dest, uint size, double &time) override
     {
         ScopeLock lock(RingLock);
-
         time = RingTimeValue + ((double)RingRead - RingTimePos) / (double)(BytesPerSample * Format->Format.nSamplesPerSec);
 
         size = Min(size, RingWrite - RingRead);
@@ -186,6 +186,26 @@ public:
         RingRead += size;
 
         return size;
+    }
+
+    void JumpToTime(double time) override
+    {
+        ScopeLock lock(RingLock);
+        int deltasamples = (int)round((time - RingTimeValue) * Format->Format.nSamplesPerSec);
+        int destpos = RingTimePos + deltasamples * BytesPerSample;
+        /*
+        if (destpos < (int)RingRead)
+        {
+
+        }
+        else if (destpos > RingWrite)
+        {
+
+        }
+        */
+        //else
+        RingRead = (uint)Clamp<int>(destpos, RingRead, RingWrite);
+
     }
 
     void Flush() override
