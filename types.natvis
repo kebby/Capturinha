@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?> 
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+  <Type Name="String">
+    <DisplayString Condition="node.ptr == 0" >(empty)</DisplayString>
+    <DisplayString Condition="node.ptr != 0" >{*node.ptr}</DisplayString>
+  </Type>
+  
+  <Type Name="String::Node">
+    <DisplayString>{str,s}</DisplayString>
+  </Type>
+
+  <Type Name="Array&lt;*&gt;">
+    <DisplayString>{{len={size}, capacity={capacity}}}</DisplayString>
+    <Expand>
+      <ArrayItems>
+        <Size>size</Size>
+        <ValuePointer>mem</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+  
+</AutoVisualizer>

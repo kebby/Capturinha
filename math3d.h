@@ -260,8 +260,6 @@ struct Mat44
     }
  };
 
-template<typename T> constexpr T Lerp(T a, T b, float l) { return a * l + b * (1 - l); }
-
 constexpr float Dot(const Vec2& a, const Vec2& b) { return a.x * b.x + a.y * b.y; }
 constexpr Vec2 Normalize(const Vec2& v) { return v / v.Length(); }
 constexpr Vec2 Min(const Vec2& a, const Vec2& b) { return Vec2(Min(a.x, b.x), Min(a.y, b.y)); }

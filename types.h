@@ -42,8 +42,6 @@ template<typename T> constexpr T Smoothstep(T v, T min, T max) { return Smooth((
 constexpr int NumArgs() { return 0; }
 template<typename a1, typename ... args> constexpr int NumArgs(a1, args... a) { return NumArgs(a...) + 1; }
 
-template<typename T> void Clear(T& t) { memset(&t, 0, sizeof(T)); }
-
 template<typename T> void Delete(T*& ptr) { delete ptr; ptr = nullptr; }
 
 // containers
@@ -59,6 +57,7 @@ private:
     void Construct(size_t at) { new(&mem[at]) T(); }
     void Construct(size_t at, const T& value) { new(&mem[at]) T(value); }
     void Construct(size_t at, T&& value) { new(&mem[at]) T(value); }
+    template<class Tv> void Construct(size_t at, Tv value) { new(&mem[at]) T(value); }
     template<class Tv, class ... args> void Construct(size_t at, Tv v, args ...a) { Construct(at, v); Construct(at + 1, a...); }
     void Destruct(size_t i) { mem[i].T::~T(); }
     
@@ -136,6 +135,8 @@ public:
     template<class ... args> void Insert(size_t at, args ...a) { PrepareInsert(at, NumArgs(a...)); Construct(at, a...); }
     template<class ... args> void PushHead(args ...a) { Insert(0, a...); }
     template<class ... args> void PushTail(args ...a) { Insert(size, a...); }
+    template<class Ta> Array& operator += (Ta arg) { Insert(size, arg); return *this; }
+
 
     T RemAtUnordered(size_t index)
     {
@@ -379,5 +380,46 @@ protected:
 // Strings
 // -------------------------------------------------------------------------------
 
-// printf stuff into a buffer
-//template<typename ...Args> Buffer BPrintF(const char* format, Args... args);
+// very basic and very not optimized quasi-immutable string class
+// I just want a better interface than C style
+// let's totally rewrite this as soon as it becomes slow enough
+class String
+{
+public:
+    String() {};
+    String(const char* p, int len=-1) { MakeNode(p, len); }
+    String(const String& s) { node = s.node; }
+    String(String&& s) { node = (RCPtr<Node>&&)s.node; }
+
+    static String PrintF(const char* format, ...);
+    static String Concat(const String& s1, const String& s2);
+
+    ~String() {}
+
+    String& operator = (const char* p) { MakeNode(p); return *this; }
+    String& operator = (const String& s) { node = s.node; return *this; }
+    String& operator = (String&& s) { node = (RCPtr<Node>&&)s.node; return *this; }
+
+    size_t Length() const { return node.IsValid() ? node->len : 0; }
+    operator const char* () const { return node.IsValid() ? node->str : ""; }
+
+    static int Compare(const String& a, const String &b, bool ignoreCase = false);
+    template<typename Ts> int Compare(const Ts& s, bool ignoreCase = false) const { return Compare(*this, s, ignoreCase); }
+
+    bool operator! () const { return !node; }
+    String operator + (const String& s) const { return Concat(*this, s); }
+
+    template<typename Ts> bool operator < (const Ts& s) const { return Compare(s) < 0; }
+    template<typename Ts> bool operator <= (const Ts& s) const { return Compare(s) <= 0; }
+    template<typename Ts> bool operator == (const Ts& s) const { return Compare(s) == 0; }
+    template<typename Ts> bool operator >= (const Ts& s) const { return Compare(s) >= 0; }
+    template<typename Ts> bool operator > (const Ts& s) const { return Compare(s) > 0; }
+    template<typename Ts> bool operator != (const String& s) const { return Compare(s) != 0; }
+
+private:
+
+    struct Node : RCObj { size_t len = 0; char str[1] = {}; };
+    RCPtr<Node> node;
+
+    void MakeNode(const char* p, int len=-1);
+};

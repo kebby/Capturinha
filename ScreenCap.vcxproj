@@ -16,7 +16,9 @@
     <ClCompile Include="graphics.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="output_libav.cpp" />
+    <ClCompile Include="screencapture.cpp" />
     <ClCompile Include="system.cpp" />
+    <ClCompile Include="types.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="audiocapture.h" />
@@ -132,8 +134,8 @@
     <ClInclude Include="math3d.h" />
     <ClInclude Include="nvEncodeAPI.h" />
     <ClInclude Include="output.h" />
+    <ClInclude Include="screencapture.h" />
     <ClInclude Include="system.h" />
-    <ClInclude Include="targetver.h" />
     <ClInclude Include="types.h" />
   </ItemGroup>
   <ItemGroup>
@@ -146,6 +148,9 @@
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="app.manifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="types.natvis" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

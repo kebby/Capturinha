@@ -11,7 +11,7 @@
 #include <cudaD3D11.h>
 
 static bool Inited = false;
-static NV_ENCODE_API_FUNCTION_LIST API;
+static NV_ENCODE_API_FUNCTION_LIST API = {};
 
 #if _DEBUG
 #define CUDAERR(x) { auto ret = (x); if(ret != CUDA_SUCCESS) { const char *err; cuGetErrorString(ret, &err); Fatal("%s(%d): CUDA call failed: %s\nCall: %s\n",__FILE__,__LINE__,err,#x); } }
@@ -207,7 +207,6 @@ public:
             auto NvEncodeAPIGetMaxSupportedVersion = (NvEncodeAPIGetMaxSupportedVersion_Type)GetProcAddress(nvenclib, "NvEncodeAPIGetMaxSupportedVersion");
             auto NvEncodeAPICreateInstance = (NvEncodeAPICreateInstance_Type)GetProcAddress(nvenclib, "NvEncodeAPICreateInstance");
             
-            Clear(API);
             API.version = NV_ENCODE_API_FUNCTION_LIST_VER;
             NVERR(NvEncodeAPICreateInstance(&API));
 
