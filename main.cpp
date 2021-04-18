@@ -18,7 +18,11 @@
 
 int main(int argc, char** argv)
 {       
-    CaptureConfig config = {};
+    CaptureConfig config = 
+    {
+        .Filename = "c:\\temp\\capture",
+    };
+
     //DbgOpenLog("c:\\temp\\capture.txt");
     auto capture = CreateScreenCapture(config);
 

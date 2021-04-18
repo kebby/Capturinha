@@ -17,15 +17,22 @@ class ScreenCapture : public IScreenCapture
     Thread* processThread = nullptr;
     Thread* captureThread = nullptr;
     uint sizeX = 0, sizeY = 0, rateNum = 0, rateDen = 0;
-    bool waitForFullscreen = true;
 
     CaptureStats Stats;
 
     void ProcessThreadFunc(Thread& thread)
     {
+        auto systime = GetSystemTime();
+        auto filename = String::PrintF("%s_%04d-%02d-%02d_%02d.%02d.%02d_%dx%d_%.4gfps.%s",
+            (const char*)Config.Filename,
+            systime.year, systime.month, systime.day, systime.hour, systime.minute, systime.second,
+            sizeX, sizeY, (double)rateNum / rateDen,
+            "mp4"
+        );
+
         OutputPara para =
         {
-            .filename = "C:\\temp\\capture",
+            .filename = filename,
             .SizeX = sizeX,
             .SizeY = sizeY,
             .RateNum = rateNum,
@@ -96,7 +103,7 @@ class ScreenCapture : public IScreenCapture
 
         while (thread.IsRunning())
         {
-            bool record = !waitForFullscreen || IsFullscreen();
+            bool record = !Config.RecordOnlyFullscreen || IsFullscreen();
 
             CaptureInfo info;
             if (CaptureFrame(2, info))
@@ -132,7 +139,8 @@ class ScreenCapture : public IScreenCapture
 
                     DPrintF("\n\n*************************** NEW\n\n\n");
 
-                    encoder = CreateEncodeNVENC();
+                    
+                    encoder = CreateEncodeNVENC(Config);
                     encoder->Init(sizeX, sizeY, rateNum, rateDen);
                     first = true;
                     duplicated = 0;
@@ -245,7 +253,7 @@ public:
     ScreenCapture(const CaptureConfig& cfg) : Config(cfg)
     {
         InitD3D();
-        audioCapture = CreateAudioCaptureWASAPI();
+        audioCapture = CreateAudioCaptureWASAPI(Config);
         captureThread = new Thread(Bind(this, &ScreenCapture::CaptureThreadFunc));
     }
 

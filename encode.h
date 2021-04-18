@@ -3,6 +3,8 @@
 #include "types.h"
 #include "graphics.h"
 
+struct CaptureConfig;
+
 struct IEncode
 {
     virtual ~IEncode() {}
@@ -19,4 +21,4 @@ struct IEncode
     virtual void EndGetPacket() = 0;
 };
 
-IEncode* CreateEncodeNVENC();
+IEncode* CreateEncodeNVENC(const CaptureConfig &cfg);

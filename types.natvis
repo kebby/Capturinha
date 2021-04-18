@@ -7,7 +7,7 @@
   </Type>
   
   <Type Name="String::Node">
-    <DisplayString>{str,s}</DisplayString>
+    <DisplayString>{str,s8}</DisplayString>
   </Type>
 
   <Type Name="Array&lt;*&gt;">

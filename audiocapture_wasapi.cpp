@@ -1,5 +1,6 @@
 #include "system.h"
 #include "audiocapture.h"
+#include "screencapture.h"
 
 #include <stdio.h>
 #include <windows.h>
@@ -17,6 +18,8 @@ static constexpr int REFPERSEC = 10000000;
 
 class AudioCapture_WASAPI : public IAudioCapture
 {
+    const CaptureConfig& Config;
+
     RCPtr<IAudioClient> Client;
     RCPtr<IAudioCaptureClient> CaptureClient;
 
@@ -97,7 +100,7 @@ class AudioCapture_WASAPI : public IAudioCapture
     }
 
 public:
-    AudioCapture_WASAPI()
+    AudioCapture_WASAPI(const CaptureConfig& cfg) : Config(cfg)
     {
         const REFERENCE_TIME duration = REFERENCE_TIME(0.02 * REFPERSEC);
 
@@ -215,4 +218,4 @@ public:
     }
 };
 
-IAudioCapture* CreateAudioCaptureWASAPI() { return new AudioCapture_WASAPI(); }
+IAudioCapture* CreateAudioCaptureWASAPI(const CaptureConfig &config) { return new AudioCapture_WASAPI(config); }

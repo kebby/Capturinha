@@ -1,5 +1,7 @@
-#include "encode.h"
 #include "graphics.h"
+
+#include "encode.h"
+#include "screencapture.h"
 
 #include <d3d11.h>
 #include "nvEncodeAPI.h"
@@ -9,6 +11,7 @@
 
 #include <cuda.h>
 #include <cudaD3D11.h>
+
 
 static bool Inited = false;
 static NV_ENCODE_API_FUNCTION_LIST API = {};
@@ -38,6 +41,8 @@ class Encode_NVENC : public IEncode
         ThreadEvent event;
         NV_ENC_OUTPUT_PTR buffer = nullptr;
     };
+
+    const CaptureConfig::VideoCodecConfig &Config;
 
     Queue<Frame*, 32> FreeFrames;
     Queue<OutBuffer*, 32> FreeBuffers;
@@ -189,7 +194,7 @@ class Encode_NVENC : public IEncode
 
 public:
 
-    Encode_NVENC()
+    Encode_NVENC(const CaptureConfig::VideoCodecConfig &cfg) : Config(cfg)
     {
         //Dev = GetDevice();
 
@@ -412,4 +417,4 @@ public:
 
 };
 
-IEncode* CreateEncodeNVENC() { return new Encode_NVENC(); }
+IEncode* CreateEncodeNVENC(const CaptureConfig &cfg) { return new Encode_NVENC(cfg.CodecCfg); }

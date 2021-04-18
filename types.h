@@ -137,7 +137,6 @@ public:
     template<class ... args> void PushTail(args ...a) { Insert(size, a...); }
     template<class Ta> Array& operator += (Ta arg) { Insert(size, arg); return *this; }
 
-
     T RemAtUnordered(size_t index)
     {
         T ret = Get(index);
@@ -414,7 +413,7 @@ public:
     template<typename Ts> bool operator == (const Ts& s) const { return Compare(s) == 0; }
     template<typename Ts> bool operator >= (const Ts& s) const { return Compare(s) >= 0; }
     template<typename Ts> bool operator > (const Ts& s) const { return Compare(s) > 0; }
-    template<typename Ts> bool operator != (const String& s) const { return Compare(s) != 0; }
+    template<typename Ts> bool operator != (const Ts& s) const { return Compare(s) != 0; }
 
 private:
 

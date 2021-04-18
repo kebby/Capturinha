@@ -1,5 +1,7 @@
 #pragma once
 
+struct CaptureConfig;
+
 enum class AudioFormat
 {
     None,
@@ -28,4 +30,4 @@ public:
     virtual void Flush() = 0;
 };
 
-IAudioCapture *CreateAudioCaptureWASAPI();
+IAudioCapture *CreateAudioCaptureWASAPI(const CaptureConfig &config);
