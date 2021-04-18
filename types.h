@@ -387,15 +387,15 @@ class String
 public:
     String() {};
     String(const char* p, int len=-1) { MakeNode(p, len); }
+    String(const wchar_t* p, int len = -1) { MakeNode(p, len); }
     String(const String& s) { node = s.node; }
     String(String&& s) { node = (RCPtr<Node>&&)s.node; }
 
     static String PrintF(const char* format, ...);
     static String Concat(const String& s1, const String& s2);
 
-    ~String() {}
-
     String& operator = (const char* p) { MakeNode(p); return *this; }
+    String& operator = (const wchar_t* p) { MakeNode(p); return *this; }
     String& operator = (const String& s) { node = s.node; return *this; }
     String& operator = (String&& s) { node = (RCPtr<Node>&&)s.node; return *this; }
 
@@ -417,8 +417,9 @@ public:
 
 private:
 
-    struct Node : RCObj { size_t len = 0; char str[1] = {}; };
+    struct Node : RCObj { size_t len = 0; char str[1] = {}; }; // variable size!
     RCPtr<Node> node;
 
     void MakeNode(const char* p, int len=-1);
+    void MakeNode(const wchar_t* p, int len = -1);
 };

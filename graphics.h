@@ -287,11 +287,13 @@ void ReleaseFrame();
 // functions
 //---------------------------------------------------------------------------
 
-void InitD3D();
+void GfxInit();
+void GetVideoOutputs(Array<String>& into);
+
+void InitD3D(int outputIndex);
 void ExitD3D();
 
 RCPtr<IDXGIAdapter> GetAdapter();
-RCPtr<ID3D11Device> GetDevice();
 
 RCPtr<Texture> LoadImg(const char *filename);
 RCPtr<Texture> CreateTexture(const TexturePara& para, const void* data);

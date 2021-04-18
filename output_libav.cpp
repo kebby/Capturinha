@@ -1,4 +1,5 @@
 #include "system.h"
+#include "screencapture.h"
 #include "output.h"
 
 extern "C"
@@ -74,7 +75,8 @@ private:
             return;
 
         // find the audio codec
-        AudioCodec = avcodec_find_encoder(AV_CODEC_ID_AAC);
+        static const AVCodecID codecs[] = { AV_CODEC_ID_PCM_S16LE, AV_CODEC_ID_PCM_F32LE, AV_CODEC_ID_MP3, AV_CODEC_ID_AAC };
+        AudioCodec = avcodec_find_encoder(codecs[Para.CConfig->UseAudioCodec]);
         if (!AudioCodec)
             return;
 
@@ -88,7 +90,7 @@ private:
         {
             AudioContext = avcodec_alloc_context3(AudioCodec);
             AudioContext->sample_fmt = sampleFmt;
-            AudioContext->bit_rate = 320000; // Para.Audio.SampleRate * 4; //3200000;
+            AudioContext->bit_rate = Para.CConfig->AudioBitrate;
             AudioContext->sample_rate = Para.Audio.SampleRate;
             AudioContext->channels = Para.Audio.Channels;
             AudioContext->channel_layout = av_get_default_channel_layout(Para.Audio.Channels);
@@ -135,7 +137,9 @@ public:
     {          
         printf("Starting file %s\n", (const char*)para.filename);
 
-        AVERR(avformat_alloc_output_context2(&Context, nullptr, "mp4", para.filename));
+        static const char* const formats[] = { "avi", "mp4", "mov", "matroska" };
+
+        AVERR(avformat_alloc_output_context2(&Context, nullptr, formats[para.CConfig->UseContainer] , para.filename));
 
         AVERR(avio_open(&Context->pb, para.filename, AVIO_FLAG_WRITE));
 

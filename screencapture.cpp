@@ -22,12 +22,15 @@ class ScreenCapture : public IScreenCapture
 
     void ProcessThreadFunc(Thread& thread)
     {
+
+        static const char* const extensions[] = { "avi", "mp4", "mov", "mkv" };
+
         auto systime = GetSystemTime();
         auto filename = String::PrintF("%s_%04d-%02d-%02d_%02d.%02d.%02d_%dx%d_%.4gfps.%s",
             (const char*)Config.Filename,
             systime.year, systime.month, systime.day, systime.hour, systime.minute, systime.second,
             sizeX, sizeY, (double)rateNum / rateDen,
-            "mp4"
+            extensions[Config.UseContainer]
         );
 
         OutputPara para =
@@ -37,7 +40,8 @@ class ScreenCapture : public IScreenCapture
             .SizeY = sizeY,
             .RateNum = rateNum,
             .RateDen = rateDen,
-            .Audio = audioCapture->GetInfo(),
+            .Audio = audioCapture ? audioCapture->GetInfo() : AudioInfo {.Format = AudioFormat::None },
+            .CConfig = &Config,
         };
 
         IOutput* output = CreateOutputLibAV(para);
@@ -61,7 +65,6 @@ class ScreenCapture : public IScreenCapture
             double videoTime;
             while (encoder->BeginGetPacket(data, size, 2, videoTime))
             {
-                Stats.AVSkew += 0.03 * (aTimeSent - vTimeSent - Stats.AVSkew);
 
                 output->SubmitVideoPacket(data, size);
                 encoder->EndGetPacket();
@@ -71,15 +74,20 @@ class ScreenCapture : public IScreenCapture
                 {
                     firstVideoTime = videoTime;
                     firstVideo = false;
-                    audioCapture->JumpToTime(firstVideoTime);
+                    if (audioCapture)
+                        audioCapture->JumpToTime(firstVideoTime);
                 }
 
-                double audioTime = 0;
-                uint audio = audioCapture->Read(audioData, audioSize, audioTime);
-                if (audio)
+                if (audioCapture)
                 {
-                    output->SubmitAudio(audioData, audio);
-                    aTimeSent += (double)audio / (para.Audio.BytesPerSample * para.Audio.SampleRate);
+                    double audioTime = 0;
+                    uint audio = audioCapture->Read(audioData, audioSize, audioTime);
+                    if (audio)
+                    {
+                        output->SubmitAudio(audioData, audio);
+                        aTimeSent += (double)audio / (para.Audio.BytesPerSample * para.Audio.SampleRate);
+                    }
+                    Stats.AVSkew += 0.03 * (aTimeSent - vTimeSent - Stats.AVSkew);
                 }
             }
 
@@ -252,8 +260,9 @@ public:
 
     ScreenCapture(const CaptureConfig& cfg) : Config(cfg)
     {
-        InitD3D();
-        audioCapture = CreateAudioCaptureWASAPI(Config);
+        InitD3D(Config.OutputIndex);
+        if (Config.CaptureAudio)
+            audioCapture = CreateAudioCaptureWASAPI(Config);
         captureThread = new Thread(Bind(this, &ScreenCapture::CaptureThreadFunc));
     }
 
@@ -267,5 +276,6 @@ public:
     CaptureStats GetStats() override { return Stats; }
 
 };
+
 
 IScreenCapture* CreateScreenCapture(const CaptureConfig& config) { return new ScreenCapture(config); }

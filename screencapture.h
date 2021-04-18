@@ -54,4 +54,5 @@ public:
     virtual CaptureStats GetStats() = 0;
 };
 
+// run a screen capture instance
 IScreenCapture* CreateScreenCapture(const CaptureConfig &config);

@@ -196,8 +196,6 @@ public:
 
     Encode_NVENC(const CaptureConfig::VideoCodecConfig &cfg) : Config(cfg)
     {
-        //Dev = GetDevice();
-
         // init cuda/nvenc api on first run
         if (!Inited)
         {

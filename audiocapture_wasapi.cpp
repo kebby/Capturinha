@@ -6,6 +6,7 @@
 #include <windows.h>
 #include <mmdeviceapi.h>
 #include <audioclient.h>
+#include <Functiondiscoverykeys_devpkey.h>
 
 extern const char* ErrorString(DWORD id);
 #if _DEBUG
@@ -15,6 +16,8 @@ extern const char* ErrorString(DWORD id);
 #endif
 
 static constexpr int REFPERSEC = 10000000;
+
+static Array<RCPtr<IMMDevice>> Devices;
 
 class AudioCapture_WASAPI : public IAudioCapture
 {
@@ -107,14 +110,8 @@ public:
         // init COM
         CHECK(CoInitializeEx(NULL, COINIT_MULTITHREADED));
 
-        // Acquire Device enumerator
-        RCPtr<IMMDeviceEnumerator> enumerator;
-        CHECK(CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), enumerator));
-
-        // Acquire endpoint (TODO: make this user selectable)
-        RCPtr<IMMDevice> device;
-        CHECK(enumerator->GetDefaultAudioEndpoint(eRender, eConsole, device));
-
+        auto device = Devices[cfg.AudioOutputIndex];
+   
         // initialize dummy playback client to keep the device running
         WAVEFORMATEX* outFormat = nullptr;
         uint outBufferSize = 0;
@@ -217,5 +214,58 @@ public:
         RingRead = RingWrite;
     }
 };
+
+void InitAudioCapture()
+{
+    CHECK(CoInitializeEx(NULL, COINIT_MULTITHREADED));
+
+    // Acquire Device enumerator
+    RCPtr<IMMDeviceEnumerator> enumerator;
+    CHECK(CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), enumerator));
+
+    // Get default endpoint
+    RCPtr<IMMDevice> defltdev;
+    CHECK(enumerator->GetDefaultAudioEndpoint(eRender, eConsole, defltdev));
+    Devices += defltdev;
+
+    RCPtr<IMMDeviceCollection> collection;
+    CHECK(enumerator->EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE, collection));
+
+    uint count = 0;
+    CHECK(collection->GetCount(&count));
+    for (uint i = 0; i < count; i++)
+    {
+        RCPtr<IMMDevice> dev;
+        CHECK(collection->Item(i, dev));
+        Devices += dev;
+    }
+}
+
+void GetAudioDevices(Array<String> &into)
+{
+    into.Clear();
+    bool dflt = true;
+    for (auto device : Devices)
+    {
+        LPWSTR id = nullptr;
+        device->GetId(&id);
+
+        RCPtr<IPropertyStore> store;
+        device->OpenPropertyStore(STGM_READ, store);
+
+        PROPVARIANT varName;
+        PropVariantInit(&varName);
+        store->GetValue(PKEY_Device_FriendlyName, &varName);
+        if (dflt)
+        {
+            into += "Default device";
+            dflt = false;
+        }
+        else
+            into += varName.pwszVal;
+
+        PropVariantClear(&varName);
+    }      
+}
 
 IAudioCapture* CreateAudioCaptureWASAPI(const CaptureConfig &config) { return new AudioCapture_WASAPI(config); }

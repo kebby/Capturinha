@@ -30,4 +30,8 @@ public:
     virtual void Flush() = 0;
 };
 
+void InitAudioCapture();
+
+void GetAudioDevices(Array<String> &into);
+
 IAudioCapture *CreateAudioCaptureWASAPI(const CaptureConfig &config);

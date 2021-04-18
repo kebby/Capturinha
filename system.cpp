@@ -137,6 +137,9 @@ RCPtr<Buffer> Buffer::Part(const RCPtr<Buffer> buffer, uint64 offset, uint64 siz
 static Stream* LogFile = nullptr;
 static ThreadLock LogLock;
 
+static constexpr int DbgSize = 4096;
+static thread_local char DbgBuffer[DbgSize];
+
 void DbgOpenLog(const char* filename)
 {
     LogFile = OpenFile(filename, OpenFileMode::Create);
@@ -160,34 +163,30 @@ static void Dbg(const char* message)
 #define PRINTF_INTERNAL() { \
     va_list args; \
     va_start(args, format); \
-    int len = vsnprintf_s(buf, size, format, args); \
+    int len = vsnprintf_s(DbgBuffer, DbgSize, format, args); \
     if (len < 0) len = 0; \
     va_end(args); \
-    buf[len] = 0; \
+    DbgBuffer[len] = 0; \
 }
 
 #ifdef _DEBUG
 void DPrintF(const char* format, ...)
 {
-    constexpr size_t size = 2048;
-    char buf[size];
     PRINTF_INTERNAL();
-    Dbg(buf);
+    Dbg(DbgBuffer);
 }
 #endif
 
 [[noreturn]]
 void Fatal(const char* format, ...)
 {
-    constexpr int size = 4096;
-    char buf[size];
     PRINTF_INTERNAL();
     Dbg("\n");
-    Dbg(buf);
+    Dbg(DbgBuffer);
     Dbg("\n");
     DbgCloseLog();
 
-    MessageBox(hWnd, buf, "Train Engine", MB_OK | MB_ICONERROR);
+    MessageBox(hWnd, DbgBuffer, "Train Engine", MB_OK | MB_ICONERROR);
     ExitProcess(1);
 }
 

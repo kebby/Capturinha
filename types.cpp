@@ -4,14 +4,28 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#include <windows.h>
+#include <stringapiset.h>
+
 void String::MakeNode(const char* p, int len)
 {
     if (!p || !p[0]) return;
     if (len<0) len = (int)strlen(p);
+    node.Clear();
     void* mem = new uint8[sizeof(Node) + len];
     node = RCPtr<Node>(new (mem) Node);
     node->len = len;
     strcpy_s(node->str, len + 1, p);
+}
+
+void String::MakeNode(const wchar_t* p, int len)
+{
+    if (!p || !p[0]) return;
+    int bytes = WideCharToMultiByte(CP_UTF8, WC_NO_BEST_FIT_CHARS, p, len, NULL, 0, NULL, NULL);
+    void* mem = new uint8[sizeof(Node) + bytes];
+    node = RCPtr<Node>(new (mem) Node);
+    node->len = bytes;
+    WideCharToMultiByte(CP_UTF8, WC_NO_BEST_FIT_CHARS, p, len, node->str, bytes, NULL, NULL);
 }
 
 String String::Concat(const String &s1, const String &s2)

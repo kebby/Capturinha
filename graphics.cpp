@@ -43,9 +43,18 @@ extern const char* ErrorString(DWORD id);
 #define DXERR(x) { HRESULT _hr=(x); if(FAILED(_hr)) Fatal("%s(%d): D3D call failed (%08x)",__FILE__,__LINE__,_hr); }
 #endif
 
+
+struct OutputDef
+{
+    String DisplayName;
+    RCPtr<IDXGIAdapter4> Adapter;
+    RCPtr<IDXGIOutput6> Output;
+};
+
 RCPtr<IDXGIFactory6> Factory;
-RCPtr<IDXGIAdapter4> Adapter;
-RCPtr<IDXGIOutput6> Output;
+Array<OutputDef> AllOutputs;
+OutputDef Output;
+
 //RCPtr<IDXGISwapChain4> SwapChain;
 RCPtr<ID3D11Device5> Dev;
 RCPtr<ID3D11DeviceContext4> Ctx;
@@ -758,42 +767,58 @@ RenderTarget::~RenderTarget() {
     if (!P->noPool)
         RTPool.PushTail(*P);
 }
-    
 
 
-void InitD3D()
+void GfxInit()
+{
+    CreateDXGIFactory1(__uuidof(IDXGIFactory6), Factory);
+
+    // enumerate all adapters and outputs
+    RCPtr<IDXGIAdapter4> adapter;
+
+    // find first adapter with dedicated video memory. This should select the proper GPU on laptops. 
+    for (UINT i = 0; Factory->EnumAdapterByGpuPreference(i, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, __uuidof(IDXGIAdapter4), adapter) != DXGI_ERROR_NOT_FOUND; ++i)
+    {
+        DXGI_ADAPTER_DESC3 adesc;
+        adapter->GetDesc3(&adesc);
+
+        String adapterName = String::PrintF("%d: %S", i + 1, adesc.Description);
+       
+        RCPtr<IDXGIOutput> out0;
+        for (UINT oi = 0; SUCCEEDED(adapter->EnumOutputs(oi, out0)); ++oi)
+        {
+            RCPtr<IDXGIOutput6> output = out0;
+            DXGI_OUTPUT_DESC1 odesc;
+            output->GetDesc1(&odesc);
+
+            String name = odesc.DeviceName;
+            DISPLAY_DEVICE dd = { .cb = sizeof(dd) } ;
+            if (EnumDisplayDevices(name, 0, &dd, 0))
+                name = dd.DeviceString;
+            
+            name = String::PrintF("%d: %s (%s)", oi+1, (const char*)name, (const char*)adapterName);
+            AllOutputs += OutputDef{ .DisplayName = name, .Adapter = adapter, .Output = output, };
+        }
+    }
+}
+
+void GetVideoOutputs(Array<String>& into)
+{
+    into.Clear();
+    for (auto& out : AllOutputs)
+        into += out.DisplayName;
+}
+
+void InitD3D(int outputIndex)
 {
     timeBeginPeriod(1);
 
     CreateDXGIFactory1(__uuidof(IDXGIFactory6), Factory);
 
-    // find first adapter with dedicated video memory. This should select the proper GPU on laptops. 
-    for (UINT i = 0; Factory->EnumAdapterByGpuPreference(i, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, __uuidof(IDXGIAdapter4), Adapter) != DXGI_ERROR_NOT_FOUND; ++i)
-    {
-        DXGI_ADAPTER_DESC3 adesc;
-        Adapter->GetDesc3(&adesc);
-        wprintf(L"%s: %I64d\n", adesc.Description, adesc.DedicatedVideoMemory);
-
-        RCPtr<IDXGIOutput> out0;
-        for (UINT oi = 0; SUCCEEDED(Adapter->EnumOutputs(oi, out0)); ++oi)
-        {
-            Output = out0;
-            DXGI_OUTPUT_DESC1 od1;
-            Output->GetDesc1(&od1);
-            wprintf(L"- %s\n", od1.DeviceName);
-            break;
-        }
-        break;
-    }
-
-    DXGI_ADAPTER_DESC3 ad;
-    Adapter->GetDesc3(&ad);
-    wprintf(L"Using GPU: %s\n", ad.Description);
-
-    DXGI_OUTPUT_DESC1 od;
-    Output->GetDesc1(&od);
-    wprintf(L"Using Output: %s\n", od.DeviceName);
-
+    Output = AllOutputs[outputIndex];
+   
+    printf("Using output: %s\n", (const char*)Output.DisplayName);
+    
     // create device and upgrade
     const D3D_FEATURE_LEVEL levels[] = { D3D_FEATURE_LEVEL_12_1, D3D_FEATURE_LEVEL_12_0, D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0 };
     UINT flags = 0;
@@ -802,7 +827,7 @@ void InitD3D()
     //#endif
     RCPtr<ID3D11Device> dev0;
     RCPtr<ID3D11DeviceContext> ctx0;
-    DXERR(D3D11CreateDevice(Adapter, Adapter.IsValid() ? D3D_DRIVER_TYPE_UNKNOWN : D3D_DRIVER_TYPE_HARDWARE, NULL, flags, levels, _countof(levels), D3D11_SDK_VERSION, dev0, &FeatureLevel, ctx0));
+    DXERR(D3D11CreateDevice(Output.Adapter, Output.Adapter.IsValid() ? D3D_DRIVER_TYPE_UNKNOWN : D3D_DRIVER_TYPE_HARDWARE, NULL, flags, levels, _countof(levels), D3D11_SDK_VERSION, dev0, &FeatureLevel, ctx0));
     Dev = dev0;
     Ctx = ctx0;
 
@@ -849,12 +874,10 @@ void ExitD3D()
 {
     RTPool.Clear();
     lastRTPool.Clear();
-
     timeEndPeriod(1);
 }
 
-RCPtr<ID3D11Device> GetDevice() { return Dev; }
-RCPtr<IDXGIAdapter> GetAdapter() { return Adapter; }
+RCPtr<IDXGIAdapter> GetAdapter() { return Output.Adapter; }
 
 static int64 lastFrameTime = 0;
 static RCPtr<Texture> capTex;
@@ -870,7 +893,7 @@ bool CaptureFrame(int timeoutMs, CaptureInfo &ci)
     // get output duplication object
     if (!Dupl.IsValid())
     {
-        hr = Output->DuplicateOutput(Dev, Dupl);
+        hr = Output.Output->DuplicateOutput(Dev, Dupl);
         if (hr == E_ACCESSDENIED)
         {
             // so far this only happens in the middle of a mode switch, try again later

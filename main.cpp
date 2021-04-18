@@ -7,6 +7,7 @@
 #include "graphics.h"
 
 #include "screencapture.h"
+#include "audiocapture.h"
 
 #include <stdio.h>
 #include <conio.h>
@@ -23,6 +24,16 @@ int main(int argc, char** argv)
         .Filename = "c:\\temp\\capture",
     };
 
+    GfxInit();
+    Array<String> videoOuts;
+    GetVideoOutputs(videoOuts);
+
+    InitAudioCapture();
+    Array<String> audioOuts;
+    GetAudioDevices(audioOuts);
+
+    config.OutputIndex = 0;
+
     //DbgOpenLog("c:\\temp\\capture.txt");
     auto capture = CreateScreenCapture(config);
 
@@ -35,8 +46,6 @@ int main(int argc, char** argv)
     _getch();
 
     delete capture;
-
-    ExitD3D();
 
     //DbgCloseLog();
     return 0;
