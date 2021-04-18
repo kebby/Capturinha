@@ -20,6 +20,7 @@ class ScreenCapture
     Thread* processThread = nullptr;
     Thread* captureThread = nullptr;
     uint sizeX = 0, sizeY = 0, rateNum = 0, rateDen = 0;
+    bool waitForFullscreen = true;
 
     void ProcessThreadFunc(Thread& thread)
     {
@@ -119,6 +120,8 @@ public:
 
         while (thread.IsRunning())
         {
+            bool record = !waitForFullscreen || IsFullscreen();
+
             CaptureInfo info;
             if (CaptureFrame(2, info))
             {
@@ -126,7 +129,16 @@ public:
                 double deltaf = (time - ltf2) * (double)info.rateNum / info.rateDen;
 
                 lastFrameTime = ltf2 = time;
-                 
+                
+                if (!record)
+                {
+                    Delete(processThread);
+                    Delete(encoder);
+                    sizeX = sizeY = 0;
+                    ReleaseFrame();
+                    continue;
+                }
+
                 if (sizeX != info.sizeX || sizeY != info.sizeY || rateNum != info.rateNum || rateDen != info.rateDen)
                 {
                     // (re)init encoder and processing thread, starts new output file
@@ -139,9 +151,8 @@ public:
                     if (encoder)
                         encoder->Flush();
 
-                    delete processThread;
-                    processThread = nullptr;
-                    delete encoder;
+                    Delete(processThread);
+                    Delete(encoder);
 
                     DPrintF("\n\n*************************** NEW\n\n\n");
 
@@ -264,12 +275,11 @@ int main(int argc, char** argv)
 {   
     
     //DbgOpenLog("c:\\temp\\capture.txt");
-
     auto capture = new ScreenCapture();
 
     while (!_kbhit())
     {
-        printf("recd %5d frames, dupl %5d frames, %5.2f FPS, skew %6.2f ms\r", capture->FramesCaptured + capture->FramesDuplicated, capture->FramesDuplicated, capture->FPS, capture->AVSkew*1000);
+        printf("recd %5d frames, dupl %5d frames, %5.2f FPS, skew %6.2f ms // fs %d\r", capture->FramesCaptured + capture->FramesDuplicated, capture->FramesDuplicated, capture->FPS, capture->AVSkew*1000, IsFullscreen());
         Thread::Sleep(10);
     }
     _getch();
@@ -277,6 +287,7 @@ int main(int argc, char** argv)
     delete capture;
 
     ExitD3D();
+
     //DbgCloseLog();
     return 0;
 }

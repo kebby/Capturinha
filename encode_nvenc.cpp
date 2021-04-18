@@ -293,7 +293,7 @@ public:
         // configure
         config.encodeCodecConfig.h264Config.idrPeriod = config.gopLength = 60;
         config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP;
-        config.rcParams.constQP.qpIntra = config.rcParams.constQP.qpInterB = config.rcParams.constQP.qpInterP = 20;
+        config.rcParams.constQP.qpIntra = config.rcParams.constQP.qpInterB = config.rcParams.constQP.qpInterP = 16;
         //config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CBR_HQ;
         //config.rcParams.averageBitRate = 20 * 1000 * 1000;
 

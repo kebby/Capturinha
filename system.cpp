@@ -8,6 +8,8 @@
 
 // Windows Header Files
 #include <windows.h>
+#include <winuser.h>
+#include <shellapi.h>
 #include <mfapi.h>
 #include <ShellScalingApi.h>
 
@@ -456,6 +458,14 @@ void Thread::Sleep(int ms)
 //----------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------
 
+bool IsFullscreen() {
+    QUERY_USER_NOTIFICATION_STATE state;
+    SHQueryUserNotificationState(&state);
+    return (state == QUNS_BUSY || state == QUNS_RUNNING_D3D_FULL_SCREEN);
+}
+
+//----------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------
 
 
 /*
