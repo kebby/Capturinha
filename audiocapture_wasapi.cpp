@@ -193,19 +193,8 @@ public:
         ScopeLock lock(RingLock);
         int deltasamples = (int)round((time - RingTimeValue) * Format->Format.nSamplesPerSec);
         int destpos = RingTimePos + deltasamples * BytesPerSample;
-        /*
-        if (destpos < (int)RingRead)
-        {
-
-        }
-        else if (destpos > RingWrite)
-        {
-
-        }
-        */
-        //else
+        //ASSERT(destpos >= (int)RingRead && destpos < (int)RingWrite);
         RingRead = (uint)Clamp<int>(destpos, RingRead, RingWrite);
-
     }
 
     void Flush() override
@@ -228,9 +217,9 @@ void InitAudioCapture()
     CHECK(enumerator->GetDefaultAudioEndpoint(eRender, eConsole, defltdev));
     Devices += defltdev;
 
+    // Enumerate all other endpoints
     RCPtr<IMMDeviceCollection> collection;
     CHECK(enumerator->EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE, collection));
-
     uint count = 0;
     CHECK(collection->GetCount(&count));
     for (uint i = 0; i < count; i++)
@@ -252,7 +241,7 @@ void GetAudioDevices(Array<String> &into)
 
         RCPtr<IPropertyStore> store;
         device->OpenPropertyStore(STGM_READ, store);
-
+         
         PROPVARIANT varName;
         PropVariantInit(&varName);
         store->GetValue(PKEY_Device_FriendlyName, &varName);

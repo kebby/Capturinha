@@ -26,6 +26,7 @@ void String::MakeNode(const wchar_t* p, int len)
     node = RCPtr<Node>(new (mem) Node);
     node->len = bytes;
     WideCharToMultiByte(CP_UTF8, WC_NO_BEST_FIT_CHARS, p, len, node->str, bytes, NULL, NULL);
+    node->str[len] = 0;
 }
 
 String String::Concat(const String &s1, const String &s2)
@@ -67,4 +68,15 @@ int String::Compare(const String& s1, const String& s2, bool ignoreCase)
         return _stricmp(s1, s2);
     else
         return strcmp(s1, s2);
+}
+
+String::WCharProxy String::ToWChar() const
+{ 
+    WCharProxy proxy;
+    if (!node) return proxy;
+    int len = MultiByteToWideChar(CP_UTF8, 0, node->str, (int)node->len, 0, 0);
+    proxy.ptr = new wchar_t[len + 1];
+    MultiByteToWideChar(CP_UTF8, 0, node->str, (int)node->len, proxy.ptr, len+1);
+    proxy.ptr[len] = 0;
+    return proxy;
 }

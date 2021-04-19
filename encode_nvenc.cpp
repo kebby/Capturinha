@@ -266,8 +266,9 @@ public:
         CUDAERR(cuGraphicsD3D11RegisterResource(&TexResource, (ID3D11Texture2D*)RT->GetTex2D(), CU_GRAPHICS_REGISTER_FLAGS_NONE));
         CUDAERR(cuGraphicsResourceSetMapFlags(TexResource, CU_GRAPHICS_MAP_RESOURCE_FLAGS_READ_ONLY));
 
-        GUID encodeGuid = NV_ENC_CODEC_H264_GUID;
-        GUID presetGuid = NV_ENC_PRESET_P3_GUID; // TODO: make selectable
+        static const GUID codecGuids[] = { NV_ENC_CODEC_H264_GUID, NV_ENC_CODEC_HEVC_GUID };
+
+        GUID encodeGuid = codecGuids[Config.Codec];
 
         uint codecGuidCount;
         NVERR(API.nvEncGetEncodeGUIDCount(Encoder, &codecGuidCount));
@@ -280,7 +281,7 @@ public:
         NVERR(API.nvEncGetEncodePresetCount(Encoder, encodeGuid, &presetGuidCount));       
         NVERR(API.nvEncGetEncodePresetGUIDs(Encoder, encodeGuid, guids, 50, &presetGuidCount));
         // TODO: select proper preset
-        presetGuid = guids[0];
+        GUID presetGuid = guids[0];
       
         // get preset config
         NV_ENC_PRESET_CONFIG presetConfig = 

@@ -415,6 +415,18 @@ public:
     template<typename Ts> bool operator > (const Ts& s) const { return Compare(s) > 0; }
     template<typename Ts> bool operator != (const Ts& s) const { return Compare(s) != 0; }
 
+    class WCharProxy
+    {
+        friend class String;
+        WCharProxy() {}
+        WCharProxy(const WCharProxy& p) = delete;
+        wchar_t* ptr = nullptr;
+    public:
+        ~WCharProxy() { delete[] ptr; }
+        WCharProxy(WCharProxy&& p) { ptr = p.ptr; p.ptr = nullptr; }
+        operator const wchar_t* () const { return ptr ? ptr : L""; }
+    } ToWChar() const;
+
 private:
 
     struct Node : RCObj { size_t len = 0; char str[1] = {}; }; // variable size!
@@ -422,4 +434,8 @@ private:
 
     void MakeNode(const char* p, int len=-1);
     void MakeNode(const wchar_t* p, int len = -1);
+
+public:
+    
+
 };
