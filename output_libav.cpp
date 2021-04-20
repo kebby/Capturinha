@@ -76,7 +76,7 @@ private:
 
         // find the audio codec
         static const AVCodecID codecs[] = { AV_CODEC_ID_PCM_S16LE, AV_CODEC_ID_PCM_F32LE, AV_CODEC_ID_MP3, AV_CODEC_ID_AAC };
-        AudioCodec = avcodec_find_encoder(codecs[Para.CConfig->UseAudioCodec]);
+        AudioCodec = avcodec_find_encoder(codecs[(int)Para.CConfig->UseAudioCodec]);
         if (!AudioCodec)
             return;
 
@@ -139,7 +139,7 @@ public:
 
         static const char* const formats[] = { "avi", "mp4", "mov", "matroska" };
 
-        AVERR(avformat_alloc_output_context2(&Context, nullptr, formats[para.CConfig->UseContainer] , para.filename));
+        AVERR(avformat_alloc_output_context2(&Context, nullptr, formats[(int)para.CConfig->UseContainer] , para.filename));
 
         AVERR(avio_open(&Context->pb, para.filename, AVIO_FLAG_WRITE));
 

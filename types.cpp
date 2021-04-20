@@ -11,7 +11,6 @@ void String::MakeNode(const char* p, int len)
 {
     if (!p || !p[0]) return;
     if (len<0) len = (int)strlen(p);
-    node.Clear();
     void* mem = new uint8[sizeof(Node) + len];
     node = RCPtr<Node>(new (mem) Node);
     node->len = len;
@@ -69,6 +68,16 @@ int String::Compare(const String& s1, const String& s2, bool ignoreCase)
     else
         return strcmp(s1, s2);
 }
+
+int String::Compare(const String& s1, const char *s2, bool ignoreCase)
+{
+    if (!s2) s2 = "";
+    if (ignoreCase)
+        return _stricmp(s1, s2);
+    else
+        return strcmp(s1, s2);
+}
+
 
 String::WCharProxy String::ToWChar() const
 { 

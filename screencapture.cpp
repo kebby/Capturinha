@@ -30,7 +30,7 @@ class ScreenCapture : public IScreenCapture
             (const char*)Config.Filename,
             systime.year, systime.month, systime.day, systime.hour, systime.minute, systime.second,
             sizeX, sizeY, (double)rateNum / rateDen,
-            extensions[Config.UseContainer]
+            extensions[(int)Config.UseContainer]
         );
 
         OutputPara para =

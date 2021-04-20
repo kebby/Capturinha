@@ -4,19 +4,20 @@
 
 struct CaptureConfig
 {
-    enum VideoCodec { H264, HEVC, };
-    enum BitrateControl { CBR, CONSTQ, };
-    enum Container { Avi, Mp4, Mov, Mkv };
-    enum AudioCodec { PCM_S16, PCM_F32, MP3, AAC };
+    enum class VideoCodec { H264, HEVC, };
+    enum class BitrateControl { CBR, CONSTQP, };
+    enum class Container { Avi, Mp4, Mov, Mkv };
+    enum class AudioCodec { PCM_S16, PCM_F32, MP3, AAC };
+    enum class FrameConfig { I, IP, IBP, IBBP,};
 
     struct VideoCodecConfig
     {
         VideoCodec Codec = VideoCodec::H264;
         // ... something something profile? (8 vs 10 bits, 4:4:4 vs 4:2:2, perf vs quality)
         
-        BitrateControl UseBitrateControl = BitrateControl::CBR;
-        int BitrateParameter = 10000000; // bit rate or qf
-        int MaxBFrames = 1;
+        BitrateControl UseBitrateControl = BitrateControl::CONSTQP;
+        int BitrateParameter = 18; // bit rate or qf
+        FrameConfig FrameCfg = FrameConfig::IP;
         int GopSize = 60; // 0: auto
     };
 

@@ -322,6 +322,7 @@ template<typename RetT, typename ...ArgT> class Func<RetT(ArgT...)>
 {
     struct ICallable : RCObj
     {
+        virtual ~ICallable() {}
         virtual RetT operator()(ArgT ...) = 0;
     };
 
@@ -389,7 +390,7 @@ public:
     String(const char* p, int len=-1) { MakeNode(p, len); }
     String(const wchar_t* p, int len = -1) { MakeNode(p, len); }
     String(const String& s) { node = s.node; }
-    String(String&& s) { node = (RCPtr<Node>&&)s.node; }
+    String(String&& s) { node = static_cast<RCPtr<Node>&&>(s.node); }
 
     static String PrintF(const char* format, ...);
     static String Concat(const String& s1, const String& s2);
@@ -397,12 +398,13 @@ public:
     String& operator = (const char* p) { MakeNode(p); return *this; }
     String& operator = (const wchar_t* p) { MakeNode(p); return *this; }
     String& operator = (const String& s) { node = s.node; return *this; }
-    String& operator = (String&& s) { node = (RCPtr<Node>&&)s.node; return *this; }
+    String& operator = (String&& s) { node = static_cast<RCPtr<Node>&&>(s.node); return *this; }
 
     size_t Length() const { return node.IsValid() ? node->len : 0; }
     operator const char* () const { return node.IsValid() ? node->str : ""; }
 
     static int Compare(const String& a, const String &b, bool ignoreCase = false);
+    static int Compare(const String& a, const char *b, bool ignoreCase = false);
     template<typename Ts> int Compare(const Ts& s, bool ignoreCase = false) const { return Compare(*this, s, ignoreCase); }
 
     bool operator! () const { return !node; }
@@ -434,8 +436,4 @@ private:
 
     void MakeNode(const char* p, int len=-1);
     void MakeNode(const wchar_t* p, int len = -1);
-
-public:
-    
-
 };
