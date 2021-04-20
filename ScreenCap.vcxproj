@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="App.cpp" />
     <ClCompile Include="audiocapture_wasapi.cpp" />
     <ClCompile Include="encode_nvenc.cpp" />
     <ClCompile Include="graphics.cpp" />
@@ -21,6 +22,7 @@
     <ClCompile Include="types.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="App.h" />
     <ClInclude Include="audiocapture.h" />
     <ClInclude Include="encode.h" />
     <ClInclude Include="graphics.h" />
@@ -134,6 +136,26 @@
     <ClInclude Include="math3d.h" />
     <ClInclude Include="nvEncodeAPI.h" />
     <ClInclude Include="output.h" />
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlapp.h" />
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlcrack.h" />
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlctrls.h" />
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlctrlw.h" />
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlctrlx.h" />
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlddx.h" />
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atldlgs.h" />
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atldwm.h" />
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlfind.h" />
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlframe.h" />
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlgdi.h" />
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlmisc.h" />
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlprint.h" />
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlres.h" />
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlribbon.h" />
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlscrl.h" />
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlsplit.h" />
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atltheme.h" />
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atluser.h" />
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlwinx.h" />
     <ClInclude Include="screencapture.h" />
     <ClInclude Include="system.h" />
     <ClInclude Include="types.h" />
@@ -151,6 +173,9 @@
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="types.natvis" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -237,5 +262,12 @@
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="packages\wtl.10.0.10320\build\native\wtl.targets" Condition="Exists('packages\wtl.10.0.10320\build\native\wtl.targets')" />
   </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('packages\wtl.10.0.10320\build\native\wtl.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\wtl.10.0.10320\build\native\wtl.targets'))" />
+  </Target>
 </Project>

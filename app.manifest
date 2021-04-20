@@ -15,11 +15,25 @@
     </application>
   </compatibility>
   
-  <asmv3:application>
-    <asmv3:windowsSettings xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">
+  <asmv3:application> 
+    <asmv3:windowsSettings xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">      
       <activeCodePage xmlns="http://schemas.microsoft.com/SMI/2019/WindowsSettings">UTF-8</activeCodePage>
       <dpiAwareness>PerMonitorV2</dpiAwareness>
     </asmv3:windowsSettings>
+    <asmv3:windowsSettings xmlns="http://schemas.microsoft.com/SMI/2017/WindowsSettings">
+      <gdiScaling>true</gdiScaling>
+    </asmv3:windowsSettings>
   </asmv3:application>
+
+  <dependency>
+    <dependentAssembly>
+      <assemblyIdentity type='win32'
+                        name='Microsoft.Windows.Common-Controls'
+                        version='6.0.0.0'
+                        processorArchitecture='amd64'
+                        publicKeyToken='6595b64144ccf1df'
+      />
+    </dependentAssembly>
+  </dependency>
   
 </assembly>
