@@ -59,7 +59,9 @@ class ScreenCapture : public IScreenCapture
 
         double vTimeSent = 0;
         double aTimeSent = 0;
-        bool scrlOn = false;
+        bool scrlOn = true;
+        if (Config.blinkScrollLock)
+            SetScrollLock(true);
 
         while (thread.IsRunning())
         {
@@ -105,8 +107,10 @@ class ScreenCapture : public IScreenCapture
                 }
             }        
         }
+
         if (Config.blinkScrollLock && scrlOn)
             SetScrollLock(false);
+
         delete output;
     }
 

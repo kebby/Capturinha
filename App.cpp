@@ -96,7 +96,7 @@ public:
         Child(label, r, "Capture screen");
 
         r = Rect(line, aLeft, aTop, 300, line.Height(), aLeft, aTop, 100);
-        Child(videoOut, r, "", CBS_DROPDOWNLIST | CBS_HASSTRINGS);        
+        Child(videoOut, r, "", WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS);        
         GetVideoOutputs(strings);
         for (auto out : strings)
             videoOut.AddString(out);
@@ -105,13 +105,13 @@ public:
         line.OffsetRect(0, 25);
 
         r = Rect(line, aLeft, aTop, 300, line.Height(), aLeft, aTop, 100);
-        Child(recordWhenFS, r, "Only record when fullscreen", BS_CHECKBOX);
+        Child(recordWhenFS, r, "Only record when fullscreen", WS_TABSTOP | BS_CHECKBOX);
 
         //CRect rlabel = Rect(line, 0, 0, 100, line.Height());
         //Child(label, rlabel, "Capture screen");
 
         r = Rect(cr, aRight, aBottom, 130, 25, aRight, aBottom);
-        startCapture.Create(m_hWnd, r, "Start", WS_CHILD | WS_VISIBLE, ID_BUTTON);
+        startCapture.Create(m_hWnd, r, "Start", WS_TABSTOP | WS_CHILD | WS_VISIBLE, ID_BUTTON);
         startCapture.SetFont(font);
 
 
@@ -353,6 +353,19 @@ public:
 //-------------------------------------------------------------------
 //-------------------------------------------------------------------
 
+struct DlgMessageFiler : CMessageFilter
+{
+    BOOL PreTranslateMessage(MSG* pMsg) override
+    {
+        if (IsDialogMessage(hWnd, pMsg))
+            return 1;
+
+        return 0;
+    }
+
+    HWND hWnd;
+};
+
 int Run(LPTSTR /*lpstrCmdLine*/ = NULL, int nCmdShow = SW_SHOWDEFAULT)
 {
     CMessageLoop theLoop;
@@ -366,6 +379,11 @@ int Run(LPTSTR /*lpstrCmdLine*/ = NULL, int nCmdShow = SW_SHOWDEFAULT)
         ATLTRACE(_T("Main window creation failed!\n"));
         return 0;
     }
+
+    DlgMessageFiler msgFilter;
+    msgFilter.hWnd = wndMain;
+
+    theLoop.AddMessageFilter(&msgFilter);
 
     wndMain.ShowWindow(nCmdShow);
 

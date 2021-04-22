@@ -298,11 +298,11 @@ public:
         config.encodeCodecConfig.h264Config.idrPeriod = config.gopLength = Clamp(Config.GopSize, 1, 1000);
         switch (Config.UseBitrateControl)
         {
-        case CaptureConfig::BitrateControl::CBR:
+        case CaptureConfig::BitrateControl::CONSTQP:
             config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP;
             config.rcParams.constQP.qpIntra = config.rcParams.constQP.qpInterB = config.rcParams.constQP.qpInterP = Clamp(Config.BitrateParameter, 2, 50);
             break;
-        case CaptureConfig::BitrateControl::CONSTQP:
+        case CaptureConfig::BitrateControl::CBR:
             config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CBR_HQ;
             config.rcParams.averageBitRate = Min(Config.BitrateParameter, 500 * 1000 * 1000);
             break;
