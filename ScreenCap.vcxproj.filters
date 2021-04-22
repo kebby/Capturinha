@@ -439,6 +439,7 @@
     <ClInclude Include="App.h">
       <Filter>UI</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="base">
@@ -505,5 +506,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="ScreenCap.rc" />
   </ItemGroup>
 </Project>

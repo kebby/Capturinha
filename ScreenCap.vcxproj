@@ -156,6 +156,7 @@
     <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atltheme.h" />
     <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atluser.h" />
     <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlwinx.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="screencapture.h" />
     <ClInclude Include="system.h" />
     <ClInclude Include="types.h" />
@@ -176,6 +177,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="ScreenCap.rc" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -231,7 +235,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Manifest>
@@ -251,7 +255,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>

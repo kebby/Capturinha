@@ -813,8 +813,6 @@ void InitD3D(int outputIndex)
 {
     timeBeginPeriod(1);
 
-    CreateDXGIFactory1(__uuidof(IDXGIFactory6), Factory);
-
     Output = AllOutputs[outputIndex];
    
     printf("Using output: %s\n", (const char*)Output.DisplayName);
@@ -875,6 +873,12 @@ void ExitD3D()
     RTPool.Clear();
     lastRTPool.Clear();
     timeEndPeriod(1);
+
+    Output = {};
+    SmplWrap.Clear();
+    Dupl.Clear();
+    Ctx.Clear();
+    Dev.Clear();
 }
 
 RCPtr<IDXGIAdapter> GetAdapter() { return Output.Adapter; }
