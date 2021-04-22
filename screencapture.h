@@ -24,6 +24,7 @@ struct CaptureConfig
     // general
     String Filename;
     Container UseContainer = Container::Mp4;
+    bool blinkScrollLock = true;
 
     // video settings
     int OutputIndex = 0; // 0: default

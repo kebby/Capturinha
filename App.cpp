@@ -124,17 +124,12 @@ public:
     {
         if (hwnd == startCapture)
         {
-            DPrintF("onclicked %d %d\n", w1, w2);
             Config.OutputIndex = videoOut.GetCurSel();
             Config.RecordOnlyFullscreen = !!recordWhenFS.GetCheck();
             SendMessage(GetParent(), WM_SETCAPTURE, 1, 0);
             return 1;
         }
-        if (hwnd == recordWhenFS)
-        {
-            recordWhenFS.SetCheck(recordWhenFS.GetCheck()?0:1);
-            return 1;
-        }
+        if (hwnd == recordWhenFS) recordWhenFS.SetCheck(recordWhenFS.GetCheck() ? 0 : 1);
 
         return 0;
     }
@@ -355,6 +350,8 @@ public:
     }
 };
 
+//-------------------------------------------------------------------
+//-------------------------------------------------------------------
 
 int Run(LPTSTR /*lpstrCmdLine*/ = NULL, int nCmdShow = SW_SHOWDEFAULT)
 {
@@ -377,9 +374,6 @@ int Run(LPTSTR /*lpstrCmdLine*/ = NULL, int nCmdShow = SW_SHOWDEFAULT)
     _Module.RemoveMessageLoop();
     return nRet;
 }
-
-//-------------------------------------------------------------------
-//-------------------------------------------------------------------
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR lpstrCmdLine, int nCmdShow)
 {

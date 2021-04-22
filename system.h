@@ -233,4 +233,5 @@ private:
 // -------------------------------------------------------------------------------
 
 bool IsFullscreen();
+void SetScrollLock(bool on);
 

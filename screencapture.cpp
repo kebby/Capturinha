@@ -1,3 +1,5 @@
+#include <math.h>
+
 #include "types.h"
 #include "system.h"
 #include "graphics.h"
@@ -7,6 +9,7 @@
 #include "output.h"
 
 #include "ScreenCapture.h"
+
 
 class ScreenCapture : public IScreenCapture
 {
@@ -56,6 +59,7 @@ class ScreenCapture : public IScreenCapture
 
         double vTimeSent = 0;
         double aTimeSent = 0;
+        bool scrlOn = false;
 
         while (thread.IsRunning())
         {
@@ -89,10 +93,20 @@ class ScreenCapture : public IScreenCapture
                     }
                     Stats.AVSkew += 0.03 * (aTimeSent - vTimeSent - Stats.AVSkew);
                 }
-            }
 
+                if (Config.blinkScrollLock)
+                {
+                    bool blink = fmod(2 * GetTime(), 1) < 0.5f;
+                    if (blink != scrlOn)
+                    {
+                        SetScrollLock(blink < 0.5f);
+                        scrlOn = blink;
+                    }
+                }
+            }        
         }
-
+        if (Config.blinkScrollLock && scrlOn)
+            SetScrollLock(false);
         delete output;
     }
 
@@ -145,7 +159,7 @@ class ScreenCapture : public IScreenCapture
                     Delete(processThread);
                     Delete(encoder);
 
-                    DPrintF("\n\n*************************** NEW\n\n\n");
+//                  DPrintF("\n\n*************************** NEW\n\n\n");
 
                     
                     encoder = CreateEncodeNVENC(Config);
@@ -218,7 +232,7 @@ class ScreenCapture : public IScreenCapture
 
                 // (it's that easy)
                 duplicated = 0;
-                DPrintF("%6.2f (%4.2f): got %d, dup %d, over %d, avskew %5.2fms, vskew %5.2ff\n", time, deltaf, info.frameCount, duplicated, over, 1000. * Stats.AVSkew, vInSkew);
+                //DPrintF("%6.2f (%4.2f): got %d, dup %d, over %d, avskew %5.2fms, vskew %5.2ff\n", time, deltaf, info.frameCount, duplicated, over, 1000. * Stats.AVSkew, vInSkew);
 
             }
 
@@ -274,7 +288,6 @@ public:
     }
 
     CaptureStats GetStats() override { return Stats; }
-
 };
 
 

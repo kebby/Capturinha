@@ -457,12 +457,35 @@ void Thread::Sleep(int ms)
 //----------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------
 
-bool IsFullscreen() {
+bool IsFullscreen() 
+{
     QUERY_USER_NOTIFICATION_STATE state;
     SHQueryUserNotificationState(&state);
     return (state == QUNS_BUSY || state == QUNS_RUNNING_D3D_FULL_SCREEN);
 }
 
+void SetScrollLock(bool on)
+{
+    BYTE keyState[256];
+
+    GetKeyboardState((LPBYTE)&keyState);
+
+    if ((on && !(keyState[VK_SCROLL] & 1)) ||
+        (!on && (keyState[VK_SCROLL] & 1)))
+    {
+        // Simulate a key press
+        keybd_event(VK_SCROLL,
+            0x45,
+            KEYEVENTF_EXTENDEDKEY | 0,
+            0);
+
+        // Simulate a key release
+        keybd_event(VK_SCROLL,
+            0x45,
+            KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP,
+            0);
+    }
+}
 //----------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------
 
