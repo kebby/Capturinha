@@ -15,7 +15,6 @@
     <ClCompile Include="audiocapture_wasapi.cpp" />
     <ClCompile Include="encode_nvenc.cpp" />
     <ClCompile Include="graphics.cpp" />
-    <ClCompile Include="main.cpp" />
     <ClCompile Include="output_libav.cpp" />
     <ClCompile Include="screencapture.cpp" />
     <ClCompile Include="system.cpp" />
