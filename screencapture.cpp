@@ -28,9 +28,11 @@ class ScreenCapture : public IScreenCapture
 
         static const char* const extensions[] = { "avi", "mp4", "mov", "mkv" };
 
+        String prefix = Config.Directory + "\\" + Config.NamePrefix;
+
         auto systime = GetSystemTime();
         auto filename = String::PrintF("%s_%04d-%02d-%02d_%02d.%02d.%02d_%dx%d_%.4gfps.%s",
-            (const char*)Config.Filename,
+            (const char*)prefix,
             systime.year, systime.month, systime.day, systime.hour, systime.minute, systime.second,
             sizeX, sizeY, (double)rateNum / rateDen,
             extensions[(int)Config.UseContainer]

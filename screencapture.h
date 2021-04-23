@@ -30,7 +30,8 @@ struct CaptureConfig
     };
 
     // general
-    String Filename;
+    String Directory;
+    String NamePrefix;
     Container UseContainer = Container::Mp4;
     bool blinkScrollLock = true;
 

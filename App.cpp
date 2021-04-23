@@ -24,7 +24,8 @@ CAppModule _Module;
 
 CaptureConfig Config = 
 {
-    .Filename = "c:\\temp\\capture",
+    .Directory = "c:\\temp",
+    .NamePrefix = "capture",
 }; 
 
 IScreenCapture* Capture = 0;
@@ -71,6 +72,15 @@ public:
     CEdit rateParam;
     CComboBox frameLayout;
     CEdit gopSize;
+    CButton captureAudio;
+    CComboBox audioOut;
+    CComboBox audioCodec;
+    CEdit audioRate;
+    CEdit directory;
+    CButton dirButton;
+    CEdit prefix;
+    CComboBox container;
+    CButton blinkScrlLock;
 
     DECLARE_WND_CLASS("SetupForm");
 
@@ -188,8 +198,81 @@ public:
 
         line.OffsetRect(0, 25);
 
+        //--------------- audio
+        line.OffsetRect(0, 15);
 
-        //--------------- lol
+        r = Rect(line, aLeft, aTop, 300, line.Height(), aLeft, aTop, labelwidth);
+        Child(captureAudio, r, "Capture audio", WS_TABSTOP | BS_AUTOCHECKBOX);
+
+        line.OffsetRect(0, 25);
+
+        r = Rect(line, 0, 0, labelwidth, line.Height(), 0, 0, 0, 4);
+        CStatic label6;
+        Child(label6, r, "Audio output");
+
+        r = Rect(line, aLeft, aTop, 300, line.Height(), aLeft, aTop, labelwidth);
+        Child(audioOut, r, "", WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS);
+        GetAudioDevices(strings);
+        for (auto out : strings)
+            audioOut.AddString(out);
+        audioOut.SetCurSel(0);
+
+        line.OffsetRect(0, 25);
+
+        //--------------- audio codec         
+        r = Rect(line, 0, 0, labelwidth, line.Height(), 0, 0, 0, 4);
+        CStatic label7;
+        Child(label7, r, "Audio Codec");
+
+        Array<String> acodecStrs = { "PCM, 16bit", "PCM, float", "MP3", "AAC" };
+        r = Rect(line, aLeft, aTop, 100, line.Height(), aLeft, aTop, labelwidth);
+        Dropdown(audioCodec, r, acodecStrs);
+
+        r = Rect(line, aLeft, aTop, 80, line.Height(), aLeft, aTop, 240, 4);
+        CStatic label8;
+        Child(label8, r, "Bit rate (kbits/s)");
+
+        r = Rect(line, aLeft, aTop, 60, line.Height(), aLeft, aTop, 320);
+        Child(audioRate, r, "", ES_RIGHT | ES_NUMBER | WS_BORDER);
+
+        line.OffsetRect(0, 25);
+
+        //--------------- directory
+        line.OffsetRect(0, 15);
+
+        r = Rect(line, 0, 0, labelwidth, line.Height(), 0, 0, 0, 4);
+        CStatic label9;
+        Child(label9, r, "Output folder");
+
+        r = Rect(line, aLeft, aTop, 300, line.Height(), aLeft, aTop, labelwidth);
+        Child(directory, r, "c:\\temp", ES_LEFT | WS_BORDER);
+
+        line.OffsetRect(0, 25);
+
+        //--------------- prefix / container
+
+        r = Rect(line, 0, 0, labelwidth, line.Height(), 0, 0, 0, 4);
+        CStatic label10;
+        Child(label10, r, "Name prefix");
+       
+        r = Rect(line, aLeft, aTop, 150, line.Height(), aLeft, aTop, labelwidth);
+        Child(prefix, r, "capture", ES_LEFT | WS_BORDER);
+
+        r = Rect(line, aLeft, aTop, 80, line.Height(), aLeft, aTop, 240, 4);
+        CStatic label11;
+        Child(label11, r, "Container");
+
+        r = Rect(line, aLeft, aTop, 60, line.Height(), aLeft, aTop, 320);
+        Array<String> containerStrs = { "avi", "mp4", "mov", "mkv" };
+        Dropdown(container, r, containerStrs);
+
+
+        line.OffsetRect(0, 25);
+
+        //--------------- options, start
+
+        r = Rect(cr, aLeft, aBottom, 200, 25, aLeft, aBottom);
+        Child(blinkScrlLock, r, "Flash Scroll Lock when recording", WS_TABSTOP | BS_AUTOCHECKBOX);
 
         r = Rect(cr, aRight, aBottom, 130, 25, aRight, aBottom);
         startCapture.Create(m_hWnd, r, "Start", WS_TABSTOP | WS_CHILD | WS_VISIBLE, ID_BUTTON);
@@ -553,7 +636,7 @@ int Run(LPTSTR /*lpstrCmdLine*/ = NULL, int nCmdShow = SW_SHOWDEFAULT)
 
     MainFrame wndMain;
 
-    RECT winRect = { .left = CW_USEDEFAULT , .top = CW_USEDEFAULT, .right = CW_USEDEFAULT+420, .bottom = CW_USEDEFAULT+300 };
+    RECT winRect = { .left = CW_USEDEFAULT , .top = CW_USEDEFAULT, .right = CW_USEDEFAULT+420, .bottom = CW_USEDEFAULT+380 };
     if (wndMain.CreateEx(0, &winRect, WS_DLGFRAME|WS_SYSMENU|WS_MINIMIZEBOX) == NULL)
     {
         ATLTRACE(_T("Main window creation failed!\n"));
