@@ -35,6 +35,8 @@ private:
     AVCodec* AudioCodec = nullptr;
     AVStream* AudioStream = nullptr;
     AVCodecContext* AudioContext = nullptr;
+    AVPacket* Packet = nullptr;
+    AVFrame* Frame = nullptr;
 
     SwrContext* Resample = nullptr;
     uint ResampleBufferSize = 0;
@@ -53,9 +55,11 @@ private:
         VideoStream->time_base.den = VideoStream->avg_frame_rate.num = Para.RateNum;
         VideoStream->time_base.num = VideoStream->avg_frame_rate.den = Para.RateDen;
 
+        static const AVCodecID vcodecs[] = { AV_CODEC_ID_H264, AV_CODEC_ID_HEVC };
+
         auto codecpar = VideoStream->codecpar;
         codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
-        codecpar->codec_id = AV_CODEC_ID_H264;
+        codecpar->codec_id = vcodecs[(int)(Para.CConfig->CodecCfg.Codec)];
         codecpar->bit_rate = 0;
         codecpar->width = Para.SizeX;
         codecpar->height = Para.SizeY;
@@ -75,8 +79,8 @@ private:
             return;
 
         // find the audio codec
-        static const AVCodecID codecs[] = { AV_CODEC_ID_PCM_S16LE, AV_CODEC_ID_PCM_F32LE, AV_CODEC_ID_MP3, AV_CODEC_ID_AAC };
-        AudioCodec = avcodec_find_encoder(codecs[(int)Para.CConfig->UseAudioCodec]);
+        static const AVCodecID acodecs[] = { AV_CODEC_ID_PCM_S16LE, AV_CODEC_ID_PCM_F32LE, AV_CODEC_ID_MP3, AV_CODEC_ID_AAC };
+        AudioCodec = avcodec_find_encoder(acodecs[(int)Para.CConfig->UseAudioCodec]);
         if (!AudioCodec)
             return;
 
@@ -117,17 +121,16 @@ private:
 
     void WriteAudio()
     {
-        AVPacket packet = { };
-        av_init_packet(&packet);
-        while (!avcodec_receive_packet(AudioContext, &packet))
+        while (!avcodec_receive_packet(AudioContext, Packet))
         {
-            packet.pts = av_rescale_q(packet.pts, AudioContext->time_base, AudioStream->time_base);
-            packet.dts = av_rescale_q(packet.dts, AudioContext->time_base, AudioStream->time_base);
-            packet.duration = (int)av_rescale_q(packet.duration, AudioContext->time_base, AudioStream->time_base);
-            packet.stream_index = AudioStream->index;
+            Packet->pts = av_rescale_q(Packet->pts, AudioContext->time_base, AudioStream->time_base);
+            Packet->dts = av_rescale_q(Packet->dts, AudioContext->time_base, AudioStream->time_base);
+            Packet->duration = (int)av_rescale_q(Packet->duration, AudioContext->time_base, AudioStream->time_base);
+            Packet->stream_index = AudioStream->index;
 
             // Write the compressed frame to the media file.
-            AVERR(av_interleaved_write_frame(Context, &packet));
+            AVERR(av_interleaved_write_frame(Context, Packet));
+            av_packet_unref(Packet);
         }
     }
 
@@ -142,6 +145,9 @@ public:
         AVERR(avformat_alloc_output_context2(&Context, nullptr, formats[(int)para.CConfig->UseContainer] , para.filename));
 
         AVERR(avio_open(&Context->pb, para.filename, AVIO_FLAG_WRITE));
+
+        Packet = av_packet_alloc();
+        Frame = av_frame_alloc();
 
         InitVideo();
         InitAudio();
@@ -170,16 +176,15 @@ public:
         AVRational tb = { .num = (int)Para.RateDen, .den = (int)Para.RateNum };
 
         // set up packet
-        AVPacket packet = {};
-        av_init_packet(&packet);
-        packet.stream_index = VideoStream->index;
-        packet.data = (uint8*)data;
-        packet.size = size;
-        packet.dts = packet.pts = av_rescale_q(FrameNo, tb, VideoStream->time_base);
-        packet.duration = av_rescale_q(1, tb, VideoStream->time_base);
+        Packet->stream_index = VideoStream->index;
+        Packet->data = (uint8*)data;
+        Packet->size = size;
+        Packet->dts = Packet->pts = av_rescale_q(FrameNo, tb, VideoStream->time_base);
+        Packet->duration = av_rescale_q(1, tb, VideoStream->time_base);
 
         // write packet
-        AVERR(av_interleaved_write_frame(Context, &packet));
+        AVERR(av_interleaved_write_frame(Context, Packet));
+        av_packet_unref(Packet);
 
         FrameNo++;
     }
@@ -246,10 +251,9 @@ public:
             while ((ResampleFill-written) >= frame)
             {
                 // make frame
-                AVFrame* audioFrame = av_frame_alloc();
-                audioFrame->pts = av_rescale_q(AudioWritten + written, tb, AudioContext->time_base);
-                audioFrame->nb_samples = frame;
-                AVERR(avcodec_fill_audio_frame(audioFrame, Para.Audio.Channels, AudioContext->sample_fmt, ResampleBuffer, rbsize, 0));
+                Frame->pts = av_rescale_q(AudioWritten + written, tb, AudioContext->time_base);
+                Frame->nb_samples = frame;
+                AVERR(avcodec_fill_audio_frame(Frame, Para.Audio.Channels, AudioContext->sample_fmt, ResampleBuffer, rbsize, 0));
 
                 // avcodec_fill_audio_frame doesn't do inter-channel stride correctly, so fix up the pointers
                 rbpos = written * ResampleBytesPerSample;
@@ -257,17 +261,15 @@ public:
                     rbpos *= Para.Audio.Channels;
                 for (int i = 0; i < 8; i++)
                 {
-                    audioFrame->data[i] = ResampleBuffer + rbpos + i * bytesPerChannel;
-                    audioFrame->linesize[i] = audioFrame->linesize[0];
+                    Frame->data[i] = ResampleBuffer + rbpos + i * bytesPerChannel;
+                    Frame->linesize[i] = Frame->linesize[0];
                 }
 
                 // encode and send
-                AVERR(avcodec_send_frame(AudioContext, audioFrame));
+                AVERR(avcodec_send_frame(AudioContext, Frame));
                 WriteAudio();
 
                 written += frame;
-
-                av_frame_free(&audioFrame);
             }
             AudioWritten += written;
 

@@ -218,6 +218,8 @@ public:
 // for..in support
 template<typename T> T* begin(Array<T> &arr) { return arr.Count() ? &arr[0] : nullptr; }
 template<typename T> T* end(Array<T> &arr) { return arr.Count() ? (&arr[0])+arr.Count() : nullptr; }
+template<typename T> T* begin(const Array<T>& arr) { return arr.Count() ? &arr[0] : nullptr; }
+template<typename T> T* end(const Array<T>& arr) { return arr.Count() ? (&arr[0]) + arr.Count() : nullptr; }
 
 template<typename TP> void DeleteAll(Array<TP*>& array) { for (TP* p : array) delete p; array.Clear(); }
 

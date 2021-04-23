@@ -80,6 +80,20 @@ public:
         child.SetFont(AtlGetStockFont(DEFAULT_GUI_FONT));
     }
 
+    template<class T> void Dropdown(T& child, const RECT& r, Array<String> &strings)
+    {
+        RECT r2 = r;
+        child.Create(m_hWnd, r2, NULL, WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS, ID_BUTTON);
+        child.SetFont(AtlGetStockFont(DEFAULT_GUI_FONT));
+        for (auto out : strings)
+            child.AddString(out);
+        child.SetCurSel(0);
+    }
+
+    CComboBox videoCodec;
+
+    static const int labelwidth = 80;
+
     LRESULT OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
     {
         CFont font = AtlGetStockFont(DEFAULT_GUI_FONT);
@@ -92,10 +106,11 @@ public:
         cr.InflateRect(-10, -10);
         CRect line = Rect(cr, 0, 0, cr.Width(), 20);
 
-        r = Rect(line, 0, 0, 100, line.Height(), 0, 0, 0, 4);
+        //------------- OutputIndex
+        r = Rect(line, 0, 0, labelwidth, line.Height(), 0, 0, 0, 4);
         Child(label, r, "Capture screen");
 
-        r = Rect(line, aLeft, aTop, 300, line.Height(), aLeft, aTop, 100);
+        r = Rect(line, aLeft, aTop, 300, line.Height(), aLeft, aTop, labelwidth);
         Child(videoOut, r, "", WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS);        
         GetVideoOutputs(strings);
         for (auto out : strings)
@@ -104,8 +119,22 @@ public:
 
         line.OffsetRect(0, 25);
 
-        r = Rect(line, aLeft, aTop, 300, line.Height(), aLeft, aTop, 100);
+        //------------- RecordOnlyFullscreen
+        r = Rect(line, aLeft, aTop, 300, line.Height(), aLeft, aTop, labelwidth);
         Child(recordWhenFS, r, "Only record when fullscreen", WS_TABSTOP | BS_CHECKBOX);
+
+        line.OffsetRect(0, 25);
+
+        CStatic label2;
+        r = Rect(line, 0, 0, labelwidth, line.Height(), 0, 0, 0, 4);
+        Child(label2, r, "Video codec");
+
+        //-------------- Codec settings
+        Array<String> codecs = { "H.264", "HEVC" };
+        r = Rect(line, aLeft, aTop, 300, line.Height(), aLeft, aTop, labelwidth);
+        Dropdown(videoCodec, r, codecs);
+
+        
 
         //CRect rlabel = Rect(line, 0, 0, 100, line.Height());
         //Child(label, rlabel, "Capture screen");
@@ -126,6 +155,7 @@ public:
         {
             Config.OutputIndex = videoOut.GetCurSel();
             Config.RecordOnlyFullscreen = !!recordWhenFS.GetCheck();
+            Config.CodecCfg.Codec = (CaptureConfig::VideoCodec)videoCodec.GetCurSel();
             SendMessage(GetParent(), WM_SETCAPTURE, 1, 0);
             return 1;
         }
@@ -373,8 +403,8 @@ int Run(LPTSTR /*lpstrCmdLine*/ = NULL, int nCmdShow = SW_SHOWDEFAULT)
 
     MainFrame wndMain;
 
-    RECT winRect = { .left = CW_USEDEFAULT , .top = CW_USEDEFAULT, .right = CW_USEDEFAULT+440, .bottom = CW_USEDEFAULT+200 };
-    if (wndMain.CreateEx(0, &winRect, WS_DLGFRAME|WS_SYSMENU) == NULL)
+    RECT winRect = { .left = CW_USEDEFAULT , .top = CW_USEDEFAULT, .right = CW_USEDEFAULT+420, .bottom = CW_USEDEFAULT+200 };
+    if (wndMain.CreateEx(0, &winRect, WS_DLGFRAME|WS_SYSMENU|WS_MINIMIZEBOX) == NULL)
     {
         ATLTRACE(_T("Main window creation failed!\n"));
         return 0;
