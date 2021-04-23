@@ -30,12 +30,18 @@
     <ClInclude Include="libavcodec\avcodec.h" />
     <ClInclude Include="libavcodec\avdct.h" />
     <ClInclude Include="libavcodec\avfft.h" />
+    <ClInclude Include="libavcodec\bsf.h" />
+    <ClInclude Include="libavcodec\codec.h" />
+    <ClInclude Include="libavcodec\codec_desc.h" />
+    <ClInclude Include="libavcodec\codec_id.h" />
+    <ClInclude Include="libavcodec\codec_par.h" />
     <ClInclude Include="libavcodec\d3d11va.h" />
     <ClInclude Include="libavcodec\dirac.h" />
     <ClInclude Include="libavcodec\dv_profile.h" />
     <ClInclude Include="libavcodec\dxva2.h" />
     <ClInclude Include="libavcodec\jni.h" />
     <ClInclude Include="libavcodec\mediacodec.h" />
+    <ClInclude Include="libavcodec\packet.h" />
     <ClInclude Include="libavcodec\qsv.h" />
     <ClInclude Include="libavcodec\vaapi.h" />
     <ClInclude Include="libavcodec\vdpau.h" />
@@ -69,6 +75,7 @@
     <ClInclude Include="libavutil\des.h" />
     <ClInclude Include="libavutil\dict.h" />
     <ClInclude Include="libavutil\display.h" />
+    <ClInclude Include="libavutil\dovi_meta.h" />
     <ClInclude Include="libavutil\downmix_info.h" />
     <ClInclude Include="libavutil\encryption_info.h" />
     <ClInclude Include="libavutil\error.h" />
@@ -76,6 +83,7 @@
     <ClInclude Include="libavutil\ffversion.h" />
     <ClInclude Include="libavutil\fifo.h" />
     <ClInclude Include="libavutil\file.h" />
+    <ClInclude Include="libavutil\film_grain_params.h" />
     <ClInclude Include="libavutil\frame.h" />
     <ClInclude Include="libavutil\hash.h" />
     <ClInclude Include="libavutil\hdr_dynamic_metadata.h" />
@@ -86,10 +94,12 @@
     <ClInclude Include="libavutil\hwcontext_drm.h" />
     <ClInclude Include="libavutil\hwcontext_dxva2.h" />
     <ClInclude Include="libavutil\hwcontext_mediacodec.h" />
+    <ClInclude Include="libavutil\hwcontext_opencl.h" />
     <ClInclude Include="libavutil\hwcontext_qsv.h" />
     <ClInclude Include="libavutil\hwcontext_vaapi.h" />
     <ClInclude Include="libavutil\hwcontext_vdpau.h" />
     <ClInclude Include="libavutil\hwcontext_videotoolbox.h" />
+    <ClInclude Include="libavutil\hwcontext_vulkan.h" />
     <ClInclude Include="libavutil\imgutils.h" />
     <ClInclude Include="libavutil\intfloat.h" />
     <ClInclude Include="libavutil\intreadwrite.h" />
@@ -127,11 +137,10 @@
     <ClInclude Include="libavutil\twofish.h" />
     <ClInclude Include="libavutil\tx.h" />
     <ClInclude Include="libavutil\version.h" />
+    <ClInclude Include="libavutil\video_enc_params.h" />
     <ClInclude Include="libavutil\xtea.h" />
     <ClInclude Include="libswresample\swresample.h" />
     <ClInclude Include="libswresample\version.h" />
-    <ClInclude Include="libswscale\swscale.h" />
-    <ClInclude Include="libswscale\version.h" />
     <ClInclude Include="math3d.h" />
     <ClInclude Include="nvEncodeAPI.h" />
     <ClInclude Include="output.h" />
@@ -166,7 +175,6 @@
     <Library Include="avutil.lib" />
     <Library Include="nvencodeapi.lib" />
     <Library Include="swresample.lib" />
-    <Library Include="swscale.lib" />
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="app.manifest" />

@@ -30,15 +30,94 @@
     <ClInclude Include="nvEncodeAPI.h">
       <Filter>3rdparty\nvEncodeAPI</Filter>
     </ClInclude>
-    <ClInclude Include="libavformat\avformat.h">
-      <Filter>3rdparty\libavformat</Filter>
+    <ClInclude Include="graphics.h">
+      <Filter>base</Filter>
     </ClInclude>
-    <ClInclude Include="libavformat\avio.h">
-      <Filter>3rdparty\libavformat</Filter>
+    <ClInclude Include="math3d.h">
+      <Filter>base</Filter>
     </ClInclude>
-    <ClInclude Include="libavformat\version.h">
-      <Filter>3rdparty\libavformat</Filter>
+    <ClInclude Include="system.h">
+      <Filter>base</Filter>
     </ClInclude>
+    <ClInclude Include="types.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="audiocapture.h">
+      <Filter>screencap</Filter>
+    </ClInclude>
+    <ClInclude Include="encode.h">
+      <Filter>screencap</Filter>
+    </ClInclude>
+    <ClInclude Include="output.h">
+      <Filter>screencap</Filter>
+    </ClInclude>
+    <ClInclude Include="screencapture.h">
+      <Filter>screencap</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlapp.h">
+      <Filter>3rdparty\WTL</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlcrack.h">
+      <Filter>3rdparty\WTL</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlctrls.h">
+      <Filter>3rdparty\WTL</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlctrlw.h">
+      <Filter>3rdparty\WTL</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlctrlx.h">
+      <Filter>3rdparty\WTL</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlddx.h">
+      <Filter>3rdparty\WTL</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atldlgs.h">
+      <Filter>3rdparty\WTL</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atldwm.h">
+      <Filter>3rdparty\WTL</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlfind.h">
+      <Filter>3rdparty\WTL</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlframe.h">
+      <Filter>3rdparty\WTL</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlgdi.h">
+      <Filter>3rdparty\WTL</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlmisc.h">
+      <Filter>3rdparty\WTL</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlprint.h">
+      <Filter>3rdparty\WTL</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlres.h">
+      <Filter>3rdparty\WTL</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlribbon.h">
+      <Filter>3rdparty\WTL</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlscrl.h">
+      <Filter>3rdparty\WTL</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlsplit.h">
+      <Filter>3rdparty\WTL</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atltheme.h">
+      <Filter>3rdparty\WTL</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atluser.h">
+      <Filter>3rdparty\WTL</Filter>
+    </ClInclude>
+    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlwinx.h">
+      <Filter>3rdparty\WTL</Filter>
+    </ClInclude>
+    <ClInclude Include="App.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h" />
     <ClInclude Include="libavcodec\ac3_parser.h">
       <Filter>3rdparty\libavcodec</Filter>
     </ClInclude>
@@ -52,6 +131,21 @@
       <Filter>3rdparty\libavcodec</Filter>
     </ClInclude>
     <ClInclude Include="libavcodec\avfft.h">
+      <Filter>3rdparty\libavcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="libavcodec\bsf.h">
+      <Filter>3rdparty\libavcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="libavcodec\codec.h">
+      <Filter>3rdparty\libavcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="libavcodec\codec_desc.h">
+      <Filter>3rdparty\libavcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="libavcodec\codec_id.h">
+      <Filter>3rdparty\libavcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="libavcodec\codec_par.h">
       <Filter>3rdparty\libavcodec</Filter>
     </ClInclude>
     <ClInclude Include="libavcodec\d3d11va.h">
@@ -70,6 +164,9 @@
       <Filter>3rdparty\libavcodec</Filter>
     </ClInclude>
     <ClInclude Include="libavcodec\mediacodec.h">
+      <Filter>3rdparty\libavcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="libavcodec\packet.h">
       <Filter>3rdparty\libavcodec</Filter>
     </ClInclude>
     <ClInclude Include="libavcodec\qsv.h">
@@ -92,6 +189,15 @@
     </ClInclude>
     <ClInclude Include="libavcodec\xvmc.h">
       <Filter>3rdparty\libavcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="libavformat\avformat.h">
+      <Filter>3rdparty\libavformat</Filter>
+    </ClInclude>
+    <ClInclude Include="libavformat\avio.h">
+      <Filter>3rdparty\libavformat</Filter>
+    </ClInclude>
+    <ClInclude Include="libavformat\version.h">
+      <Filter>3rdparty\libavformat</Filter>
     </ClInclude>
     <ClInclude Include="libavutil\adler32.h">
       <Filter>3rdparty\libavutil</Filter>
@@ -162,6 +268,9 @@
     <ClInclude Include="libavutil\display.h">
       <Filter>3rdparty\libavutil</Filter>
     </ClInclude>
+    <ClInclude Include="libavutil\dovi_meta.h">
+      <Filter>3rdparty\libavutil</Filter>
+    </ClInclude>
     <ClInclude Include="libavutil\downmix_info.h">
       <Filter>3rdparty\libavutil</Filter>
     </ClInclude>
@@ -181,6 +290,9 @@
       <Filter>3rdparty\libavutil</Filter>
     </ClInclude>
     <ClInclude Include="libavutil\file.h">
+      <Filter>3rdparty\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\film_grain_params.h">
       <Filter>3rdparty\libavutil</Filter>
     </ClInclude>
     <ClInclude Include="libavutil\frame.h">
@@ -213,6 +325,9 @@
     <ClInclude Include="libavutil\hwcontext_mediacodec.h">
       <Filter>3rdparty\libavutil</Filter>
     </ClInclude>
+    <ClInclude Include="libavutil\hwcontext_opencl.h">
+      <Filter>3rdparty\libavutil</Filter>
+    </ClInclude>
     <ClInclude Include="libavutil\hwcontext_qsv.h">
       <Filter>3rdparty\libavutil</Filter>
     </ClInclude>
@@ -223,6 +338,9 @@
       <Filter>3rdparty\libavutil</Filter>
     </ClInclude>
     <ClInclude Include="libavutil\hwcontext_videotoolbox.h">
+      <Filter>3rdparty\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="libavutil\hwcontext_vulkan.h">
       <Filter>3rdparty\libavutil</Filter>
     </ClInclude>
     <ClInclude Include="libavutil\imgutils.h">
@@ -336,6 +454,9 @@
     <ClInclude Include="libavutil\version.h">
       <Filter>3rdparty\libavutil</Filter>
     </ClInclude>
+    <ClInclude Include="libavutil\video_enc_params.h">
+      <Filter>3rdparty\libavutil</Filter>
+    </ClInclude>
     <ClInclude Include="libavutil\xtea.h">
       <Filter>3rdparty\libavutil</Filter>
     </ClInclude>
@@ -345,100 +466,6 @@
     <ClInclude Include="libswresample\version.h">
       <Filter>3rdparty\libswresample</Filter>
     </ClInclude>
-    <ClInclude Include="libswscale\swscale.h">
-      <Filter>3rdparty\libswscale</Filter>
-    </ClInclude>
-    <ClInclude Include="libswscale\version.h">
-      <Filter>3rdparty\libswscale</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics.h">
-      <Filter>base</Filter>
-    </ClInclude>
-    <ClInclude Include="math3d.h">
-      <Filter>base</Filter>
-    </ClInclude>
-    <ClInclude Include="system.h">
-      <Filter>base</Filter>
-    </ClInclude>
-    <ClInclude Include="types.h">
-      <Filter>base</Filter>
-    </ClInclude>
-    <ClInclude Include="audiocapture.h">
-      <Filter>screencap</Filter>
-    </ClInclude>
-    <ClInclude Include="encode.h">
-      <Filter>screencap</Filter>
-    </ClInclude>
-    <ClInclude Include="output.h">
-      <Filter>screencap</Filter>
-    </ClInclude>
-    <ClInclude Include="screencapture.h">
-      <Filter>screencap</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlapp.h">
-      <Filter>3rdparty\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlcrack.h">
-      <Filter>3rdparty\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlctrls.h">
-      <Filter>3rdparty\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlctrlw.h">
-      <Filter>3rdparty\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlctrlx.h">
-      <Filter>3rdparty\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlddx.h">
-      <Filter>3rdparty\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atldlgs.h">
-      <Filter>3rdparty\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atldwm.h">
-      <Filter>3rdparty\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlfind.h">
-      <Filter>3rdparty\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlframe.h">
-      <Filter>3rdparty\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlgdi.h">
-      <Filter>3rdparty\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlmisc.h">
-      <Filter>3rdparty\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlprint.h">
-      <Filter>3rdparty\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlres.h">
-      <Filter>3rdparty\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlribbon.h">
-      <Filter>3rdparty\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlscrl.h">
-      <Filter>3rdparty\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlsplit.h">
-      <Filter>3rdparty\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atltheme.h">
-      <Filter>3rdparty\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atluser.h">
-      <Filter>3rdparty\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlwinx.h">
-      <Filter>3rdparty\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="App.h">
-      <Filter>UI</Filter>
-    </ClInclude>
-    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="base">
@@ -465,9 +492,6 @@
     <Filter Include="3rdparty\libswresample">
       <UniqueIdentifier>{54cb704c-8e4a-4930-a483-c91dce6c7aa2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="3rdparty\libswscale">
-      <UniqueIdentifier>{4fbb0e3c-4c7a-4500-ac44-d147ab376414}</UniqueIdentifier>
-    </Filter>
     <Filter Include="UI">
       <UniqueIdentifier>{48d2dc99-7db5-473d-b522-a8e844f9ead8}</UniqueIdentifier>
     </Filter>
@@ -489,9 +513,6 @@
       <Filter>3rdparty</Filter>
     </Library>
     <Library Include="swresample.lib">
-      <Filter>3rdparty</Filter>
-    </Library>
-    <Library Include="swscale.lib">
       <Filter>3rdparty</Filter>
     </Library>
   </ItemGroup>
