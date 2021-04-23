@@ -169,6 +169,9 @@ public:
 
         avformat_free_context(Context);
         avcodec_free_context(&AudioContext);
+
+        av_packet_free(&Packet);
+        av_frame_free(&Frame);
     }
 
     void SubmitVideoPacket(const uint8* data, uint size) override
@@ -252,22 +255,24 @@ public:
             {
                 // make frame
                 Frame->pts = av_rescale_q(AudioWritten + written, tb, AudioContext->time_base);
+                Frame->format = AudioContext->sample_fmt;
                 Frame->nb_samples = frame;
-                AVERR(avcodec_fill_audio_frame(Frame, Para.Audio.Channels, AudioContext->sample_fmt, ResampleBuffer, rbsize, 0));
+                Frame->channels = AudioContext->channels;
+                Frame->channel_layout = AudioContext->channel_layout;
+                AVERR(av_frame_get_buffer(Frame, 0));
 
-                // avcodec_fill_audio_frame doesn't do inter-channel stride correctly, so fix up the pointers
+                // copy audio data
                 rbpos = written * ResampleBytesPerSample;
                 if (!planar)
                     rbpos *= Para.Audio.Channels;
-                for (int i = 0; i < 8; i++)
-                {
-                    Frame->data[i] = ResampleBuffer + rbpos + i * bytesPerChannel;
-                    Frame->linesize[i] = Frame->linesize[0];
-                }
+                for (int i = 0; i < 8; i++) 
+                    if (Frame->data[i])
+                        memcpy(Frame->data[i], ResampleBuffer + rbpos + i * bytesPerChannel, Frame->linesize[0]);
 
                 // encode and send
                 AVERR(avcodec_send_frame(AudioContext, Frame));
                 WriteAudio();
+                av_frame_unref(Frame);
 
                 written += frame;
             }
