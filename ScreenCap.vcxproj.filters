@@ -500,20 +500,20 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="nvencodeapi.lib">
-      <Filter>3rdparty</Filter>
-    </Library>
     <Library Include="avcodec.lib">
-      <Filter>3rdparty</Filter>
+      <Filter>3rdparty\libavcodec</Filter>
     </Library>
     <Library Include="avformat.lib">
-      <Filter>3rdparty</Filter>
+      <Filter>3rdparty\libavformat</Filter>
     </Library>
     <Library Include="avutil.lib">
-      <Filter>3rdparty</Filter>
+      <Filter>3rdparty\libavutil</Filter>
+    </Library>
+    <Library Include="nvencodeapi.lib">
+      <Filter>3rdparty\nvEncodeAPI</Filter>
     </Library>
     <Library Include="swresample.lib">
-      <Filter>3rdparty</Filter>
+      <Filter>3rdparty\libswresample</Filter>
     </Library>
   </ItemGroup>
   <ItemGroup>

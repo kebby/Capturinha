@@ -10,6 +10,7 @@
 #include <atlctrlw.h>
 #include <atltheme.h>
 #include <atlmisc.h>
+#include <atlstr.h>
 
 #include "resource.h"
 #include "system.h"
@@ -56,19 +57,27 @@ static RECT Rect (const RECT &ref, float refAnchorX, float refAnchorY, int width
 //-------------------------------------------------------------------
 //-------------------------------------------------------------------
 
-class SetupForm : public CWindowImpl<SetupForm>
+class SetupForm : public CWindowImpl<SetupForm>, CIdleHandler
 {
 public:
+
+    CaptureConfig lastConfig;
 
     CButton startCapture;
     CComboBox videoOut;
     CButton recordWhenFS;
+    CComboBox rateControl;
+    CStatic rateParamLabel;
+    CEdit rateParam;
+    CComboBox frameLayout;
+    CEdit gopSize;
 
     DECLARE_WND_CLASS("SetupForm");
 
     BEGIN_MSG_MAP(SetupForm)
         MESSAGE_HANDLER(WM_ERASEBKGND, OnEraseBackground)
         COMMAND_ID_HANDLER(BN_CLICKED, OnClick)
+        MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
         //CHAIN_MSG_MAP(CWindowImpl<SetupForm>)
         MESSAGE_HANDLER(WM_CREATE, OnCreate)
     END_MSG_MAP()
@@ -121,30 +130,93 @@ public:
 
         //------------- RecordOnlyFullscreen
         r = Rect(line, aLeft, aTop, 300, line.Height(), aLeft, aTop, labelwidth);
-        Child(recordWhenFS, r, "Only record when fullscreen", WS_TABSTOP | BS_CHECKBOX);
+        Child(recordWhenFS, r, "Only record when fullscreen", WS_TABSTOP | BS_AUTOCHECKBOX);
 
         line.OffsetRect(0, 25);
-
+       
+        //-------------- Codec profile
         CStatic label2;
         r = Rect(line, 0, 0, labelwidth, line.Height(), 0, 0, 0, 4);
         Child(label2, r, "Video codec");
 
-        //-------------- Codec settings
-        Array<String> codecs = { "H.264", "HEVC" };
+        Array<String> codecs = 
+        { 
+            "H.264 Main profile",
+            "H.264 High profile",
+            "H.264 4:4:4 High profile",
+            "H.264 lossless",
+            "HEVC Main profile",
+            "HEVC Main10 profile",
+        };
         r = Rect(line, aLeft, aTop, 300, line.Height(), aLeft, aTop, labelwidth);
         Dropdown(videoCodec, r, codecs);
+        line.OffsetRect(0, 25);
 
-        
+        //--------------- rate control
+        r = Rect(line, 0, 0, labelwidth, line.Height(), 0, 0, 0, 4);
+        CStatic label3;
+        Child(label3, r, "Rate control");
 
-        //CRect rlabel = Rect(line, 0, 0, 100, line.Height());
-        //Child(label, rlabel, "Capture screen");
+        Array<String> rateStrs = { "CBR", "Const QP" };
+        r = Rect(line, aLeft, aTop, 100, line.Height(), aLeft, aTop, labelwidth);
+        Dropdown(rateControl, r, rateStrs );
+
+        r = Rect(line, aLeft, aTop, 80, line.Height(), aLeft, aTop, 240, 4);
+        Child(rateParamLabel, r, "");
+
+        r = Rect(line, aLeft, aTop, 60, line.Height(), aLeft, aTop, 320);       
+        Child(rateParam, r, "", ES_RIGHT | ES_NUMBER | WS_BORDER);
+
+        line.OffsetRect(0, 25);
+
+        //--------------- video options
+        r = Rect(line, 0, 0, labelwidth, line.Height(), 0, 0, 0, 4);
+        CStatic label5;
+        Child(label5, r, "Frame layout");
+
+        Array<String> layoutStrs = { "I only", "I+P", /* "I+B+P", "I+B+B+P" */};
+        r = Rect(line, aLeft, aTop, 100, line.Height(), aLeft, aTop, labelwidth);
+        Dropdown(frameLayout, r, layoutStrs);
+        frameLayout.SetCurSel(1);
+
+        r = Rect(line, aLeft, aTop, 80, line.Height(), aLeft, aTop, 240, 4);
+        CStatic label4;
+        Child(label4, r, "GOP length");
+
+        r = Rect(line, aLeft, aTop, 60, line.Height(), aLeft, aTop, 320);
+        Child(gopSize, r, "", ES_RIGHT | ES_NUMBER | WS_BORDER);
+
+        line.OffsetRect(0, 25);
+
+
+        //--------------- lol
 
         r = Rect(cr, aRight, aBottom, 130, 25, aRight, aBottom);
         startCapture.Create(m_hWnd, r, "Start", WS_TABSTOP | WS_CHILD | WS_VISIBLE, ID_BUTTON);
         startCapture.SetFont(font);
 
+        lastConfig = Config;
+        SetControls(true);
+
+        CMessageLoop* pLoop = _Module.GetMessageLoop();
+        ATLASSERT(pLoop != NULL);
+        //pLoop->AddMessageFilter(this);
+        pLoop->AddIdleHandler(this);
 
         return 0;
+    }
+
+
+    LRESULT OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
+    {
+        CMessageLoop* pLoop = _Module.GetMessageLoop();
+        ATLASSERT(pLoop != NULL);
+        //pLoop->RemoveMessageFilter(this);
+        pLoop->RemoveIdleHandler(this);
+
+        SendMessage(GetParent(), WM_SETCAPTURE, 0, 0);
+        bHandled = FALSE;
+        return 1;
     }
 
     //LRESULT OnClick(WPARAM wParam, LPNMHDR nmhdr, BOOL& bHandled)
@@ -153,17 +225,95 @@ public:
     {
         if (hwnd == startCapture)
         {
-            Config.OutputIndex = videoOut.GetCurSel();
-            Config.RecordOnlyFullscreen = !!recordWhenFS.GetCheck();
-            Config.CodecCfg.Codec = (CaptureConfig::VideoCodec)videoCodec.GetCurSel();
             SendMessage(GetParent(), WM_SETCAPTURE, 1, 0);
             return 1;
         }
-        if (hwnd == recordWhenFS) recordWhenFS.SetCheck(recordWhenFS.GetCheck() ? 0 : 1);
 
         return 0;
     }
 
+
+    // Inherited via CIdleHandler
+    virtual BOOL OnIdle() override
+    {
+        Config.OutputIndex = videoOut.GetCurSel();
+        Config.RecordOnlyFullscreen = !!recordWhenFS.GetCheck();
+        Config.CodecCfg.Profile = (CaptureConfig::CodecProfile)videoCodec.GetCurSel();
+        Config.CodecCfg.UseBitrateControl = (CaptureConfig::BitrateControl)rateControl.GetCurSel();
+        Config.CodecCfg.FrameCfg = (CaptureConfig::FrameConfig)frameLayout.GetCurSel();
+
+        char rp[10];
+        rateParam.GetWindowTextA(rp, 10);
+        int rpi = atoi(rp);
+        switch (Config.CodecCfg.UseBitrateControl)
+        {
+        case CaptureConfig::BitrateControl::CBR:
+            Config.CodecCfg.BitrateParameter = Clamp(rpi, 200, 500000);
+            break;
+        case CaptureConfig::BitrateControl::CONSTQP:
+            Config.CodecCfg.BitrateParameter = Clamp(rpi, 1, 52);
+            break;
+        }
+
+        gopSize.GetWindowTextA(rp, 10);
+        rpi = atoi(rp);
+        Config.CodecCfg.GopSize = Clamp(rpi, 1, 10000);
+        if (Config.CodecCfg.FrameCfg == CaptureConfig::FrameConfig::I)
+            Config.CodecCfg.GopSize = 1;
+
+        SetControls(false);
+
+        return 0;
+    }
+
+    void SetControls(bool force)
+    {
+        if (force || lastConfig.CodecCfg.Profile != Config.CodecCfg.Profile)
+        {
+            if (Config.CodecCfg.Profile == CaptureConfig::CodecProfile::H264_LOSSLESS)
+            {
+                rateControl.EnableWindow(false);
+                rateParam.EnableWindow(false);
+                Config.CodecCfg.UseBitrateControl = CaptureConfig::BitrateControl::CONSTQP;
+                Config.CodecCfg.BitrateParameter = 1;
+            }
+            else
+            {
+                rateControl.EnableWindow(true);
+                rateParam.EnableWindow(true);
+            }
+        }
+
+        if (force || lastConfig.CodecCfg.UseBitrateControl != Config.CodecCfg.UseBitrateControl)
+        {
+            if (Config.CodecCfg.UseBitrateControl == CaptureConfig::BitrateControl::CBR)
+            {
+                rateParamLabel.SetWindowTextA("Bit rate (kbits/s)");
+                if (lastConfig.CodecCfg.UseBitrateControl != Config.CodecCfg.UseBitrateControl)
+                    Config.CodecCfg.BitrateParameter = 20000;
+            }
+            else if (Config.CodecCfg.UseBitrateControl == CaptureConfig::BitrateControl::CONSTQP)
+            {
+                rateParamLabel.SetWindowTextA("Constant QP");
+                if (lastConfig.CodecCfg.UseBitrateControl != Config.CodecCfg.UseBitrateControl)
+                    Config.CodecCfg.BitrateParameter = 20;
+            }
+            rateParam.SetWindowTextA(String::PrintF("%d", Config.CodecCfg.BitrateParameter));
+        }
+
+        if (force)
+        {
+            frameLayout.SetCurSel((int)Config.CodecCfg.FrameCfg);
+            gopSize.SetWindowTextA(String::PrintF("%d", Config.CodecCfg.GopSize));
+        }
+
+        if (force || lastConfig.CodecCfg.FrameCfg != Config.CodecCfg.FrameCfg)
+        {
+            gopSize.EnableWindow(Config.CodecCfg.FrameCfg != CaptureConfig::FrameConfig::I);
+        }
+
+        lastConfig = Config;
+    }
 
     LRESULT OnEraseBackground(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& bHandled)
     {
@@ -403,7 +553,7 @@ int Run(LPTSTR /*lpstrCmdLine*/ = NULL, int nCmdShow = SW_SHOWDEFAULT)
 
     MainFrame wndMain;
 
-    RECT winRect = { .left = CW_USEDEFAULT , .top = CW_USEDEFAULT, .right = CW_USEDEFAULT+420, .bottom = CW_USEDEFAULT+200 };
+    RECT winRect = { .left = CW_USEDEFAULT , .top = CW_USEDEFAULT, .right = CW_USEDEFAULT+420, .bottom = CW_USEDEFAULT+300 };
     if (wndMain.CreateEx(0, &winRect, WS_DLGFRAME|WS_SYSMENU|WS_MINIMIZEBOX) == NULL)
     {
         ATLTRACE(_T("Main window creation failed!\n"));

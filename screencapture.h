@@ -4,19 +4,27 @@
 
 struct CaptureConfig
 {
-    enum class VideoCodec { H264, HEVC, };
+    enum class CodecProfile
+    {
+        H264_MAIN,
+        H264_HIGH,
+        H264_HIGH_444,
+        H264_LOSSLESS,
+        HEVC_MAIN,
+        HEVC_MAIN10,
+    };
     enum class BitrateControl { CBR, CONSTQP, };
     enum class Container { Avi, Mp4, Mov, Mkv };
     enum class AudioCodec { PCM_S16, PCM_F32, MP3, AAC };
-    enum class FrameConfig { I, IP, IBP, IBBP,};
+    enum class FrameConfig { I, IP, /* IBP, IBBP, */ };
 
     struct VideoCodecConfig
     {
-        VideoCodec Codec = VideoCodec::H264;
+        CodecProfile Profile;
         // ... something something profile? (8 vs 10 bits, 4:4:4 vs 4:2:2, perf vs quality)
-        
+
         BitrateControl UseBitrateControl = BitrateControl::CONSTQP;
-        int BitrateParameter = 18; // bit rate or qf
+        int BitrateParameter = 18; // bitrate in kbits/s or qp
         FrameConfig FrameCfg = FrameConfig::IP;
         int GopSize = 60; // 0: auto
     };
@@ -57,4 +65,4 @@ public:
 };
 
 // run a screen capture instance
-IScreenCapture* CreateScreenCapture(const CaptureConfig &config);
+IScreenCapture* CreateScreenCapture(const CaptureConfig& config);

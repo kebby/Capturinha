@@ -12,6 +12,7 @@
 #include <cuda.h>
 #include <cudaD3D11.h>
 
+#pragma warning (disable: 4996)
 
 static bool Inited = false;
 static NV_ENCODE_API_FUNCTION_LIST API = {};
@@ -23,6 +24,24 @@ static NV_ENCODE_API_FUNCTION_LIST API = {};
 #define CUDAERR(x) { auto _ret = (x);  if(_ret != CUDA_SUCCESS) { const char *err; cuGetErrorString(x, &err); Fatal("%s(%d): CUDA call failed (%08x)",__FILE__,__LINE__,_ret); } }
 #define NVERR(x) { auto _ret=(x);  if(_ret != NV_ENC_SUCCESS) Fatal("%s(%d): NVENC call failed (%08x)",__FILE__,__LINE__,_ret); }
 #endif
+
+
+struct ProfileDef
+{
+    GUID encodeGuid, presetGuid, profileGuid;
+};
+
+
+static ProfileDef Profiles[] =
+{
+    { NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_H264_PROFILE_MAIN_GUID },
+    { NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_H264_PROFILE_HIGH_GUID },
+    { NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_H264_PROFILE_HIGH_444_GUID },
+    { NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_LOSSLESS_DEFAULT_GUID, NV_ENC_H264_PROFILE_HIGH_444_GUID },
+    { NV_ENC_CODEC_HEVC_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_HEVC_PROFILE_MAIN_GUID },
+    { NV_ENC_CODEC_HEVC_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_HEVC_PROFILE_MAIN10_GUID },
+};
+
 
 class Encode_NVENC : public IEncode
 {
@@ -266,22 +285,28 @@ public:
         CUDAERR(cuGraphicsD3D11RegisterResource(&TexResource, (ID3D11Texture2D*)RT->GetTex2D(), CU_GRAPHICS_REGISTER_FLAGS_NONE));
         CUDAERR(cuGraphicsResourceSetMapFlags(TexResource, CU_GRAPHICS_MAP_RESOURCE_FLAGS_READ_ONLY));
 
-        static const GUID codecGuids[] = { NV_ENC_CODEC_H264_GUID, NV_ENC_CODEC_HEVC_GUID };
-
-        GUID encodeGuid = codecGuids[(int)Config.Codec];
-
-        uint codecGuidCount;
-        NVERR(API.nvEncGetEncodeGUIDCount(Encoder, &codecGuidCount));
+        const ProfileDef profile = Profiles[(int)Config.Profile];
 
         GUID guids[50];
+        uint codecGuidCount;
+        NVERR(API.nvEncGetEncodeGUIDCount(Encoder, &codecGuidCount));
         NVERR(API.nvEncGetEncodeGUIDs(Encoder, guids, codecGuidCount, &codecGuidCount));
         // TODO: check if our encodeGuid is in there
 
         uint presetGuidCount;
-        NVERR(API.nvEncGetEncodePresetCount(Encoder, encodeGuid, &presetGuidCount));       
-        NVERR(API.nvEncGetEncodePresetGUIDs(Encoder, encodeGuid, guids, 50, &presetGuidCount));
-        // TODO: select proper preset
-        GUID presetGuid = guids[0];
+        NVERR(API.nvEncGetEncodePresetCount(Encoder, profile.encodeGuid, &presetGuidCount));       
+        NVERR(API.nvEncGetEncodePresetGUIDs(Encoder, profile.encodeGuid, guids, 50, &presetGuidCount));
+
+        bool found = false;
+        for (uint i = 0; i < presetGuidCount; i++)
+        {
+            if (guids[i] == profile.presetGuid)
+            {
+                found = true;
+                break;
+            }
+        }
+        GUID presetGuid = found ? profile.presetGuid : guids[0];
       
         // get preset config
         NV_ENC_PRESET_CONFIG presetConfig = 
@@ -289,30 +314,40 @@ public:
             .version = NV_ENC_PRESET_CONFIG_VER,
         };
 
-        auto& config = presetConfig.presetCfg;
-        config.version = NV_ENC_CONFIG_VER;
-        NVERR(API.nvEncGetEncodePresetConfig(Encoder, encodeGuid, presetGuid, &presetConfig));
+        auto& enccfg = presetConfig.presetCfg;
+        enccfg.version = NV_ENC_CONFIG_VER;
+        NVERR(API.nvEncGetEncodePresetConfig(Encoder, profile.encodeGuid, presetGuid, &presetConfig));
 
         // configure
-        config.frameIntervalP = (int)Config.FrameCfg;
-        config.encodeCodecConfig.h264Config.idrPeriod = config.gopLength = Clamp(Config.GopSize, 1, 1000);
+        enccfg.profileGUID = profile.profileGuid;
+        enccfg.frameIntervalP = (int)Config.FrameCfg;
+        enccfg.encodeCodecConfig.h264Config.idrPeriod = enccfg.gopLength = Clamp(Config.GopSize, 1, 1000);
         switch (Config.UseBitrateControl)
         {
         case CaptureConfig::BitrateControl::CONSTQP:
-            config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP;
-            config.rcParams.constQP.qpIntra = config.rcParams.constQP.qpInterB = config.rcParams.constQP.qpInterP = Clamp(Config.BitrateParameter, 2, 50);
+            enccfg.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP;
+            enccfg.rcParams.constQP.qpIntra = enccfg.rcParams.constQP.qpInterB = enccfg.rcParams.constQP.qpInterP = Clamp(Config.BitrateParameter, 1, 52);
             break;
         case CaptureConfig::BitrateControl::CBR:
-            config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CBR_HQ;
-            config.rcParams.averageBitRate = Min(Config.BitrateParameter, 500 * 1000 * 1000);
+            enccfg.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CBR_HQ;
+            enccfg.rcParams.averageBitRate = Min(Config.BitrateParameter * 1000, 500 * 1000 * 1000);
             break;
         }
 
+        if (profile.encodeGuid == NV_ENC_CODEC_HEVC_GUID)
+        {
+            enccfg.encodeCodecConfig.hevcConfig.idrPeriod = enccfg.gopLength;
+        }
+        else
+        {
+            enccfg.encodeCodecConfig.h264Config.idrPeriod = enccfg.gopLength;           
+        }
+       
         // initialize encoder
         NV_ENC_INITIALIZE_PARAMS params =
         {
             .version = NV_ENC_INITIALIZE_PARAMS_VER,
-            .encodeGUID = encodeGuid,
+            .encodeGUID = profile.encodeGuid,
             .presetGUID = presetGuid,
             .encodeWidth = SizeX,
             .encodeHeight = SizeY,
@@ -322,8 +357,21 @@ public:
             .frameRateDen = rateDen,
             .enableEncodeAsync = 1,
             .enablePTD = 1,
-            .encodeConfig = &config,
+            .encodeConfig = &enccfg,
         };
+
+        switch (Config.Profile)
+        {
+        case CaptureConfig::CodecProfile::H264_LOSSLESS:
+            enccfg.encodeCodecConfig.h264Config.qpPrimeYZeroTransformBypassFlag = 1;
+            enccfg.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP;
+            enccfg.rcParams.constQP.qpIntra = enccfg.rcParams.constQP.qpInterB = enccfg.rcParams.constQP.qpInterP = 0;
+            //params.tuningInfo = NV_ENC_TUNING_INFO_LOSSLESS;
+        case CaptureConfig::CodecProfile::H264_HIGH_444:
+            //enccfg.encodeCodecConfig.h264Config.separateColourPlaneFlag = 1;
+            break;
+        }
+     
 
         NVERR(API.nvEncInitializeEncoder(Encoder, &params));
 
