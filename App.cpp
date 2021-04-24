@@ -244,8 +244,11 @@ public:
         CStatic label9;
         Child(label9, r, "Output folder");
 
-        r = Rect(line, aLeft, aTop, 300, line.Height(), aLeft, aTop, labelwidth);
+        r = Rect(line, aLeft, aTop, 265, line.Height(), aLeft, aTop, labelwidth);
         Child(directory, r, "c:\\temp", ES_LEFT | WS_BORDER);
+
+        r = Rect(line, aLeft, aTop, 30, line.Height(), aLeft, aTop, 350);
+        Child(dirButton, r, "...", BS_PUSHBUTTON);
 
         line.OffsetRect(0, 25);
 
@@ -310,6 +313,16 @@ public:
         {
             SendMessage(GetParent(), WM_SETCAPTURE, 1, 0);
             return 1;
+        }
+        if (hwnd == dirButton)
+        {
+            CFolderDialog dlg(m_hWnd, "Select the capture destination folder");
+            dlg.SetInitialFolder("c:\\temp", true);
+            if (dlg.DoModal(m_hWnd) == IDOK)
+            {
+                directory.SetWindowTextA(dlg.GetFolderPath());
+            }
+
         }
 
         return 0;
