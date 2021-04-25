@@ -114,9 +114,6 @@
     <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlwinx.h">
       <Filter>3rdparty\WTL</Filter>
     </ClInclude>
-    <ClInclude Include="App.h">
-      <Filter>UI</Filter>
-    </ClInclude>
     <ClInclude Include="resource.h" />
     <ClInclude Include="libavcodec\ac3_parser.h">
       <Filter>3rdparty\libavcodec</Filter>

@@ -21,7 +21,6 @@
     <ClCompile Include="types.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="App.h" />
     <ClInclude Include="audiocapture.h" />
     <ClInclude Include="encode.h" />
     <ClInclude Include="graphics.h" />

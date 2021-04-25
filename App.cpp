@@ -1,5 +1,3 @@
-#include "App.h"
-
 #include <windows.h>
 
 #include <atlbase.h>
@@ -652,7 +650,7 @@ int Run(LPTSTR /*lpstrCmdLine*/ = NULL, int nCmdShow = SW_SHOWDEFAULT)
     {
         String json = ReadFileUTF8("config.json");
         Array<String> errors;
-        if (!Json::Deserialize(json, Config, errors))
+        if (json.Length()>0 && !Json::Deserialize(json, Config, errors))
         {
             String allerrors = String::Join(errors, "\n");
             Fatal(String("Could not read config.json: \n\n") + allerrors);
