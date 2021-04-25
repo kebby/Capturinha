@@ -188,6 +188,11 @@ void Fatal(const char* format, ...)
     Dbg("\n");
     DbgCloseLog();
 
+#ifdef _DEBUG
+    if (IsDebuggerPresent())
+        DebugBreak();
+#endif
+
     MessageBox(hWnd, DbgBuffer, "Train Engine", MB_OK | MB_ICONERROR);
     ExitProcess(1);
 }

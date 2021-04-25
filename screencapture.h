@@ -19,11 +19,11 @@ enum class AudioCodec { PCM_S16, PCM_F32, MP3, AAC };
 enum class FrameConfig { I, IP, /* IBP, IBBP, */ };
 
 
-JSON_DEFINE_ENUM(CodecProfile, ("H264_MAIN", "H264_HIGH", "H264_HIGH_444", "H264_LOSSLESS", "HEVC_MAIN", "HEVC_MAIN10" ))
-JSON_DEFINE_ENUM(BitrateControl, ("CBR", "CONSTQP"))
-JSON_DEFINE_ENUM(Container, ("Avi", "Mp4", "Mov", "Mkv"))
-JSON_DEFINE_ENUM(AudioCodec, ("PCM_S16", "PCM_F32", "MP3", "AAC"))
-JSON_DEFINE_ENUM(FrameConfig, ("I", "IP"/* ,"IBP", "IBBP", */))
+JSON_DEFINE_ENUM(CodecProfile,   ("h264_main", "h264_high", "h264_high_444", "h264_lossless", "hevc_main", "hevc_main10" ))
+JSON_DEFINE_ENUM(BitrateControl, ("cbr", "constqp"))
+JSON_DEFINE_ENUM(Container,      ("avi", "mp4", "mov", "mkv"))
+JSON_DEFINE_ENUM(AudioCodec,     ("pcm_s16", "pcm_f32", "mp3", "aac"))
+JSON_DEFINE_ENUM(FrameConfig,    ("i", "ip"/* ,"ibp", "ibbp", */))
 
 
 struct VideoCodecConfig
@@ -32,9 +32,9 @@ struct VideoCodecConfig
     // ... something something profile? (8 vs 10 bits, 4:4:4 vs 4:2:2, perf vs quality)
 
     BitrateControl UseBitrateControl = BitrateControl::CONSTQP;
-    int BitrateParameter = 18; // bitrate in kbits/s or qp
+    uint BitrateParameter = 18; // bitrate in kbits/s or qp
     FrameConfig FrameCfg = FrameConfig::IP;
-    int GopSize = 60; // 0: auto
+    uint GopSize = 60; // 0: auto
 
     JSON_BEGIN(VideoCodecConfig);
         JSON_ENUM(Profile);
@@ -45,30 +45,31 @@ struct VideoCodecConfig
     JSON_END();
 
 };
+
 struct CaptureConfig
 {   
     // general
     String Directory;
     String NamePrefix;
     Container UseContainer = Container::Mp4;
-    bool blinkScrollLock = true;
+    bool BlinkScrollLock = true;
 
     // video settings
-    int OutputIndex = 0; // 0: default
+    uint OutputIndex = 0; // 0: default
     VideoCodecConfig CodecCfg;
     bool RecordOnlyFullscreen = true;
 
     // audio settings
     bool CaptureAudio = true;
-    int AudioOutputIndex = 0; // 0: default
+    uint AudioOutputIndex = 0; // 0: default
     AudioCodec UseAudioCodec = AudioCodec::AAC;
-    int AudioBitrate = 320000; // not for PCM
+    uint AudioBitrate = 320; // not for PCM
 
     JSON_BEGIN(VideoCodecConfig)
         JSON_VALUE(Directory)
         JSON_VALUE(NamePrefix)
         JSON_ENUM(UseContainer)
-        JSON_VALUE(blinkScrollLock)
+        JSON_VALUE(BlinkScrollLock)
         JSON_VALUE(OutputIndex)
         JSON_VALUE(CodecCfg)
         JSON_VALUE(RecordOnlyFullscreen)

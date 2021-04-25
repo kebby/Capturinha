@@ -62,7 +62,7 @@ class ScreenCapture : public IScreenCapture
         double vTimeSent = 0;
         double aTimeSent = 0;
         bool scrlOn = true;
-        if (Config.blinkScrollLock)
+        if (Config.BlinkScrollLock)
             SetScrollLock(true);
 
         while (thread.IsRunning())
@@ -98,7 +98,7 @@ class ScreenCapture : public IScreenCapture
                     Stats.AVSkew += 0.03 * (aTimeSent - vTimeSent - Stats.AVSkew);
                 }
 
-                if (Config.blinkScrollLock)
+                if (Config.BlinkScrollLock)
                 {
                     bool blink = fmod(2 * GetTime(), 1) < 0.5f;
                     if (blink != scrlOn)
@@ -110,7 +110,7 @@ class ScreenCapture : public IScreenCapture
             }        
         }
 
-        if (Config.blinkScrollLock && scrlOn)
+        if (Config.BlinkScrollLock && scrlOn)
             SetScrollLock(false);
 
         delete output;

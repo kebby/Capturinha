@@ -123,6 +123,7 @@ private:
                 const_cast<T&>(def.ref) = (T)i;
                 return;
             }
+        scan.Error(String::PrintF("Unknown value %s (expected: %s)", (const char*)value, (const char*)String::Join(strs, ", ")));
     }
 
     template<class T> static void Read(Scanner& scan, Array<T>& array)
@@ -229,7 +230,7 @@ private:
                 case '\r': addChar('\\'); addChar('r'); break;
                 case '\n': addChar('\\'); addChar('n'); break;
                 case '\t': addChar('\\'); addChar('t'); break;
-                default: addChar(*value); break;
+                default: if ((uint)*value >= ' ') addChar(*value); break;
                 }
                 value++;
             }

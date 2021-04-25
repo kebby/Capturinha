@@ -321,16 +321,15 @@ public:
         // configure
         enccfg.profileGUID = profile.profileGuid;
         enccfg.frameIntervalP = (int)Config.FrameCfg;
-        enccfg.encodeCodecConfig.h264Config.idrPeriod = enccfg.gopLength = Clamp(Config.GopSize, 1, 1000);
         switch (Config.UseBitrateControl)
         {
         case BitrateControl::CONSTQP:
             enccfg.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP;
-            enccfg.rcParams.constQP.qpIntra = enccfg.rcParams.constQP.qpInterB = enccfg.rcParams.constQP.qpInterP = Clamp(Config.BitrateParameter, 1, 52);
+            enccfg.rcParams.constQP.qpIntra = enccfg.rcParams.constQP.qpInterB = enccfg.rcParams.constQP.qpInterP = Clamp(Config.BitrateParameter, 1u, 52u);
             break;
         case BitrateControl::CBR:
             enccfg.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CBR_HQ;
-            enccfg.rcParams.averageBitRate = Min(Config.BitrateParameter * 1000, 500 * 1000 * 1000);
+            enccfg.rcParams.averageBitRate = Min(Config.BitrateParameter * 1000, 500u * 1000 * 1000);
             break;
         }
 

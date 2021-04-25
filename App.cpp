@@ -280,7 +280,7 @@ public:
         startCapture.SetFont(font);
 
         lastConfig = Config;
-        SetControls(true);
+        ConfigToControls(true);
 
         CMessageLoop* pLoop = _Module.GetMessageLoop();
         ATLASSERT(pLoop != NULL);
@@ -327,9 +327,21 @@ public:
         return 0;
     }
 
+    static int GetInt(const CWindow& wnd)
+    {
+        char rp[10];
+        wnd.GetWindowTextA(rp, 10);
+        return atoi(rp);
+    }
 
-    // Inherited via CIdleHandler
-    virtual BOOL OnIdle() override
+    static String GetString(const CWindow& wnd)
+    {
+        char buffer[1024];
+        wnd.GetWindowTextA(buffer, 1024);
+        return buffer;
+    }
+
+    void ConfigFromControls()
     {
         Config.OutputIndex = videoOut.GetCurSel();
         Config.RecordOnlyFullscreen = !!recordWhenFS.GetCheck();
@@ -337,9 +349,7 @@ public:
         Config.CodecCfg.UseBitrateControl = (BitrateControl)rateControl.GetCurSel();
         Config.CodecCfg.FrameCfg = (FrameConfig)frameLayout.GetCurSel();
 
-        char rp[10];
-        rateParam.GetWindowTextA(rp, 10);
-        int rpi = atoi(rp);
+        int rpi = GetInt(rateParam);
         switch (Config.CodecCfg.UseBitrateControl)
         {
         case BitrateControl::CBR:
@@ -350,19 +360,53 @@ public:
             break;
         }
 
-        gopSize.GetWindowTextA(rp, 10);
-        rpi = atoi(rp);
-        Config.CodecCfg.GopSize = Clamp(rpi, 1, 10000);
+        Config.CodecCfg.GopSize = Clamp(GetInt(gopSize), 1, 10000);
         if (Config.CodecCfg.FrameCfg == FrameConfig::I)
             Config.CodecCfg.GopSize = 1;
 
-        SetControls(false);
+        Config.CaptureAudio = !!captureAudio.GetCheck();
+        Config.AudioOutputIndex = audioOut.GetCurSel();
+        Config.UseAudioCodec = (AudioCodec)audioCodec.GetCurSel();
+        Config.AudioBitrate = Clamp(GetInt(audioRate), 32, 320);
 
+        Config.Directory = GetString(directory);
+        Config.NamePrefix = GetString(prefix);
+        Config.UseContainer = (Container)container.GetCurSel();
+        Config.BlinkScrollLock = !!blinkScrlLock.GetCheck();
+    }
+
+    // Inherited via CIdleHandler
+    virtual BOOL OnIdle() override
+    {
+        ConfigFromControls();
+        ConfigToControls(false);
         return 0;
     }
 
-    void SetControls(bool force)
+    void ConfigToControls(bool force)
     {
+        // set control states from config
+        if (force)
+        {
+            videoOut.SetCurSel(Config.OutputIndex);
+            recordWhenFS.SetCheck(Config.RecordOnlyFullscreen);
+            videoCodec.SetCurSel((int)Config.CodecCfg.Profile);
+            rateControl.SetCurSel((int)Config.CodecCfg.UseBitrateControl);
+            rateParam.SetWindowTextA(String::PrintF("%d", Config.CodecCfg.BitrateParameter));
+            frameLayout.SetCurSel((int)Config.CodecCfg.FrameCfg);
+            gopSize.SetWindowTextA(String::PrintF("%d", Config.CodecCfg.GopSize));
+            captureAudio.SetCheck(Config.CaptureAudio);
+            audioOut.SetCurSel(Config.AudioOutputIndex);
+            audioCodec.SetCurSel((int)Config.UseAudioCodec);
+            audioRate.SetWindowTextA(String::PrintF("%d", Config.AudioBitrate));
+            directory.SetWindowTextA(Config.Directory);
+            prefix.SetWindowTextA(Config.NamePrefix);
+            container.SetCurSel((int)Config.UseContainer);
+            blinkScrlLock.SetCheck(Config.BlinkScrollLock);
+        }
+
+        // enable/disable options etc
+
         if (force || lastConfig.CodecCfg.Profile != Config.CodecCfg.Profile)
         {
             if (Config.CodecCfg.Profile == CodecProfile::H264_LOSSLESS)
@@ -396,15 +440,21 @@ public:
             rateParam.SetWindowTextA(String::PrintF("%d", Config.CodecCfg.BitrateParameter));
         }
 
-        if (force)
-        {
-            frameLayout.SetCurSel((int)Config.CodecCfg.FrameCfg);
-            gopSize.SetWindowTextA(String::PrintF("%d", Config.CodecCfg.GopSize));
-        }
-
+       
         if (force || lastConfig.CodecCfg.FrameCfg != Config.CodecCfg.FrameCfg)
         {
             gopSize.EnableWindow(Config.CodecCfg.FrameCfg != FrameConfig::I);
+        }
+
+        if (force || lastConfig.CaptureAudio != Config.CaptureAudio)
+        {
+            audioOut.EnableWindow(Config.CaptureAudio);
+            audioCodec.EnableWindow(Config.CaptureAudio);
+        }
+
+        if (force || lastConfig.UseAudioCodec != Config.UseAudioCodec || lastConfig.CaptureAudio != Config.CaptureAudio)
+        {
+            audioRate.EnableWindow(Config.CaptureAudio && Config.UseAudioCodec >= AudioCodec::MP3);
         }
 
         lastConfig = Config;
