@@ -334,19 +334,19 @@ public:
     {
         Config.OutputIndex = videoOut.GetCurSel();
         Config.RecordOnlyFullscreen = !!recordWhenFS.GetCheck();
-        Config.CodecCfg.Profile = (CaptureConfig::CodecProfile)videoCodec.GetCurSel();
-        Config.CodecCfg.UseBitrateControl = (CaptureConfig::BitrateControl)rateControl.GetCurSel();
-        Config.CodecCfg.FrameCfg = (CaptureConfig::FrameConfig)frameLayout.GetCurSel();
+        Config.CodecCfg.Profile = (CodecProfile)videoCodec.GetCurSel();
+        Config.CodecCfg.UseBitrateControl = (BitrateControl)rateControl.GetCurSel();
+        Config.CodecCfg.FrameCfg = (FrameConfig)frameLayout.GetCurSel();
 
         char rp[10];
         rateParam.GetWindowTextA(rp, 10);
         int rpi = atoi(rp);
         switch (Config.CodecCfg.UseBitrateControl)
         {
-        case CaptureConfig::BitrateControl::CBR:
+        case BitrateControl::CBR:
             Config.CodecCfg.BitrateParameter = Clamp(rpi, 200, 500000);
             break;
-        case CaptureConfig::BitrateControl::CONSTQP:
+        case BitrateControl::CONSTQP:
             Config.CodecCfg.BitrateParameter = Clamp(rpi, 1, 52);
             break;
         }
@@ -354,7 +354,7 @@ public:
         gopSize.GetWindowTextA(rp, 10);
         rpi = atoi(rp);
         Config.CodecCfg.GopSize = Clamp(rpi, 1, 10000);
-        if (Config.CodecCfg.FrameCfg == CaptureConfig::FrameConfig::I)
+        if (Config.CodecCfg.FrameCfg == FrameConfig::I)
             Config.CodecCfg.GopSize = 1;
 
         SetControls(false);
@@ -366,11 +366,11 @@ public:
     {
         if (force || lastConfig.CodecCfg.Profile != Config.CodecCfg.Profile)
         {
-            if (Config.CodecCfg.Profile == CaptureConfig::CodecProfile::H264_LOSSLESS)
+            if (Config.CodecCfg.Profile == CodecProfile::H264_LOSSLESS)
             {
                 rateControl.EnableWindow(false);
                 rateParam.EnableWindow(false);
-                Config.CodecCfg.UseBitrateControl = CaptureConfig::BitrateControl::CONSTQP;
+                Config.CodecCfg.UseBitrateControl = BitrateControl::CONSTQP;
                 Config.CodecCfg.BitrateParameter = 1;
             }
             else
@@ -382,13 +382,13 @@ public:
 
         if (force || lastConfig.CodecCfg.UseBitrateControl != Config.CodecCfg.UseBitrateControl)
         {
-            if (Config.CodecCfg.UseBitrateControl == CaptureConfig::BitrateControl::CBR)
+            if (Config.CodecCfg.UseBitrateControl == BitrateControl::CBR)
             {
                 rateParamLabel.SetWindowTextA("Bit rate (kbits/s)");
                 if (lastConfig.CodecCfg.UseBitrateControl != Config.CodecCfg.UseBitrateControl)
                     Config.CodecCfg.BitrateParameter = 20000;
             }
-            else if (Config.CodecCfg.UseBitrateControl == CaptureConfig::BitrateControl::CONSTQP)
+            else if (Config.CodecCfg.UseBitrateControl == BitrateControl::CONSTQP)
             {
                 rateParamLabel.SetWindowTextA("Constant QP");
                 if (lastConfig.CodecCfg.UseBitrateControl != Config.CodecCfg.UseBitrateControl)
@@ -405,7 +405,7 @@ public:
 
         if (force || lastConfig.CodecCfg.FrameCfg != Config.CodecCfg.FrameCfg)
         {
-            gopSize.EnableWindow(Config.CodecCfg.FrameCfg != CaptureConfig::FrameConfig::I);
+            gopSize.EnableWindow(Config.CodecCfg.FrameCfg != FrameConfig::I);
         }
 
         lastConfig = Config;
@@ -643,7 +643,7 @@ struct DlgMessageFiler : CMessageFilter
 };
 
 int Run(LPTSTR /*lpstrCmdLine*/ = NULL, int nCmdShow = SW_SHOWDEFAULT)
-{
+{  
     CMessageLoop theLoop;
     _Module.AddMessageLoop(&theLoop);
 

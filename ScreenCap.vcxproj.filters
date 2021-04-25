@@ -466,6 +466,9 @@
     <ClInclude Include="libswresample\version.h">
       <Filter>3rdparty\libswresample</Filter>
     </ClInclude>
+    <ClInclude Include="json.h">
+      <Filter>base</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="base">

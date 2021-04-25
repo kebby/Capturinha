@@ -54,7 +54,7 @@ struct Stream
     virtual RCPtr<Buffer> Map() { return RCPtr<Buffer>(); }
 };
 
-enum OpenFileMode
+enum class OpenFileMode
 {
     Read,
     Create,

@@ -25,6 +25,7 @@
     <ClInclude Include="audiocapture.h" />
     <ClInclude Include="encode.h" />
     <ClInclude Include="graphics.h" />
+    <ClInclude Include="json.h" />
     <ClInclude Include="libavcodec\ac3_parser.h" />
     <ClInclude Include="libavcodec\adts_parser.h" />
     <ClInclude Include="libavcodec\avcodec.h" />

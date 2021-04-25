@@ -57,8 +57,8 @@ private:
 
         auto codecpar = VideoStream->codecpar;
         codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
-        codecpar->codec_id = Para.CConfig->CodecCfg.Profile >= CaptureConfig::CodecProfile::HEVC_MAIN ? AV_CODEC_ID_HEVC : AV_CODEC_ID_H264;
-        codecpar->bit_rate = Para.CConfig->CodecCfg.UseBitrateControl == CaptureConfig::BitrateControl::CBR ? Para.CConfig->CodecCfg.BitrateParameter * 1000 : 0;
+        codecpar->codec_id = Para.CConfig->CodecCfg.Profile >= CodecProfile::HEVC_MAIN ? AV_CODEC_ID_HEVC : AV_CODEC_ID_H264;
+        codecpar->bit_rate = Para.CConfig->CodecCfg.UseBitrateControl == BitrateControl::CBR ? Para.CConfig->CodecCfg.BitrateParameter * 1000 : 0;
         codecpar->width = Para.SizeX;
         codecpar->height = Para.SizeY;
         codecpar->bits_per_coded_sample = 24;

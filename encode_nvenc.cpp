@@ -61,7 +61,7 @@ class Encode_NVENC : public IEncode
         NV_ENC_OUTPUT_PTR buffer = nullptr;
     };
 
-    const CaptureConfig::VideoCodecConfig &Config;
+    const VideoCodecConfig &Config;
 
     Queue<Frame*, 32> FreeFrames;
     Queue<OutBuffer*, 32> FreeBuffers;
@@ -213,7 +213,7 @@ class Encode_NVENC : public IEncode
 
 public:
 
-    Encode_NVENC(const CaptureConfig::VideoCodecConfig &cfg) : Config(cfg)
+    Encode_NVENC(const VideoCodecConfig &cfg) : Config(cfg)
     {
         // init cuda/nvenc api on first run
         if (!Inited)
@@ -324,11 +324,11 @@ public:
         enccfg.encodeCodecConfig.h264Config.idrPeriod = enccfg.gopLength = Clamp(Config.GopSize, 1, 1000);
         switch (Config.UseBitrateControl)
         {
-        case CaptureConfig::BitrateControl::CONSTQP:
+        case BitrateControl::CONSTQP:
             enccfg.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP;
             enccfg.rcParams.constQP.qpIntra = enccfg.rcParams.constQP.qpInterB = enccfg.rcParams.constQP.qpInterP = Clamp(Config.BitrateParameter, 1, 52);
             break;
-        case CaptureConfig::BitrateControl::CBR:
+        case BitrateControl::CBR:
             enccfg.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CBR_HQ;
             enccfg.rcParams.averageBitRate = Min(Config.BitrateParameter * 1000, 500 * 1000 * 1000);
             break;
@@ -362,12 +362,12 @@ public:
 
         switch (Config.Profile)
         {
-        case CaptureConfig::CodecProfile::H264_LOSSLESS:
+        case CodecProfile::H264_LOSSLESS:
             enccfg.encodeCodecConfig.h264Config.qpPrimeYZeroTransformBypassFlag = 1;
             enccfg.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP;
             enccfg.rcParams.constQP.qpIntra = enccfg.rcParams.constQP.qpInterB = enccfg.rcParams.constQP.qpInterP = 0;
             //params.tuningInfo = NV_ENC_TUNING_INFO_LOSSLESS;
-        case CaptureConfig::CodecProfile::H264_HIGH_444:
+        case CodecProfile::H264_HIGH_444:
             //enccfg.encodeCodecConfig.h264Config.separateColourPlaneFlag = 1;
             break;
         }

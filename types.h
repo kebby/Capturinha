@@ -218,8 +218,8 @@ public:
 // for..in support
 template<typename T> T* begin(Array<T> &arr) { return arr.Count() ? &arr[0] : nullptr; }
 template<typename T> T* end(Array<T> &arr) { return arr.Count() ? (&arr[0])+arr.Count() : nullptr; }
-template<typename T> T* begin(const Array<T>& arr) { return arr.Count() ? &arr[0] : nullptr; }
-template<typename T> T* end(const Array<T>& arr) { return arr.Count() ? (&arr[0]) + arr.Count() : nullptr; }
+template<typename T> const T* begin(const Array<T>& arr) { return arr.Count() ? &arr[0] : nullptr; }
+template<typename T> const T* end(const Array<T>& arr) { return arr.Count() ? (&arr[0]) + arr.Count() : nullptr; }
 
 template<typename TP> void DeleteAll(Array<TP*>& array) { for (TP* p : array) delete p; array.Clear(); }
 
@@ -389,16 +389,18 @@ class String
 {
 public:
     String() {};
-    String(const char* p, int len=-1) { MakeNode(p, len); }
-    String(const wchar_t* p, int len = -1) { MakeNode(p, len); }
+    String(const char* p, int len=-1) { Make(p, len); }
+    String(const wchar_t* p, int len = -1) { Make(p, len); }
     String(const String& s) { node = s.node; }
     String(String&& s) { node = static_cast<RCPtr<Node>&&>(s.node); }
 
     static String PrintF(const char* format, ...);
     static String Concat(const String& s1, const String& s2);
+    static String Repeat(char chr, int count);
+    static String Join(const Array<String> &strings, const String &separator);
 
-    String& operator = (const char* p) { MakeNode(p); return *this; }
-    String& operator = (const wchar_t* p) { MakeNode(p); return *this; }
+    String& operator = (const char* p) { Make(p); return *this; }
+    String& operator = (const wchar_t* p) { Make(p); return *this; }
     String& operator = (const String& s) { node = s.node; return *this; }
     String& operator = (String&& s) { node = static_cast<RCPtr<Node>&&>(s.node); return *this; }
 
@@ -407,6 +409,7 @@ public:
 
     static int Compare(const String& a, const String &b, bool ignoreCase = false);
     static int Compare(const String& a, const char *b, bool ignoreCase = false);
+    static int CompareLen(const String& a, const char* b, bool ignoreCase = false);
     template<typename Ts> int Compare(const Ts& s, bool ignoreCase = false) const { return Compare(*this, s, ignoreCase); }
 
     bool operator! () const { return !node; }
@@ -431,11 +434,69 @@ public:
         operator const wchar_t* () const { return ptr ? ptr : L""; }
     } ToWChar() const;
 
+    char *Make(int len); // HERE BE DRAGONS, you need to fill the string aftewards
+
 private:
+    friend class StringBuilder;
 
     struct Node : RCObj { size_t len = 0; char str[1] = {}; }; // variable size!
     RCPtr<Node> node;
 
-    void MakeNode(const char* p, int len=-1);
-    void MakeNode(const wchar_t* p, int len = -1);
+    void Make(const char* p, int len=-1);
+    void Make(const wchar_t* p, int len = -1);
+    
+};
+
+
+class StringBuilder
+{
+public:
+
+    void Clear() { strings.Clear(); }
+
+    void Append(const String& str) { if (firstInLine) CheckIndent(); if (str.Length()) strings.PushTail(str); }
+    template<class ... args> void Append(const String &str, args ...a) { Append(str); Append(a...); }
+    void operator += (const String& str) { Append(str); }
+
+    String ToString() const;
+
+    // pretty printing
+    void SetPrettyPrint(bool p) { pretty = p; indent = 0; firstInLine = p; }
+    void PrettySpace() { if (pretty) Append(" "); }
+    void PrettyNewline(int ind = 0) { if (pretty) { Append("\n"); indent = Max(0, indent + ind); firstInLine = true; } }
+
+private:
+    Array<String> strings;
+    bool pretty = false;
+    int indent = 0;
+    bool firstInLine = true;
+
+    void CheckIndent() { strings += String::Repeat(' ', indent); firstInLine = false; }
+};
+
+
+class Scanner
+{
+public:
+    Scanner(const char* text) : ptr(text), line(text) {}
+
+    bool If(const String& str);    
+    bool IfChar(char c);   
+    bool Char(char c);
+    int64 Decimal(int* digits = nullptr);
+    void Error(const String& err);
+    String QuotedString();
+
+    bool operator!() const { return errors.Count() > 0; }
+   
+private:
+    const char* ptr;
+    const char* line;
+    int ln = 0;
+    Array<String> errors;
+    char buffer[1024];
+    int bfill = 0;
+
+    void Skip();
+    void AddChar(char c, String& out);
 };
