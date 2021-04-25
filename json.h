@@ -205,12 +205,44 @@ private:
     static void Write(StringBuilder& sb, const char *value) 
     { 
         if (value)
-            sb.Append("\"", value, "\"");
+        {
+            char buffer[1024];
+            int bfill = 0;
+
+            auto addChar = [&](char c)
+            {
+                buffer[bfill++] = c;
+                if (bfill == 1023)
+                {
+                    buffer[bfill] = 0;
+                    sb += buffer;
+                    bfill = 0;
+                }
+            };
+
+            sb += "\"";
+            while (*value)
+            {
+                switch (*value)
+                {
+                case '\\': case '\"': addChar('\\'); addChar(*value); break;
+                case '\r': addChar('\\'); addChar('r'); break;
+                case '\n': addChar('\\'); addChar('n'); break;
+                case '\t': addChar('\\'); addChar('t'); break;
+                default: addChar(*value); break;
+                }
+                value++;
+            }
+
+            buffer[bfill] = 0;
+            sb += buffer;
+            sb += "\"";
+        }
         else
             sb += "null";
     }
 
-    static void Write(StringBuilder& sb, const String& value) { sb.Append("\"", value, "\""); }
+    static void Write(StringBuilder& sb, const String& value) { Write(sb, (const char*)value); }
 
     template<class T> static void Write(StringBuilder& sb, const JsonEnumDef<T>& value) 
     {
