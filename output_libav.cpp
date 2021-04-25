@@ -43,12 +43,11 @@ private:
     uint8* ResampleBuffer = nullptr;
     uint ResampleBytesPerSample = 0;
     uint ResampleFill = 0;
-    uint SkipAudio = 0; // bytes
 
     int FrameNo = 0;
     int AudioWritten = 0;
 
-    void InitVideo()
+    void InitVideo(const uint8 *firstFrame, int firstFrameSize)
     {
         VideoStream = avformat_new_stream(Context, 0);
         VideoStream->id = 0;
@@ -69,6 +68,8 @@ private:
         codecpar->chroma_location = AVCHROMA_LOC_UNSPECIFIED;
         codecpar->sample_aspect_ratio.num = codecpar->sample_aspect_ratio.den = 1;
         codecpar->field_order = AV_FIELD_PROGRESSIVE;
+        codecpar->extradata = (uint8*)firstFrame;
+        codecpar->extradata_size = firstFrameSize;
     }
 
     void InitAudio()
@@ -92,10 +93,15 @@ private:
         {
             AudioContext = avcodec_alloc_context3(AudioCodec);
             AudioContext->sample_fmt = sampleFmt;
-            AudioContext->bit_rate = Para.CConfig->AudioBitrate;
             AudioContext->sample_rate = Para.Audio.SampleRate;
             AudioContext->channels = Para.Audio.Channels;
             AudioContext->channel_layout = av_get_default_channel_layout(Para.Audio.Channels);
+
+            if (Para.CConfig->UseAudioCodec >= AudioCodec::MP3)
+                AudioContext->bit_rate = Clamp(Para.CConfig->AudioBitrate, 32u, 320u) * 1000;
+            else
+                AudioContext->bit_rate = Para.Audio.SampleRate * Para.Audio.Channels * av_get_bytes_per_sample(sampleFmt) * 8;
+
             AVERR(avcodec_open2(AudioContext, AudioCodec, 0));
 
             AudioStream = avformat_new_stream(Context, AudioCodec);
@@ -132,25 +138,33 @@ private:
         }
     }
 
+
+    static void OnLog(void*, int level, const char* format, va_list args)
+    {
+        static char buffer[4096];
+        int len = vsnprintf_s(buffer, 4096, format, args);
+        if (len < 0) len = 0;
+        buffer[len] = 0;
+
+        buffer[len] = '\n';
+        buffer[len+1] = 0;
+        DPrintF(buffer);
+    }
+
+
 public:
 
     Output_LibAV(const OutputPara& para) : Para(para)
     {          
-        printf("Starting file %s\n", (const char*)para.filename);
+        av_log_set_callback(OnLog);
 
         static const char* const formats[] = { "avi", "mp4", "mov", "matroska" };
 
         AVERR(avformat_alloc_output_context2(&Context, nullptr, formats[(int)para.CConfig->UseContainer] , para.filename));
-
         AVERR(avio_open(&Context->pb, para.filename, AVIO_FLAG_WRITE));
 
         Packet = av_packet_alloc();
-        Frame = av_frame_alloc();
-
-        InitVideo();
-        InitAudio();
-
-        AVERR(avformat_write_header(Context, nullptr));
+        Frame = av_frame_alloc();     
     }
 
     ~Output_LibAV()
@@ -170,10 +184,21 @@ public:
 
         av_packet_free(&Packet);
         av_frame_free(&Frame);
+
+        av_log_set_callback(nullptr);
     }
 
     void SubmitVideoPacket(const uint8* data, uint size) override
     {
+        if (!VideoStream)
+        {
+            InitVideo(data, size);
+            InitAudio();
+            AVERR(avformat_write_header(Context, nullptr));
+            VideoStream->codecpar->extradata = nullptr;
+            VideoStream->codecpar->extradata_size = 0;
+        }
+
         AVRational tb = { .num = (int)Para.RateDen, .den = (int)Para.RateNum };
 
         // set up packet
@@ -190,35 +215,10 @@ public:
         FrameNo++;
     }
 
-    void SetAudioDelay(double delaySec)
-    {
-        // turn the delay into samples and then either push some silence
-        // or tell SubmitAudio to skip some input
-        uint samples = (uint)fabs(delaySec * Para.Audio.SampleRate);
-        uint size = samples * Para.Audio.BytesPerSample;
-        if (delaySec > 0)
-        {
-            uint8* zeroes = new uint8[size];
-            memset(zeroes, 0, size);
-            SubmitAudio(zeroes, size);
-            delete[] zeroes;
-        }
-        else
-        {
-            SkipAudio = size;
-        }
-    }
-
     void SubmitAudio(const uint8* data, uint size) override
     {
         if (!AudioContext) return;
-
-        uint skip = Min(SkipAudio, size);
-        data += skip;
-        size -= skip;
-        SkipAudio -= skip;
-        if (!size) return;
-
+     
         AVRational tb = { .num = 1, .den = (int)Para.Audio.SampleRate, };
         uint samples = size / Para.Audio.BytesPerSample;       
         int planar = av_sample_fmt_is_planar(AudioContext->sample_fmt);
