@@ -16,3 +16,4 @@ swresample*
 swscale*
 
 /packages
+/config.json

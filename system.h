@@ -62,8 +62,13 @@ enum class OpenFileMode
     RandomAccess,
 };
 
+bool FileExists(const char* path);
+
 Stream* OpenFile(const char* path, OpenFileMode mode = OpenFileMode::Read);
 RCPtr<Buffer> LoadFile(const char* path);
+
+String ReadFileUTF8(const char* path);
+void WriteFileUTF8(const String& str, const char* path);
 
 RCPtr<Buffer> LoadResource(int name, int type);
 

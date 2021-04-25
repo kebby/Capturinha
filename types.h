@@ -484,11 +484,13 @@ public:
     bool IfChar(char c);   
     bool Char(char c);
     int64 Decimal(int* digits = nullptr);
-    void Error(const String& err);
     String QuotedString();
 
     bool operator!() const { return errors.Count() > 0; }
-   
+
+    void Error(const String& err);
+    const Array<String>& Errors() const { return errors; }
+
 private:
     const char* ptr;
     const char* line;

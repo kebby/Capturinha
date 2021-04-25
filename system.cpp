@@ -12,6 +12,7 @@
 #include <shellapi.h>
 #include <mfapi.h>
 #include <ShellScalingApi.h>
+#include <shlwapi.h>
 
 //#include "Resource.h"
 #include "system.h"
@@ -19,6 +20,7 @@
 #include <stdio.h>
 
 #pragma comment (lib, "mfplat.lib")
+#pragma comment (lib, "shlwapi.lib")
 
 
 
@@ -298,6 +300,11 @@ struct FileStream : Stream
     }
 };
 
+bool FileExists(const char* path)
+{
+    return !!PathFileExists(path);
+}
+
 Stream *OpenFile(const char* path, OpenFileMode mode)
 {
     HANDLE h = INVALID_HANDLE_VALUE;
@@ -342,6 +349,40 @@ RCPtr<Buffer> LoadFile(const char* path)
         delete s;
     }
     return buffer;
+}
+
+String ReadFileUTF8(const char* path)
+{
+    Stream* str = OpenFile(path);
+    ASSERT(str);
+
+    size_t len = str->Length();
+    String ret;
+    char *ptr = ret.Make((int)len);
+
+    size_t offs = 0;
+    size_t read;
+    while (offs < len && (read = str->Read(ptr + offs, len - offs)))
+        offs += read;
+
+    ptr[offs] = 0;
+    delete str;
+    return ret;
+}
+
+void WriteFileUTF8(const String& text, const char* path)
+{
+    Stream* str = OpenFile(path, OpenFileMode::Create);
+    ASSERT(str);
+
+    size_t len = text.Length();
+    size_t offs = 0;
+    size_t written;
+    const char* ptr = text;
+    while (offs < len && (written = str->Write(ptr + offs, len - offs)))
+        offs += written;
+
+    delete str;
 }
 
 RCPtr<Buffer> LoadResource(int name, int type)

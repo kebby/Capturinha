@@ -30,22 +30,19 @@ public:
         return sb.ToString();
     }
 
-    template<typename T> static T Deserialize(const char *json)
+    template<typename T> static bool Deserialize(const char *json, T &into)
     {
-        T value = {};
         Scanner scan(json);
-        Read(scan, value);
-        ASSERT(!!scan);
-        return value;
+        Read(scan, into);       
+        return !!scan;
     }
 
-    template<typename T> static T Deserialize(const char* json, Array<String> &errors)
-    {
-        T value = {};
+    template<typename T> static bool Deserialize(const char* json, T &into, Array<String> &errors)
+    {      
         Scanner scan(json);
-        Read(scan, value);
-        errors = scan.errors;
-        return value;
+        Read(scan, into);
+        errors = scan.Errors();
+        return !!scan;
     }
 
 

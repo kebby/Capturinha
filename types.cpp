@@ -197,7 +197,7 @@ int64 Scanner::Decimal(int* digits)
 
 void Scanner::Error(const String& err)
 {
-    errors += String::PrintF("Error (%d,%d): %s", ln, line - ptr, (const char*)err);
+    errors += String::PrintF("Error (%d,%d): %s", ln + 1, ptr - line, (const char*)err);
 }
 
 String Scanner::QuotedString()

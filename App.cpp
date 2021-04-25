@@ -311,6 +311,7 @@ public:
     {
         if (hwnd == startCapture)
         {
+            WriteFileUTF8(Json::Serialize(Config, true), "config.json");
             SendMessage(GetParent(), WM_SETCAPTURE, 1, 0);
             return 1;
         }
@@ -646,6 +647,17 @@ int Run(LPTSTR /*lpstrCmdLine*/ = NULL, int nCmdShow = SW_SHOWDEFAULT)
 {  
     CMessageLoop theLoop;
     _Module.AddMessageLoop(&theLoop);
+
+    if (FileExists("config.json"))
+    {
+        String json = ReadFileUTF8("config.json");
+        Array<String> errors;
+        if (!Json::Deserialize(json, Config, errors))
+        {
+            String allerrors = String::Join(errors, "\n");
+            Fatal(String("Could not read config.json: \n\n") + allerrors);
+        }
+    }
 
     MainFrame wndMain;
 
