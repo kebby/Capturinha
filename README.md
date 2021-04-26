@@ -45,6 +45,8 @@ recording file will be closed and a new one will be opened.
 
 Press "Stop" when you're done. That's basically it.
 
+The current configuration gets stored in a file called `config.json` in the program directory.
+
 ##### Tips
 * You can leave "only record when fullscreen" on and then just let the tool run minimized - 
   everything that goes into fullscreen will be recorded into its own file in the background

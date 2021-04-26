@@ -34,10 +34,10 @@ JSON_DEFINE_ENUM(FrameConfig,    ("i", "ip"/* ,"ibp", "ibbp", */))
 struct VideoCodecConfig
 {
     CodecProfile Profile = CodecProfile::H264_MAIN;
-    // ... something something profile? (8 vs 10 bits, 4:4:4 vs 4:2:2, perf vs quality)
 
     BitrateControl UseBitrateControl = BitrateControl::CONSTQP;
     uint BitrateParameter = 20; // bitrate in kbits/s or qp
+
     FrameConfig FrameCfg = FrameConfig::IP;
     uint GopSize = 60; // 0: auto
 

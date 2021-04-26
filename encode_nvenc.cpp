@@ -3,21 +3,21 @@
 // Licensed under the MIT License. See LICENSE.md file for full license information
 //
 
-#include "graphics.h"
+#include <stdio.h>
 
+#include "graphics.h"
 #include "encode.h"
 #include "screencapture.h"
 
+#pragma warning (disable: 4996) // deprecated GUIDs in nvEncodeAPI.h that are actually the only ones that work
+
 #include <d3d11.h>
-#include "nvEncodeAPI.h"
-#include <stdio.h>
+#include <nvEncodeAPI.h>
+#include <cuda.h>
+#include <cudaD3D11.h>
 #pragma comment (lib, "cuda.lib")
 #pragma comment (lib, "cudart.lib")
 
-#include <cuda.h>
-#include <cudaD3D11.h>
-
-#pragma warning (disable: 4996)
 
 static bool Inited = false;
 static NV_ENCODE_API_FUNCTION_LIST API = {};
@@ -37,7 +37,7 @@ struct ProfileDef
 };
 
 
-static ProfileDef Profiles[] =
+static const ProfileDef Profiles[] =
 {
     { NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_H264_PROFILE_MAIN_GUID },
     { NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_H264_PROFILE_HIGH_GUID },

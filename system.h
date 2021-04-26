@@ -51,7 +51,6 @@ struct Stream
     virtual uint64 Read(void* ptr, uint64 len) = 0;
     virtual uint64 Write(const void* ptr, uint64 len) = 0;
 
-
     virtual uint64 Length() const { return 0; }
     virtual uint64 Seek(int64, From) { return 0; }
     virtual uint64 Pos() { return (uint64)Seek(0, From::Current); }
@@ -162,6 +161,7 @@ private:
 
 // -------------------------------------------------------------------------------
 
+// concurrent queue
 template <typename T, int SIZE> class Queue
 {
 public:

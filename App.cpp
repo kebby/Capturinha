@@ -387,8 +387,6 @@ public:
         Config.BlinkScrollLock = !!blinkScrlLock.GetCheck();
     }
 
-  
-
     void ConfigToControls(bool force)
     {
         // set control states from config
@@ -542,6 +540,7 @@ public:
     {
         return 1;
     }
+
     static COLORREF CRef(const Vec3& color)
     {
         return (int(255 * color.x)) | (int(255 * color.y ) << 8) | (int(255 * color.z ) << 16);
@@ -598,7 +597,7 @@ public:
 
 
         CBrush peak;
-        peak.CreateSolidBrush(CRef(Vec3(1, 0.3, 0.3)));
+        peak.CreateSolidBrush(CRef(Vec3(1, 0.3f, 0.3f)));
         dc.SelectStockPen(NULL_PEN);
         dc.SelectBrush(peak);
 
@@ -607,7 +606,7 @@ public:
        
         for (int ch = 0; ch < nch; ch++)
         {
-            float v = VUToScreen(stats.VU[ch]);
+            float v = VUToScreen(Clamp(stats.VU[ch], 0.0f, 1.0f));
             int t = area.top + ch * area.Height() / nch;
             int b = area.top + (ch + 1) * area.Height() / nch +1;
             int l = area.left;
@@ -772,7 +771,6 @@ public:
         return 1;
     }
 
-
     //LRESULT OnClick(WPARAM wParam, LPNMHDR nmhdr, BOOL& bHandled)
     //LRESULT OnClick(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
     LRESULT OnClick(UINT w1, UINT w2, HWND hwnd, BOOL& bHandled)
@@ -785,7 +783,6 @@ public:
 
         return 0;
     }
-
 
     // Inherited via CIdleHandler
     virtual BOOL OnIdle() override
@@ -924,11 +921,17 @@ int Run(LPTSTR /*lpstrCmdLine*/ = NULL, int nCmdShow = SW_SHOWDEFAULT)
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR lpstrCmdLine, int nCmdShow)
 {
-    HRESULT hRes = ::CoInitializeEx(NULL, COINIT_MULTITHREADED);
-    // If you are running on NT 4.0 or higher you can use the following call instead to 
-    // make the EXE free threaded. This means that calls come in on a random RPC thread.
-    //	HRESULT hRes = ::CoInitializeEx(NULL, COINIT_MULTITHREADED);
+    HRESULT hRes = ::CoInitializeEx(NULL, COINIT_MULTITHREADED);  
     ATLASSERT(SUCCEEDED(hRes));
+
+    // check for FFmpeg presence
+    HMODULE dll = LoadLibrary("avcodec-58.dll");
+    if (!dll)
+    {
+        char directory[MAX_PATH + 1];
+        GetCurrentDirectory(MAX_PATH + 1, directory);
+        Fatal("The FFmpeg DLLs are missing\n\nPlease download an FFmpeg 4.x build (64 bit, shared version), and place the DLLs from the bin folder into %s.", directory);
+    }
 
     GfxInit();
     InitAudioCapture();

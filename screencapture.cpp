@@ -27,7 +27,7 @@ class ScreenCapture : public IScreenCapture
     Thread* captureThread = nullptr;
     uint sizeX = 0, sizeY = 0, rateNum = 0, rateDen = 0;
 
-    CaptureStats Stats;
+    CaptureStats Stats = {};
     double avSkew = 0;
     double fps = 0;
     double bitrate = 0;
@@ -92,7 +92,7 @@ class ScreenCapture : public IScreenCapture
         Stats.FPS = (double)rateNum / rateDen;
         Stats.SizeX = sizeX;
         Stats.SizeY = sizeY;
-
+        
         IOutput* output = CreateOutputLibAV(para);
 
         const uint audioSize = para.Audio.BytesPerSample * (para.Audio.SampleRate / 10);
@@ -205,6 +205,9 @@ class ScreenCapture : public IScreenCapture
                     Delete(encoder);
                     sizeX = sizeY = 0;
                     ReleaseFrame();
+                    for (int i = 0; i < 32; i++)
+                        if (Stats.VU[i] > 0)
+                            Stats.VU[i] = 0;
                     continue;
                 }
 
@@ -331,9 +334,7 @@ class ScreenCapture : public IScreenCapture
 
         delete processThread;
         delete encoder;
-        for (int i = 0; i < 32; i++)
-            if (Stats.VU[i] > 0)
-                Stats.VU[i] = 0;
+       
     }
 
 public:
@@ -344,6 +345,9 @@ public:
         if (Config.CaptureAudio)
             audioCapture = CreateAudioCaptureWASAPI(Config);
         captureThread = new Thread(Bind(this, &ScreenCapture::CaptureThreadFunc));
+
+        for (int i = 0; i < 32; i++)
+                Stats.VU[i] = i ? -1.0f : 0.0f;
     }
 
     ~ScreenCapture()
