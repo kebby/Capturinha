@@ -4,6 +4,9 @@ A tool for real time screen and audio capture on Windows, using NVIDIA's NVENC a
 on performance, correctness (eg. frame rate stability) and configurability. Mostly made for demoscene productions
 but you can use it with everything that's on your screen.
 
+This is not a .kkapture successor. At least not yet. Mainly it's there to make the lives of demo party 
+organizers - and other people who need a good video of their screen - easier.
+
 ### Why
 
 Yes, there are a lot of screen capture tools around, built into Windows and GPU drivers even, 
@@ -11,8 +14,9 @@ but during testing I found them all lacking. There are either commercial solutio
 "Free" tier is so bad it's pretty much unusable and doesn't inspire you to shell out money 
 for the real product, and the solutions built into Windows or the graphics driver lack configuration 
 options such as choosing a constant quality encoding mode or even what codec to use - 
-and all of them dropped frames like hot potatoes. So, having had some experience in using NVENC and
-the FFmpeg libraries for encoding and muxing video and audio, I thought "how hard can it be?"
+and all of them dropped frames like hot potatoes. So, having had some experience with graphics 
+programming in general and with using NVENC and the FFmpeg libraries for encoding and muxing video 
+and audio in particular, I thought "how hard can it be?"
 
 ### Building
 

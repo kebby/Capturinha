@@ -184,6 +184,8 @@ public:
        
         AVERR(av_write_trailer(Context));
 
+        avio_close(Context->pb);
+
         avformat_free_context(Context);
         avcodec_free_context(&AudioContext);
 

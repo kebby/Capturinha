@@ -37,7 +37,7 @@ struct VideoCodecConfig
     // ... something something profile? (8 vs 10 bits, 4:4:4 vs 4:2:2, perf vs quality)
 
     BitrateControl UseBitrateControl = BitrateControl::CONSTQP;
-    uint BitrateParameter = 18; // bitrate in kbits/s or qp
+    uint BitrateParameter = 20; // bitrate in kbits/s or qp
     FrameConfig FrameCfg = FrameConfig::IP;
     uint GopSize = 60; // 0: auto
 
@@ -56,7 +56,7 @@ struct CaptureConfig
     // general
     String Directory;
     String NamePrefix;
-    Container UseContainer = Container::Mp4;
+    Container UseContainer = Container::Mkv;
     bool BlinkScrollLock = true;
 
     // video settings
@@ -67,7 +67,7 @@ struct CaptureConfig
     // audio settings
     bool CaptureAudio = true;
     uint AudioOutputIndex = 0; // 0: default
-    AudioCodec UseAudioCodec = AudioCodec::AAC;
+    AudioCodec UseAudioCodec = AudioCodec::PCM_S16;
     uint AudioBitrate = 320; // not for PCM
 
     JSON_BEGIN()
@@ -97,6 +97,9 @@ struct CaptureStats
 
     bool Recording;
 
+    int SizeX;
+    int SizeY;   
+    double Time;
     double FPS;
     double AvgBitrate;
     double MaxBitrate;

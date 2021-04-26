@@ -90,6 +90,8 @@ class ScreenCapture : public IScreenCapture
 
         Stats.Filename = filename;
         Stats.FPS = (double)rateNum / rateDen;
+        Stats.SizeX = sizeX;
+        Stats.SizeY = sizeY;
 
         IOutput* output = CreateOutputLibAV(para);
 
@@ -160,7 +162,7 @@ class ScreenCapture : public IScreenCapture
                 bitrate += 0.03 * (br  - bitrate);
                 Stats.AvgBitrate = (8. * (double)totalBytes * rateNum) / (1000. * frameCount * rateDen);
                 Stats.MaxBitrate = Max(Stats.MaxBitrate, bitrate);
-                
+                Stats.Time = (double)frameCount * rateDen / rateNum;
                 Stats.Frames.PushTail(CaptureStats::Frame{ .FPS = fps, .AVSkew = avSkew, .Bitrate = bitrate });
             }        
         }
@@ -187,6 +189,7 @@ class ScreenCapture : public IScreenCapture
         while (thread.IsRunning())
         {
             bool record = !Config.RecordOnlyFullscreen || IsFullscreen();
+            Stats.Recording = record;
 
             CaptureInfo info;
             if (CaptureFrame(2, info))
