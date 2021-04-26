@@ -1,6 +1,7 @@
 .vs
 x64
 *.user
+*.aps
 
 libavcodec/
 libavformat/
