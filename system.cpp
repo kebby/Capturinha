@@ -28,7 +28,7 @@
 //HINSTANCE hInst = 0;
 HWND hWnd = 0;
 //float UIScale;
-
+const char* AppName = "Train Engine";
 
 //----------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------
@@ -192,7 +192,7 @@ void Fatal(const char* format, ...)
         DebugBreak();
 #endif
 
-    MessageBox(hWnd, DbgBuffer, "Train Engine", MB_OK | MB_ICONERROR);
+    MessageBox(hWnd, DbgBuffer, AppName, MB_OK | MB_ICONERROR);
     ExitProcess(1);
 }
 

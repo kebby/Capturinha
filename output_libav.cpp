@@ -20,11 +20,13 @@ extern "C"
 #include <math.h>
 #include <stdio.h>
 
+static Array<String> Errors;
+
 #if _DEBUG
 static char averrbuf[1024];
-#define AVERR(x) { auto _ret=(x); if(_ret<0) { Fatal("%s(%d): libav call failed: %s\nCall: %s\n",__FILE__,__LINE__,av_make_error_string(averrbuf, 1024, _ret),#x); } }
+#define AVERR(x) { auto _ret=(x); if(_ret<0) { Fatal("%s(%d): libav call failed: %s\n%s\nCall: %s\n",__FILE__,__LINE__,av_make_error_string(averrbuf, 1024, _ret),(const char*)String::Join(Errors,""),#x); } }
 #else
-#define AVERR(x) { auto _ret=(x); if(_ret<0) { Fatal("%s(%d): libav call failed: %08x\n",__FILE__,__LINE__,_ret); } }
+#define AVERR(x) { auto _ret=(x); if(_ret<0) { Fatal("%s(%d): libav call failed: %08x\n%s\n",__FILE__,__LINE__,(const char*)String::Join(Errors,""),_ret); } }
 #endif
 
 class Output_LibAV : public IOutput
@@ -73,8 +75,11 @@ private:
         codecpar->chroma_location = AVCHROMA_LOC_UNSPECIFIED;
         codecpar->sample_aspect_ratio.num = codecpar->sample_aspect_ratio.den = 1;
         codecpar->field_order = AV_FIELD_PROGRESSIVE;
-        codecpar->extradata = (uint8*)firstFrame;
-        codecpar->extradata_size = firstFrameSize;
+        //if (codecpar->codec_id == AV_CODEC_ID_H264)
+        {
+            codecpar->extradata = (uint8*)firstFrame;
+            codecpar->extradata_size = firstFrameSize;
+        }
     }
 
     void InitAudio()
@@ -143,14 +148,14 @@ private:
         }
     }
 
-
     static void OnLog(void*, int level, const char* format, va_list args)
     {
         static char buffer[4096];
         int len = vsnprintf_s(buffer, 4096, format, args);
         if (len < 0) len = 0;
         buffer[len] = 0;
-
+        if (level <= AV_LOG_WARNING)
+            Errors.PushTail(buffer);
         buffer[len] = '\n';
         buffer[len+1] = 0;
         DPrintF(buffer);
@@ -160,7 +165,8 @@ private:
 public:
 
     Output_LibAV(const OutputPara& para) : Para(para)
-    {          
+    {       
+        Errors.Clear();
         av_log_set_callback(OnLog);
 
         static const char* const formats[] = { "avi", "mp4", "mov", "matroska" };

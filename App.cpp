@@ -918,11 +918,16 @@ int Run(LPTSTR /*lpstrCmdLine*/ = NULL, int nCmdShow = SW_SHOWDEFAULT)
     return nRet;
 }
 
+extern const char* AppName;
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR lpstrCmdLine, int nCmdShow)
 {
     HRESULT hRes = ::CoInitializeEx(NULL, COINIT_MULTITHREADED);  
     ATLASSERT(SUCCEEDED(hRes));
+
+    static char appName[1024];
+    LoadString(ModuleHelper::GetResourceInstance(), IDR_MAINFRAME, appName, 2048);
+    AppName = appName;
 
     // check for FFmpeg presence
     HMODULE dll = LoadLibrary("avcodec-58.dll");
