@@ -36,7 +36,7 @@ struct VideoCodecConfig
     FrameConfig FrameCfg = FrameConfig::IP;
     uint GopSize = 60; // 0: auto
 
-    JSON_BEGIN(VideoCodecConfig);
+    JSON_BEGIN();
         JSON_ENUM(Profile);
         JSON_ENUM(UseBitrateControl);
         JSON_VALUE(BitrateParameter);
@@ -65,7 +65,7 @@ struct CaptureConfig
     AudioCodec UseAudioCodec = AudioCodec::AAC;
     uint AudioBitrate = 320; // not for PCM
 
-    JSON_BEGIN(VideoCodecConfig)
+    JSON_BEGIN()
         JSON_VALUE(Directory)
         JSON_VALUE(NamePrefix)
         JSON_ENUM(UseContainer)
@@ -80,12 +80,30 @@ struct CaptureConfig
     JSON_END();
 };
 
+
 struct CaptureStats
 {
-    uint FramesCaptured;
-    uint FramesDuplicated;
+    struct Frame
+    {
+        double FPS;
+        double AVSkew;
+        double Bitrate;
+    };
+
+    bool Recording;
+
     double FPS;
-    double AVSkew;
+    double AvgBitrate;
+    double MaxBitrate;
+    Array<Frame> Frames = Array<Frame>((size_t)40000);
+
+    uint FramesCaptured;
+    uint FramesDuplicated;      
+
+    float VU[32] = {};
+    float VUPeak[32] = {};
+
+    String Filename;
 };
 
 
@@ -94,7 +112,7 @@ class IScreenCapture
 public:
     virtual ~IScreenCapture() {}
 
-    virtual CaptureStats GetStats() = 0;
+    virtual const CaptureStats &GetStats() = 0;
 };
 
 // run a screen capture instance

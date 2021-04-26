@@ -487,11 +487,13 @@ public:
 
     CStatic statusText;
     CButton stopCapture;
+    double maxRate = 0;
 
     DECLARE_WND_CLASS("StatsForm");
 
     BEGIN_MSG_MAP(StatsForm)
         MESSAGE_HANDLER(WM_ERASEBKGND, OnEraseBackground)
+        MESSAGE_HANDLER(WM_PAINT, OnPaint)
         COMMAND_ID_HANDLER(BN_CLICKED, OnClick)
         MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
         MESSAGE_HANDLER(WM_CREATE, OnCreate)
@@ -515,9 +517,8 @@ public:
         GetClientRect(&cr);
         cr.InflateRect(-10, -10);
         CRect line = Rect(cr, 0, 0, cr.Width(), 20);
-
        
-        Child(statusText, line, "Status text");
+        //Child(statusText, line, "Status text");
 
 
         r = Rect(cr, aRight, aBottom, 130, 25, aRight, aBottom);
@@ -542,6 +543,199 @@ public:
         bHandled = FALSE;
         return 1;
     }
+
+    static COLORREF CRef(const Vec3& color)
+    {
+        return (int(255 * color.x)) | (int(255 * color.y ) << 8) | (int(255 * color.z ) << 16);
+    }
+
+    static float VUToScreen(float vu)
+    {
+        return powf(vu, 0.3);
+    }
+
+    static float DecibelToLinear(float dB) { return powf(10, dB / 20); };
+
+    void PaintVU(CDC& dc, const RECT& rect, const CaptureStats& stats)
+    {
+        CPen pen;
+        pen.CreatePen(PS_SOLID, 1, 0xc0c0c0);
+        CPen pen2;
+        pen2.CreatePen(PS_SOLID, 2, 0xd0d0d0);
+        CPen pen3;
+        pen3.CreatePen(PS_SOLID, 1, 0xe0e0e0);
+
+        dc.SelectPen(pen);
+        dc.SelectStockBrush(NULL_BRUSH);
+        dc.Rectangle(&rect);
+        CRect area = rect;
+        area.InflateRect(-1, -1);
+
+        for (int db = 1; db < 100; db++)
+        {
+            if (db > 50 && db % 10) continue;
+            if (db > 20 && db % 2) continue;
+            float v = VUToScreen(DecibelToLinear(-db));                   
+            int x = area.left + int(v * area.Width() + 1);
+            dc.SelectPen(db % 10 ? pen3 : pen2);
+            dc.MoveTo(x, area.top);
+            dc.LineTo(x, area.bottom);
+        }
+
+        CBrush bar;
+        bar.CreateSolidBrush(CRef(Vec3(0, 0, 0.5)));
+
+        dc.SelectStockPen(NULL_PEN);
+        dc.SelectBrush(bar);
+
+        int nch;
+        for (nch = 0; stats.VU[nch] >= 0; nch++) {}
+       
+        for (int ch = 0; ch < nch; ch++)
+        {
+            float v = VUToScreen(stats.VU[ch]);
+            int t = area.top + ch * area.Height() / nch;
+            int b = area.top + (ch + 1) * area.Height() / nch +1;
+            int l = area.left;
+            int r = area.left + int(v * area.Width()+1);
+            Vec3 ca(0, 0.5, 0);
+            Vec3 cb = Lerp(v, ca, Vec3(1, 0.5, 0));
+            
+            dc.GradientFillRect(*CRect(l, t, r, b), CRef(ca), CRef(cb), TRUE);
+            //dc.Rectangle(CRect(l,t,r,b));
+        }
+
+    }
+
+    void PaintGraph(CDC& dc, const RECT &rect, const Vec3& color, const char* label, const char* unitFmt, size_t nPoints, double max, double avg, Func<double(int)> getPoint)
+    {
+        CPen pen;
+        pen.CreatePen(PS_SOLID, 1, 0xc0c0c0);
+
+        dc.SelectPen(pen);
+        dc.SelectStockBrush(NULL_BRUSH);
+        dc.Rectangle(&rect);
+
+        CRect grapharea = rect;
+        grapharea.InflateRect(-1, -1);
+
+        // the points for the graph...
+        int np = Min(grapharea.Width() + 1, (int)nPoints);
+        int offs = (int)nPoints - np;
+        double gh = grapharea.Height() + 1;
+        Array<POINT> points(POINT{ .x = grapharea.left, .y = grapharea.bottom });
+        for (int i = 0; i < np; i++)
+        {
+            POINT point{ .x = grapharea.left + i , .y = grapharea.bottom - LONG(getPoint(i+offs)*gh/max) };
+            points.PushTail(point);
+        }
+        points.PushTail(POINT{ .x = grapharea.left + np - 1, .y = grapharea.bottom });
+
+        CBrush green;
+        Vec3 grcol = Lerp(0.75f, color, Vec3(1));
+        green.CreateSolidBrush(CRef(grcol));
+
+        dc.SelectStockPen(NULL_PEN);
+        dc.SelectBrush(green);
+
+        dc.Polygon(&points[0], np + 2);
+
+        CPen darkgreen;
+        
+        darkgreen.CreatePen(PS_SOLID, 1, CRef(color));
+
+        dc.SelectPen(darkgreen);
+        dc.SelectStockBrush(NULL_BRUSH);
+        dc.MoveTo(points[1]);
+        for (int i = 2; i < np - 1; i++)
+            dc.LineTo(points[i]);
+
+        if (avg >= 0)
+        {
+            int y = grapharea.bottom - LONG(avg * gh / max);
+            dc.MoveTo(grapharea.left, y);
+            dc.LineTo(grapharea.right, y);
+        }
+
+        CFont font;
+        font.CreateFontA(12, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, FALSE, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH, "Segoe UI");
+
+        CRect textRect(grapharea.left + 5, grapharea.top + 1, grapharea.left + 5 + 100, grapharea.top + 1 + 10);
+        dc.SelectFont(font);
+        dc.SetTextColor(CRef(color * 0.5f));
+        dc.SetBkMode(TRANSPARENT);
+        dc.DrawTextA(label, -1, &textRect, DT_LEFT);
+
+        CRect textRect2(grapharea.right - 5 - 200, grapharea.top + 1, grapharea.right - 5, grapharea.top + 1 + 10);        
+        dc.DrawTextA(String::PrintF(unitFmt, max), -1, &textRect2, DT_RIGHT);
+    }
+
+    LRESULT OnPaint(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/)
+    {
+        RECT cr;
+        GetClientRect(&cr);
+        auto w = cr.right - cr.left - 20;
+        auto h = cr.bottom - cr.top - 60;
+        PAINTSTRUCT ps;
+        CDC maindc = BeginPaint(&ps);
+        CDC dc;
+        dc.CreateCompatibleDC(maindc);
+        CBitmap bitmap;
+        bitmap.CreateCompatibleBitmap(maindc, w, h);
+
+        dc.SelectBitmap(bitmap);
+
+        // clear
+        dc.SelectStockPen(NULL_PEN);
+        dc.SelectStockBrush(WHITE_BRUSH);
+        dc.Rectangle(&cr);
+
+        CRect area(0, 0, w, h);
+        area.InflateRect(-10, -10);
+
+        if (Capture)
+        {
+            auto& stats = Capture->GetStats();
+
+            // test
+    
+            CRect graph(area.left, area.top, area.right, area.top + 62);
+
+            PaintGraph(dc, graph, Vec3(0, 0.5, 0), "FPS", "%.2f", stats.Frames.Count(), stats.FPS, -1, [&](int i)
+            {
+                return stats.Frames[i].FPS;
+            });
+           
+            while (stats.MaxBitrate < (maxRate-5000))
+                maxRate = maxRate - 5000;
+            while (stats.MaxBitrate > maxRate)
+                maxRate = maxRate + 5000;
+
+            graph.OffsetRect(0, 70);
+            PaintGraph(dc, graph, Vec3(0.0, 0, 0.5), "Bit rate", "%.0f kbits/s", stats.Frames.Count(), maxRate, stats.AvgBitrate, [&](int i)
+            {
+                return stats.Frames[i].Bitrate;
+            });
+
+            CRect vumeter(area.left, graph.bottom + 10, area.right, graph.bottom + 10 + 26);
+            PaintVU(dc, vumeter, stats);
+        }
+
+
+
+        /*
+        Vec2 v(100, 100);
+        Vec2 v2 = Vec2(50, 50).Rotate(GetTime());
+
+        dc.MoveTo(v.x - v2.x, v.y - v2.y);
+        dc.LineTo(v.x + v2.x, v.y +  v2.y);
+        */
+
+        maindc.BitBlt(10, 10, w, h, dc, 0, 0, SRCCOPY);
+        EndPaint(&ps);
+        return 1;
+    }
+
 
     //LRESULT OnClick(WPARAM wParam, LPNMHDR nmhdr, BOOL& bHandled)
     //LRESULT OnClick(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
@@ -577,12 +771,13 @@ public:
     // Inherited via CIdleHandler
     virtual BOOL OnIdle() override
     {
-        if (!Capture) return 0;
+        //if (!Capture) return 0;
 
-        auto stats = Capture->GetStats();
-        auto text = String::PrintF("recd %5d frames, dupl %5d frames, %5.2f FPS, skew %6.2f ms // fs %d\r", stats.FramesCaptured + stats.FramesDuplicated, stats.FramesDuplicated, stats.FPS, stats.AVSkew * 1000, IsFullscreen());
+        //auto stats = Capture->GetStats();
+        //auto text = String::PrintF("recd %5d frames, dupl %5d frames, %5.2f FPS, skew %6.2f ms // fs %d\r", stats.FramesCaptured + stats.FramesDuplicated, stats.FramesDuplicated, stats.FPS, stats.AVSkew * 1000, IsFullscreen());
 
-        statusText.SetWindowTextA(text);
+        //statusText.SetWindowTextA(text);
+        Invalidate();
 
         return 0;
     }
@@ -625,8 +820,11 @@ public:
         CRect cr;
         GetClientRect(&cr);
 
-        setupForm.Create(m_hWnd, cr, "", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, ID_BUTTON);      
+        setupForm.Create(m_hWnd, cr, "", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, ID_BUTTON);
         statsForm.Create(m_hWnd, cr, "", WS_CHILD | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, ID_BUTTON);
+
+        // DELETE ME
+        statsForm.SetTimer(1, 16);
 
         // register object for message filtering and idle updates
         CMessageLoop* pLoop = _Module.GetMessageLoop();

@@ -335,11 +335,11 @@ public:
 
         if (profile.encodeGuid == NV_ENC_CODEC_HEVC_GUID)
         {
-            enccfg.encodeCodecConfig.hevcConfig.idrPeriod = enccfg.gopLength;
+            enccfg.encodeCodecConfig.hevcConfig.idrPeriod = enccfg.gopLength = Config.GopSize;
         }
         else
         {
-            enccfg.encodeCodecConfig.h264Config.idrPeriod = enccfg.gopLength;           
+            enccfg.encodeCodecConfig.h264Config.idrPeriod = enccfg.gopLength = Config.GopSize;
         }
        
         // initialize encoder

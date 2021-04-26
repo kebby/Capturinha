@@ -30,7 +30,8 @@ void OnAssert(const char* file, int line, const char* expr);
 template<typename T> constexpr T Min(T a, T b) { return a < b ? a : b; }
 template<typename T> constexpr T Max(T a, T b) { return a > b ? a : b; }
 template<typename T> constexpr T Clamp(T v, T min, T max) { return Min(Max(v, min), max); }
-template<typename T> constexpr T Lerp(T v, T a, T b) { return a * (1 - v) + b * v; }
+template<typename T> constexpr T Lerp(float v, T a, T b) { return a * (1 - v) + b * v; }
+template<typename T> constexpr T Lerp(double v, T a, T b) { return a * (1 - v) + b * v; }
 
 template<typename T> constexpr T Smooth(T x) { return (3 * x - 2) * x * x; }
 template<typename T> constexpr T Smoothstep(T v, T min, T max) { return Smooth((v - min) / (max - min)); }

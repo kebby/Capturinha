@@ -9,7 +9,7 @@
     const type & ref; \
 };
 
-#define JSON_BEGIN(cls) template<class TV> void _VisitJson(TV &visitor) const { bool comma = false;
+#define JSON_BEGIN() template<class TV> void _VisitJson(TV &visitor) const { bool comma = false;
 #define JSON_VALUE(v) visitor.Member(#v, v, comma); comma = true; 
 #define JSON_VALUE_NAME(v, name) visitor.Member(name, v, comma); comma = true;
 #define JSON_ENUM(v)visitor.Member(#v, GetEnumDef(v), comma); comma = true; 

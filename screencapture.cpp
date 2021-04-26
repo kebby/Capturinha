@@ -17,15 +17,47 @@ class ScreenCapture : public IScreenCapture
 
     IEncode* encoder = nullptr;
     IAudioCapture* audioCapture = nullptr;
+    AudioInfo audioInfo;
     Thread* processThread = nullptr;
     Thread* captureThread = nullptr;
     uint sizeX = 0, sizeY = 0, rateNum = 0, rateDen = 0;
 
     CaptureStats Stats;
+    double avSkew = 0;
+    double fps = 0;
+    double bitrate = 0;
+
+    void CalcVU(const uint8 *ptr, uint size)
+    {
+        uint ch = audioInfo.Channels;
+        if (audioInfo.Format != AudioFormat::F32)
+            ch = 0;
+
+        size /= 4 * ch;
+
+        for (uint i = 0; i < ch; i++)
+        {
+            const float* data = ((float*)ptr) + i;
+            float cvu = Stats.VU[i];
+            for (uint s = 0; s < size; s++)
+            {
+                float v = fabsf(*data);
+                if (v > cvu)
+                    cvu = v;
+                else
+                    cvu *= 0.9999f;
+                data += ch;
+            }
+            Stats.VU[i] = cvu;
+            Stats.VUPeak[i] = Max(Stats.VUPeak[i], cvu);
+        }
+
+        for (int i = ch; i < 32; i++)
+            Stats.VU[i] = -1;        
+    }
 
     void ProcessThreadFunc(Thread& thread)
     {
-
         static const char* const extensions[] = { "avi", "mp4", "mov", "mkv" };
 
         String prefix = Config.Directory + "\\" + Config.NamePrefix;
@@ -38,6 +70,8 @@ class ScreenCapture : public IScreenCapture
             extensions[(int)Config.UseContainer]
         );
 
+        audioInfo = audioCapture ? audioCapture->GetInfo() : AudioInfo{ .Format = AudioFormat::None };
+
         OutputPara para =
         {
             .filename = filename,
@@ -45,9 +79,12 @@ class ScreenCapture : public IScreenCapture
             .SizeY = sizeY,
             .RateNum = rateNum,
             .RateDen = rateDen,
-            .Audio = audioCapture ? audioCapture->GetInfo() : AudioInfo {.Format = AudioFormat::None },
+            .Audio = audioInfo,
             .CConfig = &Config,
         };
+
+        Stats.Filename = filename;
+        Stats.FPS = (double)rateNum / rateDen;
 
         IOutput* output = CreateOutputLibAV(para);
 
@@ -58,12 +95,15 @@ class ScreenCapture : public IScreenCapture
         bool firstAudio = true;
 
         double firstVideoTime = 0;
-
+        
         double vTimeSent = 0;
         double aTimeSent = 0;
         bool scrlOn = true;
         if (Config.BlinkScrollLock)
             SetScrollLock(true);
+
+        int frameCount = 0;
+        uint totalBytes = 0;
 
         while (thread.IsRunning())
         {
@@ -73,7 +113,6 @@ class ScreenCapture : public IScreenCapture
             double videoTime;
             while (encoder->BeginGetPacket(data, size, 2, videoTime))
             {
-
                 output->SubmitVideoPacket(data, size);
                 encoder->EndGetPacket();
                 vTimeSent += (double)rateDen / rateNum;
@@ -94,8 +133,9 @@ class ScreenCapture : public IScreenCapture
                     {
                         output->SubmitAudio(audioData, audio);
                         aTimeSent += (double)audio / (para.Audio.BytesPerSample * para.Audio.SampleRate);
+                        CalcVU(audioData, audio);
                     }
-                    Stats.AVSkew += 0.03 * (aTimeSent - vTimeSent - Stats.AVSkew);
+                    avSkew += 0.03 * (aTimeSent - vTimeSent - avSkew);
                 }
 
                 if (Config.BlinkScrollLock)
@@ -107,6 +147,16 @@ class ScreenCapture : public IScreenCapture
                         scrlOn = blink;
                     }
                 }
+
+                frameCount++;
+                totalBytes += size;
+
+                double br = (8. * size * rateNum) / (1000. * rateDen);
+                bitrate += 0.03 * (br  - bitrate);
+                Stats.AvgBitrate = (8. * (double)totalBytes * rateNum) / (1000. * frameCount * rateDen);
+                Stats.MaxBitrate = Max(Stats.MaxBitrate, bitrate);
+                
+                Stats.Frames.PushTail(CaptureStats::Frame{ .FPS = fps, .AVSkew = avSkew, .Bitrate = bitrate });
             }        
         }
 
@@ -217,8 +267,8 @@ class ScreenCapture : public IScreenCapture
                         if (deltaFrames)
                         {
                             double curfps = (double)info.rateNum / (info.rateDen * deltaFrames);
-                            if (!Stats.FPS) Stats.FPS = curfps;
-                            Stats.FPS += 0.03 * (curfps - Stats.FPS);
+                            if (!fps) fps = curfps;
+                            fps += 0.03 * (curfps - fps);
                         }
                     }
 
@@ -263,7 +313,7 @@ class ScreenCapture : public IScreenCapture
 
                     lastFrameTime += frameDuration;
                     double curfps = (double)info.rateNum / (info.rateDen * (duplicated + 1));
-                    Stats.FPS += 0.03 * (curfps - Stats.FPS);
+                    fps += 0.03 * (curfps - fps);
                 }
             }
         }
@@ -273,7 +323,9 @@ class ScreenCapture : public IScreenCapture
 
         delete processThread;
         delete encoder;
-
+        for (int i = 0; i < 32; i++)
+            if (Stats.VU[i] > 0)
+                Stats.VU[i] = 0;
     }
 
 public:
@@ -293,7 +345,7 @@ public:
         ExitD3D();
     }
 
-    CaptureStats GetStats() override { return Stats; }
+    const CaptureStats &GetStats() override { return Stats; }
 };
 
 

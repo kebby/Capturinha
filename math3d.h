@@ -24,6 +24,8 @@ struct Vec2
     constexpr float LengthSq() const { return x * x + y * y; }
     float Length() const { return sqrtf(LengthSq()); }
 
+    Vec2 Rotate(float a) const { float s = sinf(a); float c = cosf(a); return Vec2(c * x + s * y, c * y - s * x); }
+
     constexpr float operator[](int i) const { return ((const float*)this)[i]; }
     operator const float* () const { return (const float*)this; }
 };
