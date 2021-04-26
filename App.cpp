@@ -1,3 +1,9 @@
+//
+// Copyright (C) Tammo Hinrichs 2021. All rights reserved.
+// Licensed under the MIT License. See LICENSE.md file for full license information
+//
+
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 #include <atlbase.h>
@@ -551,7 +557,7 @@ public:
 
     static float VUToScreen(float vu)
     {
-        return powf(vu, 0.3);
+        return powf(vu, 0.3f);
     }
 
     static float DecibelToLinear(float dB) { return powf(10, dB / 20); };
@@ -575,7 +581,7 @@ public:
         {
             if (db > 50 && db % 10) continue;
             if (db > 20 && db % 2) continue;
-            float v = VUToScreen(DecibelToLinear(-db));                   
+            float v = VUToScreen(DecibelToLinear((float)-db));                   
             int x = area.left + int(v * area.Width() + 1);
             dc.SelectPen(db % 10 ? pen3 : pen2);
             dc.MoveTo(x, area.top);

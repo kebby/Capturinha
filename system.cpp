@@ -1,7 +1,8 @@
+//
+// Copyright (C) Tammo Hinrichs 2021. All rights reserved.
+// Licensed under the MIT License. See LICENSE.md file for full license information
+//
 
-// // Including SDKDDKVer.h defines the highest available Windows platform.
-// If you wish to build your application for a previous Windows platform, include WinSDKVer.h and
-// set the _WIN32_WINNT macro to the platform you wish to support before including SDKDDKVer.h.
 #include <SDKDDKVer.h>
 
 #define WIN32_LEAN_AND_MEAN  // Exclude rarely-used stuff from Windows headers
@@ -23,12 +24,10 @@
 #pragma comment (lib, "shlwapi.lib")
 
 
-
 // Global Variables:
-HINSTANCE hInst = 0;
+//HINSTANCE hInst = 0;
 HWND hWnd = 0;
-
-float UIScale;
+//float UIScale;
 
 
 //----------------------------------------------------------------------------------------------

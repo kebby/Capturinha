@@ -1,3 +1,8 @@
+//
+// Copyright (C) Tammo Hinrichs 2021. All rights reserved.
+// Licensed under the MIT License. See LICENSE.md file for full license information
+//
+
 #include "system.h"
 #include "audiocapture.h"
 #include "screencapture.h"
@@ -247,7 +252,7 @@ void GetAudioDevices(Array<String> &into)
         store->GetValue(PKEY_Device_FriendlyName, &varName);
         if (dflt)
         {
-            into += "Default device";
+            into += "Default output";
             dflt = false;
         }
         else

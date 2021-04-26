@@ -1,3 +1,8 @@
+//
+// Copyright (C) Tammo Hinrichs 2021. All rights reserved.
+// Licensed under the MIT License. See LICENSE.md file for full license information
+//
+
 #pragma once
 
 #include <math.h>
@@ -423,6 +428,8 @@ public:
     template<typename Ts> bool operator > (const Ts& s) const { return Compare(s) > 0; }
     template<typename Ts> bool operator != (const Ts& s) const { return Compare(s) != 0; }
 
+    // wrapper to UTF-16 string
+    // Beware object lifetimes (using ToWChar() as function argument is fine)
     class WCharProxy
     {
         friend class String;
@@ -448,7 +455,8 @@ private:
     
 };
 
-
+// StringBuilder class, just append strings and get the result at the end
+// Supports optional pretty printing for human readable formats
 class StringBuilder
 {
 public:
@@ -475,7 +483,8 @@ private:
     void CheckIndent() { strings += String::Repeat(' ', indent); firstInLine = false; }
 };
 
-
+// Scans text and returns symbols, strings, or numbers
+// There's an error list you can use to relay errors back to the user
 class Scanner
 {
 public:

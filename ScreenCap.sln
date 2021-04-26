@@ -10,6 +10,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Stuff", "Stuff", "{96D74884
 		.editorconfig = .editorconfig
 		.gitignore = .gitignore
 		config.json = config.json
+		LICENSE.md = LICENSE.md
 		README.md = README.md
 	EndProjectSection
 EndProject

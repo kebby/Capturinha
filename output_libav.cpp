@@ -1,3 +1,8 @@
+//
+// Copyright (C) Tammo Hinrichs 2021. All rights reserved.
+// Licensed under the MIT License. See LICENSE.md file for full license information
+//
+
 #include "system.h"
 #include "screencapture.h"
 #include "output.h"

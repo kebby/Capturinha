@@ -1,3 +1,8 @@
+//
+// Copyright (C) Tammo Hinrichs 2021. All rights reserved.
+// Licensed under the MIT License. See LICENSE.md file for full license information
+//
+
 #include "types.h"
 
 #include <string.h>
@@ -212,8 +217,21 @@ String Scanner::QuotedString()
         if (*ptr == '\\')
         {
             ptr++;
+            switch (*ptr)
+            {
+            case 0: ptr--; break;
+            case 'r': AddChar('\r', ret); break;
+            case 't': AddChar('\t', ret); break;
+            case 'n': AddChar('\n', ret); break;
+            case 'b': AddChar('\b', ret); break;
+            case 'f': AddChar('\f', ret); break;
+            case 'u': ASSERT0("IMPLEMENT ME");
+            case '\\': case '"': case '/': AddChar(*ptr, ret); break;
+            }
+            ptr++;
         }
-        AddChar(*ptr++, ret);
+        else
+            AddChar(*ptr++, ret);
     }
     if (!Char('\"')) return String();
 

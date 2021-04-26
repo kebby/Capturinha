@@ -11,7 +11,8 @@ but during testing I found them all lacking. There are either commercial solutio
 "Free" tier is so bad it's pretty much unusable and doesn't inspire you to shell out money 
 for the real product, and the solutions built into Windows or the graphics driver lack configuration 
 options such as choosing a constant quality encoding mode or even what codec to use - 
-and all of them dropped frames like hot potatoes. So I thought "how hard can it be?"
+and all of them dropped frames like hot potatoes. So, having had some experience in using NVENC and
+the FFmpeg libraries for encoding and muxing video and audio, I thought "how hard can it be?"
 
 ### Building
 
@@ -27,7 +28,7 @@ and all of them dropped frames like hot potatoes. So I thought "how hard can it 
 
 ### Usage
 
-To run this tool you'll need at least Windows 10 version 1903 or later, and an NVIDIA graphics card.
+To run this tool you'll need at least Windows 10 (64 bit) version 1903 or later, and an NVIDIA graphics card.
 Your screen must be connected to that GPU, so sadly at the moment most laptops are out :/
 
 You'll be greeted by a configuration dialog. Select the screen you want to capture at the top, 
@@ -63,5 +64,5 @@ Press "Stop" when you're done. That's basically it.
   and encoders only seem to accept YUV (instead of RGBA) for full quality in high bpc or 4:4:4 modes 
 * Refine full screen detection so it doesn't capture a few wrong frames at the end 
   when the app to record is already gone
-* Show mouse cursor (needs to be rendered into the target texture)
-* Region of Interest or single window capture 
+* Optionally show mouse cursor (needs to be rendered into the target texture)
+* Region of Interest or single window capture (only if it's in the foreground)
