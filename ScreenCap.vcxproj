@@ -188,6 +188,9 @@
   <ItemGroup>
     <ResourceCompile Include="ScreenCap.rc" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="appicon.ico" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>

@@ -97,14 +97,14 @@ public:
     template<class T> void Child(T& child, const RECT& r, const char* text = "", const DWORD style = 0)
     {
         RECT r2 = r;
-        child.Create(m_hWnd, r2, text, WS_CHILD | WS_VISIBLE | style, ID_BUTTON);
+        child.Create(m_hWnd, r2, text, WS_CHILD | WS_VISIBLE | style, 0);
         child.SetFont(AtlGetStockFont(DEFAULT_GUI_FONT));
     }
 
     template<class T> void Dropdown(T& child, const RECT& r, Array<String> &strings)
     {
         RECT r2 = r;
-        child.Create(m_hWnd, r2, NULL, WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS, ID_BUTTON);
+        child.Create(m_hWnd, r2, NULL, WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS, 0);
         child.SetFont(AtlGetStockFont(DEFAULT_GUI_FONT));
         for (auto out : strings)
             child.AddString(out);
@@ -280,7 +280,7 @@ public:
         Child(blinkScrlLock, r, "Flash Scroll Lock when recording", WS_TABSTOP | BS_AUTOCHECKBOX);
 
         r = Rect(cr, aRight, aBottom, 130, 25, aRight, aBottom);
-        startCapture.Create(m_hWnd, r, "Start", WS_TABSTOP | WS_CHILD | WS_VISIBLE, ID_BUTTON);
+        startCapture.Create(m_hWnd, r, "Start", WS_TABSTOP | WS_CHILD | WS_VISIBLE, 0);
         startCapture.SetFont(font);
 
         lastConfig = Config;
@@ -493,7 +493,7 @@ public:
     template<class T> void Child(T& child, const RECT& r, const char* text = "", const DWORD style = 0)
     {
         RECT r2 = r;
-        child.Create(m_hWnd, r2, text, WS_CHILD | WS_VISIBLE | style, ID_BUTTON);
+        child.Create(m_hWnd, r2, text, WS_CHILD | WS_VISIBLE | style, 0);
         child.SetFont(font);
     }
 
@@ -838,8 +838,8 @@ public:
         CRect cr;
         GetClientRect(&cr);
 
-        setupForm.Create(m_hWnd, cr, "", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, ID_BUTTON);
-        statsForm.Create(m_hWnd, cr, "", WS_CHILD | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, ID_BUTTON);
+        setupForm.Create(m_hWnd, cr, "", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0);
+        statsForm.Create(m_hWnd, cr, "", WS_CHILD | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0);
 
         return 0;
     }

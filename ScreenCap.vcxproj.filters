@@ -530,4 +530,7 @@
   <ItemGroup>
     <ResourceCompile Include="ScreenCap.rc" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="appicon.ico" />
+  </ItemGroup>
 </Project>
