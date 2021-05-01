@@ -131,11 +131,11 @@ public:
 
     CComboBox videoCodec;
 
-    static const int labelwidth = 80;
+    static const int labelwidth = 85;
 
     LRESULT OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
     {
-        font.CreateFontA(WithDpi(14), 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH, "Segoe UI");
+        font.CreateFontA(WithDpi(16), 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH, "Segoe UI");
         SetFont(font);
 
         CRect r, cr;
@@ -195,7 +195,7 @@ public:
         r = Rect(line, aLeft, aTop, 80, line.Height(), aLeft, aTop, 240, 4);
         Child(rateParamLabel, r, "");
 
-        r = Rect(line, aLeft, aTop, 60, line.Height(), aLeft, aTop, 320);       
+        r = Rect(line, aLeft, aTop, 60, line.Height(), aLeft, aTop, 325);       
         Child(rateParam, r, "", ES_RIGHT | ES_NUMBER | WS_BORDER);
 
         line.OffsetRect(0, 25);
@@ -214,7 +214,7 @@ public:
         CStatic label4;
         Child(label4, r, "GOP length");
 
-        r = Rect(line, aLeft, aTop, 60, line.Height(), aLeft, aTop, 320);
+        r = Rect(line, aLeft, aTop, 60, line.Height(), aLeft, aTop, 325);
         Child(gopSize, r, "", ES_RIGHT | ES_NUMBER | WS_BORDER);
 
         line.OffsetRect(0, 25);
@@ -253,7 +253,7 @@ public:
         CStatic label8;
         Child(label8, r, "Bit rate (kbits/s)");
 
-        r = Rect(line, aLeft, aTop, 60, line.Height(), aLeft, aTop, 320);
+        r = Rect(line, aLeft, aTop, 60, line.Height(), aLeft, aTop, 325);
         Child(audioRate, r, "", ES_RIGHT | ES_NUMBER | WS_BORDER);
 
         line.OffsetRect(0, 25);
@@ -268,7 +268,7 @@ public:
         r = Rect(line, aLeft, aTop, 265, line.Height(), aLeft, aTop, labelwidth);
         Child(directory, r, "c:\\temp", ES_LEFT | WS_BORDER);
 
-        r = Rect(line, aLeft, aTop, 30, line.Height(), aLeft, aTop, 350);
+        r = Rect(line, aLeft, aTop, 30, line.Height(), aLeft, aTop, 355);
         Child(dirButton, r, "...", BS_PUSHBUTTON);
 
         line.OffsetRect(0, 25);
@@ -286,7 +286,7 @@ public:
         CStatic label11;
         Child(label11, r, "Container");
 
-        r = Rect(line, aLeft, aTop, 60, line.Height(), aLeft, aTop, 320);
+        r = Rect(line, aLeft, aTop, 60, line.Height(), aLeft, aTop, 325);
         Array<String> containerStrs = { "avi", "mp4", "mov", "mkv" };
         Dropdown(container, r, containerStrs);
 
