@@ -46,6 +46,22 @@ constexpr float aTop = 0;
 constexpr float aBottom = 1;
 constexpr float aligned = -1;
 
+static int DPI = 96;
+
+inline int WithDpi(int s) { return s>=0 ? s * DPI / 96 : s; }
+inline int WithoutDpi(int s) { return s >= 0 ? s * 96 / DPI : s; }
+
+inline RECT WithDpi(const RECT& r)
+{
+    return RECT{ .left = WithDpi(r.left), .top = WithDpi(r.top), .right = WithDpi(r.right), .bottom = WithDpi(r.bottom) };
+}
+
+
+inline RECT WithoutDpi(const RECT& r)
+{
+    return RECT{ .left = WithoutDpi(r.left), .top = WithoutDpi(r.top), .right = WithoutDpi(r.right), .bottom = WithoutDpi(r.bottom) };
+
+}
 static RECT Rect (const RECT &ref, float refAnchorX, float refAnchorY, int width, int height, float anchorX = aligned, float anchorY = aligned, int offsX = 0, int offsY = 0)
 {
     float ax = Lerp<float>(refAnchorX, (float)ref.left, (float)ref.right);
@@ -56,7 +72,7 @@ static RECT Rect (const RECT &ref, float refAnchorX, float refAnchorY, int width
 
     int left = (int)roundf(ax - width * anchorX + offsX);
     int top = (int)roundf(ay - height * anchorY + offsY);
-    return RECT{ .left = left, .top = top, .right = left + width, .bottom = top + height };
+    return WithDpi(RECT{ .left = left, .top = top, .right = left + width, .bottom = top + height });
 }
 
 //-------------------------------------------------------------------
@@ -65,6 +81,8 @@ static RECT Rect (const RECT &ref, float refAnchorX, float refAnchorY, int width
 class SetupForm : public CWindowImpl<SetupForm>, CIdleHandler
 {
 public:
+
+    CFont font;
 
     CaptureConfig lastConfig;
 
@@ -98,14 +116,14 @@ public:
     {
         RECT r2 = r;
         child.Create(m_hWnd, r2, text, WS_CHILD | WS_VISIBLE | style, 0);
-        child.SetFont(AtlGetStockFont(DEFAULT_GUI_FONT));
+        child.SetFont(font);
     }
 
     template<class T> void Dropdown(T& child, const RECT& r, Array<String> &strings)
     {
         RECT r2 = r;
         child.Create(m_hWnd, r2, NULL, WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS, 0);
-        child.SetFont(AtlGetStockFont(DEFAULT_GUI_FONT));
+        child.SetFont(font);
         for (auto out : strings)
             child.AddString(out);
         child.SetCurSel(0);
@@ -117,15 +135,16 @@ public:
 
     LRESULT OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
     {
-        CFont font = AtlGetStockFont(DEFAULT_GUI_FONT);
+        font.CreateFontA(WithDpi(14), 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH, "Segoe UI");
         SetFont(font);
 
         CRect r, cr;
         CStatic label;
         Array<String> strings;
         GetClientRect(&cr);
-        cr.InflateRect(-10, -10);
-        CRect line = Rect(cr, 0, 0, cr.Width(), 20);
+        cr = WithoutDpi(cr);
+        cr.InflateRect(-10,-10);
+        CRect line = WithoutDpi(Rect(cr, 0, 0, cr.Width(), 20));
 
         //------------- OutputIndex
         r = Rect(line, 0, 0, labelwidth, line.Height(), 0, 0, 0, 4);
@@ -230,7 +249,7 @@ public:
         r = Rect(line, aLeft, aTop, 100, line.Height(), aLeft, aTop, labelwidth);
         Dropdown(audioCodec, r, acodecStrs);
 
-        r = Rect(line, aLeft, aTop, 80, line.Height(), aLeft, aTop, 240, 4);
+        r = Rect(line, aLeft, aTop, 100, line.Height(), aLeft, aTop, 240, 4);
         CStatic label8;
         Child(label8, r, "Bit rate (kbits/s)");
 
@@ -498,15 +517,14 @@ public:
     }
 
     LRESULT OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
-    {
-        font = AtlGetStockFont(DEFAULT_GUI_FONT);
-        SetFont(font);
-
-        smallFont.CreateFontA(12, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH, "Segoe UI");
-        bigFont.CreateFontA(24, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH, "Segoe UI");
+    {        
+        font.CreateFontA(WithDpi(14), 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH, "Segoe UI");
+        smallFont.CreateFontA(WithDpi(11), 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH, "Segoe UI");
+        bigFont.CreateFontA(WithDpi(24), 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH, "Bahnschrift");
 
         CRect r, cr;
         GetClientRect(&cr);
+        cr = WithoutDpi(cr);
         cr.InflateRect(-10, -10);
 
         r = Rect(cr, aLeft, aBottom, 230, 25, aLeft, aBottom);
@@ -572,6 +590,9 @@ public:
         dc.SetTextColor(0xa0a0a0);
         dc.SetBkMode(TRANSPARENT);
 
+        int d10 = WithDpi(10);
+        int d20 = WithDpi(20);
+
         for (int db = 1; db < 100; db++)
         {
             if (db > 50 && db % 10) continue;
@@ -581,7 +602,7 @@ public:
                        
             if ((db >= 30 && db <= 60 && !(db % 10)) || (db<30 && !(db % 6)))
             {
-                CRect textRect(x-10, area.bottom, x+10, area.bottom+10);
+                CRect textRect(x-d10, area.bottom, x+d10, area.bottom+d10);
                 dc.DrawTextA(String::PrintF("-%d",db), -1, &textRect, DT_CENTER);
                 dc.SelectPen(pen2);
             }
@@ -590,9 +611,9 @@ public:
             dc.MoveTo(x, area.top);
             dc.LineTo(x, area.bottom);
         }
-        CRect textRect2(area.left, area.bottom, area.left+20, area.bottom + 10);
+        CRect textRect2(area.left, area.bottom, area.left+WithDpi(d20), area.bottom + d10);
         dc.DrawTextA("dBFS", -1, &textRect2, DT_LEFT);
-        CRect textRect3(area.right-20, area.bottom, area.right, area.bottom + 10);
+        CRect textRect3(area.right-d20, area.bottom, area.right, area.bottom + d10);
         dc.DrawTextA("0", -1, &textRect3, DT_RIGHT);
 
 
@@ -637,7 +658,7 @@ public:
         // the points for the graph...
         int np = Min(grapharea.Width() + 1, (int)nPoints);
         int offs = (int)nPoints - np;
-        double gh = grapharea.Height() + 1;
+        double gh = (double)grapharea.Height() + 1;
         Array<POINT> points(POINT{ .x = grapharea.left, .y = grapharea.bottom });
         for (int i = 0; i < np; i++)
         {
@@ -672,13 +693,17 @@ public:
             dc.LineTo(grapharea.right, y);
         }
 
-        CRect textRect(grapharea.left + 5, grapharea.top + 1, grapharea.left + 5 + 100, grapharea.top + 1 + 10);
+        int d5 = WithDpi(5);
+        int d10 = WithDpi(10);
+        int d100 = WithDpi(100);
+
+        CRect textRect(grapharea.left + d5, grapharea.top + 1, grapharea.left + d5 + d100, grapharea.top + 1 + d10);
         dc.SelectFont(smallFont);
         dc.SetTextColor(CRef(color * 0.5f));
         dc.SetBkMode(TRANSPARENT);
         dc.DrawTextA(label, -1, &textRect, DT_LEFT);
 
-        CRect textRect2(grapharea.right - 5 - 200, grapharea.top + 1, grapharea.right - 5, grapharea.top + 1 + 10);        
+        CRect textRect2(grapharea.right - d5 - 2*d100, grapharea.top + 1, grapharea.right - d5, grapharea.top + 1 + d10);        
         dc.DrawTextA(String::PrintF(unitFmt, max), -1, &textRect2, DT_RIGHT);
     }
 
@@ -688,14 +713,13 @@ public:
         dc.SetTextColor(0x000000);
         dc.SetBkMode(TRANSPARENT);
 
-        CRect r1 = rect; r1.right = r1.left + leftw; r1.bottom = r1.top + 20;
-        CRect r2 = rect; r2.left = r2.left + leftw; r2.bottom = r2.top + 20;
+        int d20 = WithDpi(20);
+        leftw = WithDpi(leftw);
+
+        CRect r1 = WithDpi(rect); r1.right = r1.left + leftw; r1.bottom = r1.top + d20;
+        CRect r2 = WithDpi(rect); ; r2.left = r2.left + leftw; r2.bottom = r2.top + d20;
         dc.DrawTextA(left, -1, &r1, DT_LEFT);
         dc.DrawTextA(right, -1, &r2, DT_RIGHT|DT_PATH_ELLIPSIS);
-
-        //DRAWTEXTPARAMS dtp = {};
-        //dtp.
-        //dc.DrawTextExA()
 
         rect.OffsetRect(0, 20);
     }
@@ -703,7 +727,8 @@ public:
     LRESULT OnPaint(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/)
     {
         RECT cr;
-        GetClientRect(&cr);
+        GetClientRect(&cr);      
+        cr = WithoutDpi(cr);
         auto w = cr.right - cr.left - 20;
         auto h = cr.bottom - cr.top - 60;
         PAINTSTRUCT ps;
@@ -711,17 +736,21 @@ public:
         CDC dc;
         dc.CreateCompatibleDC(maindc);
         CBitmap bitmap;
-        bitmap.CreateCompatibleBitmap(maindc, w, h);
+        bitmap.CreateCompatibleBitmap(maindc, WithDpi(w), WithDpi(h));
 
         dc.SelectBitmap(bitmap);
+
+        CRect area(0, 0, w, h);
 
         // clear
         dc.SelectStockPen(NULL_PEN);
         dc.SelectStockBrush(WHITE_BRUSH);
-        dc.Rectangle(&cr);
+        CRect clr = WithDpi(area);
+        dc.Rectangle(&clr);
 
-        CRect area(0, 0, w, h);
         area.InflateRect(-10, -10);
+
+       
 
         if (Capture)
         {
@@ -730,7 +759,7 @@ public:
 
             // FPS graph    
             CRect graph(area.left, area.top, area.right, area.top + 62);
-            PaintGraph(dc, graph, Vec3(0, 0.5, 0), "FPS", "%.2f", stats.Frames.Count(), stats.FPS, -1, [&](int i)
+            PaintGraph(dc, WithDpi(graph), Vec3(0, 0.5, 0), "FPS", "%.2f", stats.Frames.Count(), stats.FPS, -1, [&](int i)
             {
                 return stats.Frames[i].FPS;
             });
@@ -742,14 +771,14 @@ public:
 
             // Bitrate graph
             graph.OffsetRect(0, 70);
-            PaintGraph(dc, graph, Vec3(0.0, 0, 0.5), "Bit rate", "%.0f kbits/s", stats.Frames.Count(), maxRate, stats.AvgBitrate, [&](int i)
+            PaintGraph(dc, WithDpi(graph), Vec3(0.0, 0, 0.5), "Bit rate", "%.0f kbits/s", stats.Frames.Count(), maxRate, stats.AvgBitrate, [&](int i)
             {
                 return stats.Frames[i].Bitrate;
             });
 
             // VU meter
             CRect vumeter(area.left, graph.bottom + 10, area.right, graph.bottom + 10 + 26);
-            PaintVU(dc, vumeter, stats);
+            PaintVU(dc, WithDpi(vumeter), stats);
 
             // info
             CRect line(area.left, vumeter.bottom + 20, area.right, area.bottom);
@@ -766,7 +795,8 @@ public:
             PaintText(dc, "Bitrate", String::PrintF("avg %d, max %d kbits/s", (int)stats.AvgBitrate,(int)stats.MaxBitrate), line, lw);
         }
 
-        maindc.BitBlt(10, 10, w, h, dc, 0, 0, SRCCOPY);
+        int d10 = WithDpi(10);
+        maindc.BitBlt(d10, d10, WithDpi(w), WithDpi(h), dc, 0, 0, SRCCOPY);
         EndPaint(&ps);
         return 1;
     }
@@ -899,7 +929,10 @@ int Run(LPTSTR /*lpstrCmdLine*/ = NULL, int nCmdShow = SW_SHOWDEFAULT)
 
     MainFrame wndMain;
 
-    RECT winRect = { .left = CW_USEDEFAULT , .top = CW_USEDEFAULT, .right = CW_USEDEFAULT+420, .bottom = CW_USEDEFAULT+380 };
+    DPI = GetDpiForSystem();
+    RECT winRect = { .left = CW_USEDEFAULT , .top = CW_USEDEFAULT, .right = CW_USEDEFAULT+WithDpi(420), .bottom = CW_USEDEFAULT+WithDpi(380) };
+
+
     if (wndMain.CreateEx(0, &winRect, WS_DLGFRAME|WS_SYSMENU|WS_MINIMIZEBOX) == NULL)
     {
         ATLTRACE(_T("Main window creation failed!\n"));
@@ -925,7 +958,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR lpstr
     HRESULT hRes = ::CoInitializeEx(NULL, COINIT_MULTITHREADED);  
     ATLASSERT(SUCCEEDED(hRes));
 
-    static char appName[1024];
+    static char appName[2048];
     LoadString(ModuleHelper::GetResourceInstance(), IDR_MAINFRAME, appName, 2048);
     AppName = appName;
 
