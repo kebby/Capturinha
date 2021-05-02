@@ -22,7 +22,7 @@ struct ColorSpace
     }
 };
 
-constexpr Mat33 MakeRGB2YPbPr(const Vec3& k)
+constexpr inline Mat33 MakeRGB2YPbPr(const Vec3& k)
 {
     return Mat33
     {
@@ -32,7 +32,7 @@ constexpr Mat33 MakeRGB2YPbPr(const Vec3& k)
     }.Transpose();
 }
 
-constexpr Mat44 MakeRGB2YUV44(const ColorSpace& space, float yMin, float yMax, float uvMin, float uvMax)
+constexpr inline Mat44 MakeRGB2YUV44(const ColorSpace& space, float yMin, float yMax, float uvMin, float uvMax)
 {
     Mat33 rgb2ypp = MakeRGB2YPbPr(space.GetK());
     Vec3 scale = { yMax - yMin, uvMax - uvMin, uvMax - uvMin };
@@ -45,6 +45,9 @@ constexpr Mat44 MakeRGB2YUV44(const ColorSpace& space, float yMin, float yMax, f
     };
 }
 
+// color spaces
+// -------------------------------------------------------------------------------
+
 constexpr static const ColorSpace Rec709 = // also sRGB
 {
     .r = { 0.640f, 0.330f }, 
@@ -52,3 +55,78 @@ constexpr static const ColorSpace Rec709 = // also sRGB
     .b = { 0.150f, 0.060f },
     .white = { 0.3127f, 0.3290f }
 };
+
+constexpr static const ColorSpace Rec601_625 = 
+{
+    .r = { 0.640f, 0.330f },
+    .g = { 0.290f, 0.600f },
+    .b = { 0.150f, 0.060f },
+    .white = { 0.3127f, 0.3290f }
+};
+
+constexpr static const ColorSpace Rec601_525 =
+{
+    .r = { 0.630f, 0.340f },
+    .g = { 0.310f, 0.595f },
+    .b = { 0.155f, 0.070f },
+    .white = { 0.3127f, 0.3290f }
+};
+
+constexpr static const ColorSpace Rec2020 =
+{
+    .r = { 0.708f, 0.292f },
+    .g = { 0.170f, 0.797f },
+    .b = { 0.131f, 0.046f },
+    .white = { 0.3127f, 0.3290f }
+};
+
+constexpr static const ColorSpace DCI_P3_D65 =
+{
+    .r = { 0.680f, 0.320f },
+    .g = { 0.265f, 0.690f },
+    .b = { 0.150f, 0.060f },
+    .white = { 0.3127f, 0.3290f }
+};
+
+constexpr static const ColorSpace DCI_P3_DCI =
+{
+    .r = { 0.680f, 0.320f },
+    .g = { 0.265f, 0.690f },
+    .b = { 0.150f, 0.060f },
+    .white = { 0.314f, 0.351f }
+};
+
+constexpr static const ColorSpace DCI_P3_D60 =
+{
+    .r = { 0.680f, 0.320f },
+    .g = { 0.265f, 0.690f },
+    .b = { 0.150f, 0.060f },
+    .white = { 0.32168f, 0.33767f }
+};
+
+constexpr static const ColorSpace AdobeRGB =
+{
+    .r = { 0.640f, 0.330f },
+    .g = { 0.210f, 0.710f },
+    .b = { 0.150f, 0.060f },
+    .white = { 0.3127f, 0.3290f }
+};
+
+constexpr static const ColorSpace ACES2065_1 =
+{
+    .r = { 0.7347f, 0.2653f },
+    .g = { 0.0000f, 1.0000f },
+    .b = { 0.0001f, -0.0770f },
+    .white = { 0.32168f, 0.33767f }
+};
+
+constexpr static const ColorSpace ACEScg =
+{
+    .r = { 0.713f, 0.293f },
+    .g = { 0.165f, 0.830f },
+    .b = { 0.128f, 0.044f },
+    .white = { 0.32168f, 0.33767f }
+};
+
+
+
