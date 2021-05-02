@@ -466,6 +466,9 @@
     <ClInclude Include="json.h">
       <Filter>base</Filter>
     </ClInclude>
+    <ClInclude Include="colormath.h">
+      <Filter>capture</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="base">

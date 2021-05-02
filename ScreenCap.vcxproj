@@ -22,6 +22,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="audiocapture.h" />
+    <ClInclude Include="colormath.h" />
     <ClInclude Include="encode.h" />
     <ClInclude Include="graphics.h" />
     <ClInclude Include="json.h" />

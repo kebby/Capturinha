@@ -19,5 +19,33 @@
       </ArrayItems>
     </Expand>
   </Type>
+
+  <Type Name="Vec2">
+    <DisplayString>({x,g}, {y,g})</DisplayString>
+  </Type>
+
+  <Type Name="Vec3">
+    <DisplayString>({x,g}, {y,g}, {z,g})</DisplayString>
+  </Type>
+
+  <Type Name="Vec3P">
+    <DisplayString>P ({x,g}, {y,g}, {z,g})</DisplayString>
+  </Type>
+
+  <Type Name="Vec4">
+    <DisplayString>({x,g}, {y,g}, {z,g}, {w,g})</DisplayString>
+  </Type>
+
+  <Type Name="Mat22">
+    <DisplayString>({i}, {j})</DisplayString>
+  </Type>
+
+  <Type Name="Mat33">
+    <DisplayString>({i}, {j}, {k})</DisplayString>
+  </Type>
   
+  <Type Name="Mat44">
+    <DisplayString>({i}, {j}, {k}, {l})</DisplayString>
+  </Type>
+
 </AutoVisualizer>
