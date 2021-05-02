@@ -211,8 +211,8 @@ struct Mat33
     }
 
     constexpr inline float Determinant() const { 
-        return i.x * (j.y * k.z - j.z * k.y) -
-               i.y * (j.x * k.z - j.z * k.z) +
+        return i.x * (j.y * k.z - k.y * j.z) -
+               i.y * (j.x * k.z - j.z * k.x) +
                i.z * (j.x * k.y - j.y * k.x);
     }
 
@@ -226,27 +226,19 @@ struct Mat33
     }
 
     constexpr inline Mat33 Inverse() const 
-    {
-        float d = Determinant();
-        Mat33 res = {
-            {
-                Mat22({ j.y, j.z }, { k.y, k.z }).Determinant(),
-                Mat22({ j.x, j.z }, { k.x, k.z }).Determinant(),
-                Mat22({ j.x, j.y }, { k.x, k.y }).Determinant(),
-            },                             
-            {                              
-                Mat22({ i.y, j.z }, { k.y, k.z }).Determinant(),
-                Mat22({ i.x, j.z }, { k.x, k.z }).Determinant(),
-                Mat22({ i.x, j.y }, { k.x, k.y }).Determinant(),
-            },
-            {
-                Mat22({ i.y, i.z }, { j.y, j.z }).Determinant(),
-                Mat22({ i.x, i.z }, { j.x, j.z }).Determinant(),
-                Mat22({ i.x, i.y }, { j.x, j.y }).Determinant(),
-            },
-        };
-        float invdet = 1.0f / (i.x * res.i.x - i.y * res.i.y + i.z * res.i.z);
-        return res * Scale(invdet);
+    {        
+        float invdet = 1 / Determinant();
+        Mat33 minv; // inverse of matrix m
+        minv.i.x = (j.y * k.z - k.y * j.z) * invdet;
+        minv.i.y = (i.z * k.y - i.y * k.z) * invdet;
+        minv.i.z = (i.y * j.z - i.z * j.y) * invdet;
+        minv.j.x = (j.z * k.x - j.x * k.z) * invdet;
+        minv.j.y = (i.x * k.z - i.z * k.x) * invdet;
+        minv.j.z = (j.x * i.z - i.x * j.z) * invdet;
+        minv.k.x = (j.x * k.y - k.x * j.y) * invdet;
+        minv.k.y = (k.x * i.y - i.x * k.y) * invdet;
+        minv.k.z = (i.x * j.y - j.x * i.y) * invdet;
+        return minv;
     }
 
 
