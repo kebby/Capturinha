@@ -26,7 +26,7 @@ static Array<String> Errors;
 static char averrbuf[1024];
 #define AVERR(x) { auto _ret=(x); if(_ret<0) { Fatal("%s(%d): libav call failed: %s\n%s\nCall: %s\n",__FILE__,__LINE__,av_make_error_string(averrbuf, 1024, _ret),(const char*)String::Join(Errors,""),#x); } }
 #else
-#define AVERR(x) { auto _ret=(x); if(_ret<0) { Fatal("%s(%d): libav call failed: %08x\n%s\n",__FILE__,__LINE__,(const char*)String::Join(Errors,""),_ret); } }
+#define AVERR(x) { auto _ret=(x); if(_ret<0) { Fatal("%s(%d): libav call failed: %08x\n%s\n",__FILE__,__LINE__,_ret,(const char*)String::Join(Errors,"")); } }
 #endif
 
 class Output_LibAV : public IOutput

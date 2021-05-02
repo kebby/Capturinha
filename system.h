@@ -6,15 +6,14 @@
 #pragma once
 #include "types.h"
 
-// these are your entry points
-// -------------------------------------------------------------------------------
-
+/*
 struct ScreenMode
 {
     uint width;
     uint height;
     bool fullscreen;
 };
+*/
 
 // time
 // -------------------------------------------------------------------------------

@@ -38,10 +38,12 @@ struct ProfileDef
 
 static const ProfileDef Profiles[] =
 {
-    { NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_H264_PROFILE_MAIN_GUID },
+    { NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_H264_PROFILE_MAIN_GUID },    
     { NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_H264_PROFILE_HIGH_GUID },
+    /* not yet
     { NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_H264_PROFILE_HIGH_444_GUID },
     { NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_LOSSLESS_DEFAULT_GUID, NV_ENC_H264_PROFILE_HIGH_444_GUID },
+    */
     { NV_ENC_CODEC_HEVC_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_HEVC_PROFILE_MAIN_GUID },
     { NV_ENC_CODEC_HEVC_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_HEVC_PROFILE_MAIN10_GUID },
 };
@@ -363,6 +365,7 @@ public:
             .encodeConfig = &enccfg,
         };
 
+        /* not yet, see header
         switch (Config.Profile)
         {
         case CodecProfile::H264_LOSSLESS:
@@ -374,7 +377,7 @@ public:
             //enccfg.encodeCodecConfig.h264Config.separateColourPlaneFlag = 1;
             break;
         }
-     
+        */
 
         NVERR(API.nvEncInitializeEncoder(Encoder, &params));
 

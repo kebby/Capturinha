@@ -174,8 +174,10 @@ public:
         { 
             "H.264 Main profile",
             "H.264 High profile",
+            /* not yet, see header
             "H.264 4:4:4 High profile",
             "H.264 lossless",
+            */
             "HEVC Main profile",
             "HEVC Main10 profile",
         };
@@ -432,6 +434,7 @@ public:
 
         if (force || lastConfig.CodecCfg.Profile != Config.CodecCfg.Profile)
         {
+            /* not yet, see header
             if (Config.CodecCfg.Profile == CodecProfile::H264_LOSSLESS)
             {
                 rateControl.EnableWindow(false);
@@ -439,7 +442,7 @@ public:
                 Config.CodecCfg.UseBitrateControl = BitrateControl::CONSTQP;
                 Config.CodecCfg.BitrateParameter = 1;
             }
-            else
+            else */
             {
                 rateControl.EnableWindow(true);
                 rateParam.EnableWindow(true);
@@ -969,6 +972,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR lpstr
         char directory[MAX_PATH + 1];
         GetCurrentDirectory(MAX_PATH + 1, directory);
         Fatal("The FFmpeg DLLs are missing\n\nPlease download an FFmpeg 4.x build (64 bit, shared version), and place the DLLs from the bin folder into %s.", directory);
+    }
+
+    // check for CUDA presence
+    dll = LoadLibrary("nvcuda.dll");
+    if (!dll)
+    {
+        char directory[MAX_PATH + 1];
+        GetCurrentDirectory(MAX_PATH + 1, directory);
+        Fatal("CUDA must be installed - Capturinha currently only works on NVIDIA GPUs, sorry for that.");
     }
 
     GfxInit();

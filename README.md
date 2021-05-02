@@ -1,4 +1,4 @@
-# ScreenCap
+# Capturinha
 
 A tool for real time screen and audio recording on Windows, using NVIDIA's NVENC and with an emphasis 
 on performance, correctness (eg. frame rate stability) and configurability. Mostly made for demoscene productions
@@ -21,8 +21,8 @@ and audio in particular, I thought "how hard can it be?"
 ### Building
 
 ##### Prerequisites: 
-* Visual Studio 2019 with desktop C++ workloads installed (make sure to install ATL and Direct3D support). Older VS versions might work, too.
-* FFmpeg 4.0 or later - http://ffmpeg.org/download.html or in binary form https://github.com/BtbN/FFmpeg-Builds/releases (you'll need the win64 shared LGPL build) - Copy the libav* and swresample* libs and DLLs into the project directory, as well as the respective contents of the include/ folder.
+* Visual Studio 2019 with desktop/game C++ workloads installed (make sure to install ATL and Direct3D support). Older VS versions might work, too.
+* FFmpeg 4.0 or later - http://ffmpeg.org/download.html or in binary form https://github.com/BtbN/FFmpeg-Builds/releases (you'll need the win64 shared LGPL build) - Copy the libavcodec, -format and -util, and swresample libs and DLLs into the project directory, as well as the respective contents of the include/ folder.
 * NVIDIA CUDA Toolkit - https://developer.nvidia.com/cuda-downloads?target_os=Windows&target_arch=x86_64 
 * NVIDIA Video Codec SDK 9 or later - https://developer.nvidia.com/nvidia-video-codec-sdk - copy nvEncodeAPI.h and nvencodeapi.lib into the project directory
 * WTL 10.0 - included as NuGet package, please restore packages before build.
@@ -32,8 +32,8 @@ and audio in particular, I thought "how hard can it be?"
 
 ### Usage
 
-To run this tool you'll need at least Windows 10 (64 bit) version 1903 or later, and an NVIDIA graphics card.
-Your screen must be connected to that GPU, so sadly at the moment most laptops are out :/
+To run Capturinha you'll need at least Windows 10 (64 bit) version 1903 or later, and an NVIDIA graphics card.
+Your screen must be connected to that GPU, so sadly at the moment most laptops are out 😞
 
 You'll be greeted by a configuration dialog. Select the screen you want to capture at the top, 
 set up encoding and audio options in the middle, and choose an output directory, name and container format
@@ -59,7 +59,7 @@ The current configuration gets stored in a file called `config.json` in the prog
 
 (also, not listed by priority)
 
-* Full, not only nominal, support for high quality formats (4:4:4 and high bit depths)
+* Full support for high quality formats (4:4:4 and high bit depths)
 * This requires: Compute shader based color space conversion to planar YUV. We need one blit anyway, and it seems
   BGRA buffers are always converted to 8bit 4:2:0 by NVENC
 * Proper GPU capabilities and error handling. At the moment it just displays a message box and then bails.
