@@ -36,7 +36,6 @@ struct ProfileDef
     GUID encodeGuid, presetGuid, profileGuid;
 };
 
-
 static const ProfileDef Profiles[] =
 {
     { NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_H264_PROFILE_MAIN_GUID },

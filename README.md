@@ -1,6 +1,6 @@
 # ScreenCap
 
-A tool for real time screen and audio capture on Windows, using NVIDIA's NVENC and with an emphasis 
+A tool for real time screen and audio recording on Windows, using NVIDIA's NVENC and with an emphasis 
 on performance, correctness (eg. frame rate stability) and configurability. Mostly made for demoscene productions
 but you can use it with everything that's on your screen.
 
@@ -59,6 +59,9 @@ The current configuration gets stored in a file called `config.json` in the prog
 
 (also, not listed by priority)
 
+* Full, not only nominal, support for high quality formats (4:4:4 and high bit depths)
+* This requires: Compute shader based color space conversion to planar YUV. We need one blit anyway, and it seems
+  BGRA buffers are always converted to 8bit 4:2:0 by NVENC
 * Proper GPU capabilities and error handling. At the moment it just displays a message box and then bails.
 * Backends for Non-NVIDIA encoders
   * AMD Video Code Engine
@@ -66,9 +69,8 @@ The current configuration gets stored in a file called `config.json` in the prog
   * Direct3D11 Video Acceleration to get vendor independent
 * Replace WTL with a more modern UI toolkit that doesn't look like a 90s revival party at 4AM when the lights go on
 * Factor the encode and output parts into a library that can be used by other people that need a video writer in their engines/tools
-* Compute shader based color space conversion to planar or NV12 YUV. We need one blit anyway, 
-  and encoders only seem to accept YUV (instead of RGBA) for full quality in high bpc or 4:4:4 modes 
 * Refine full screen detection so it doesn't capture a few wrong frames at the end 
   when the app to record is already gone
-* Optionally show mouse cursor (needs to be rendered into the target texture)
+* Optionally capture the mouse cursor (needs to be rendered into the target texture)
 * Region of Interest or single window capture (only if it's in the foreground)
+* As soon as it becomes relevant: HDR capture (using HEVC)

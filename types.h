@@ -39,12 +39,14 @@ template<typename T> constexpr T Lerp(float v, T a, T b) { return a * (1 - v) + 
 template<typename T> constexpr T Lerp(double v, T a, T b) { return a * (1 - v) + b * v; }
 
 template<typename T> constexpr T Smooth(T x) { return (3 * x - 2) * x * x; }
-template<typename T> constexpr T Smoothstep(T v, T min, T max) { return Smooth((v - min) / (max - min)); }
+constexpr float Smoothstep(float v, float min, float max) { return Smooth(Clamp((v - min) / (max - min), 0.f, 1.f)); }
+constexpr double Smoothstep(double v, double min, double max) { return Smooth(Clamp((v - min) / (max - min), 0., 1.)); }
 
 
 // basic helper stuff 
 // -------------------------------------------------------------------------------
 
+// returns the number of supplied arguments
 constexpr int NumArgs() { return 0; }
 template<typename a1, typename ... args> constexpr int NumArgs(a1, args... a) { return NumArgs(a...) + 1; }
 
@@ -65,7 +67,7 @@ private:
     void Construct(size_t at, T&& value) { new(&mem[at]) T(value); }
     template<class Tv> void Construct(size_t at, Tv value) { new(&mem[at]) T(value); }
     template<class Tv, class ... args> void Construct(size_t at, Tv v, args ...a) { Construct(at, v); Construct(at + 1, a...); }
-    void Destruct(size_t i) { mem[i].T::~T(); }
+    void Destruct(size_t at) { mem[at].T::~T(); }
     
     void Grow(size_t to)
     {
@@ -115,7 +117,7 @@ public:
         a.size = a.capacity = 0;
         a.mem = nullptr;            
     }
-    ~Array() { Clear(); delete (uint8*)mem; }
+    ~Array() { Clear(); delete[] (uint8*)mem; }
 
     Array& operator = (const Array &arr)
     {
