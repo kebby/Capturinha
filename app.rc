@@ -62,7 +62,7 @@ IDR_MAINFRAME              ICON                    "appicon.ico"
 
 STRINGTABLE
 BEGIN
-    IDR_MAINFRAME           "Unnamed Screen Capture tool"
+    IDR_MAINFRAME           "Capturinha 0.1"
 END
 
 #endif    // English (United States) resources

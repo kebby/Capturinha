@@ -8,16 +8,16 @@
       <Filter>base</Filter>
     </ClCompile>
     <ClCompile Include="audiocapture_wasapi.cpp">
-      <Filter>screencap</Filter>
+      <Filter>capture</Filter>
     </ClCompile>
     <ClCompile Include="encode_nvenc.cpp">
-      <Filter>screencap</Filter>
+      <Filter>capture</Filter>
     </ClCompile>
     <ClCompile Include="output_libav.cpp">
-      <Filter>screencap</Filter>
+      <Filter>capture</Filter>
     </ClCompile>
     <ClCompile Include="screencapture.cpp">
-      <Filter>screencap</Filter>
+      <Filter>capture</Filter>
     </ClCompile>
     <ClCompile Include="types.cpp">
       <Filter>base</Filter>
@@ -43,16 +43,16 @@
       <Filter>base</Filter>
     </ClInclude>
     <ClInclude Include="audiocapture.h">
-      <Filter>screencap</Filter>
+      <Filter>capture</Filter>
     </ClInclude>
     <ClInclude Include="encode.h">
-      <Filter>screencap</Filter>
+      <Filter>capture</Filter>
     </ClInclude>
     <ClInclude Include="output.h">
-      <Filter>screencap</Filter>
+      <Filter>capture</Filter>
     </ClInclude>
     <ClInclude Include="screencapture.h">
-      <Filter>screencap</Filter>
+      <Filter>capture</Filter>
     </ClInclude>
     <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlapp.h">
       <Filter>3rdparty\WTL</Filter>
@@ -471,9 +471,6 @@
     <Filter Include="base">
       <UniqueIdentifier>{12781895-3aa0-4202-8748-5ed4cd596433}</UniqueIdentifier>
     </Filter>
-    <Filter Include="screencap">
-      <UniqueIdentifier>{d6300db1-8c54-4978-89ad-e31d20a2a215}</UniqueIdentifier>
-    </Filter>
     <Filter Include="3rdparty">
       <UniqueIdentifier>{0c582e1b-c35c-41fb-94d3-e5f4b8faca83}</UniqueIdentifier>
     </Filter>
@@ -497,6 +494,9 @@
     </Filter>
     <Filter Include="3rdparty\WTL">
       <UniqueIdentifier>{2113dfc2-3b33-4fd8-a289-a6e7479a6f4a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="capture">
+      <UniqueIdentifier>{d6300db1-8c54-4978-89ad-e31d20a2a215}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -528,7 +528,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="ScreenCap.rc" />
+    <ResourceCompile Include="app.rc" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="appicon.ico" />
