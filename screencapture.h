@@ -38,7 +38,7 @@ struct VideoCodecConfig
     CodecProfile Profile = CodecProfile::H264_MAIN;
 
     BitrateControl UseBitrateControl = BitrateControl::CONSTQP;
-    uint BitrateParameter = 20; // bitrate in kbits/s or qp
+    uint BitrateParameter = 24; // bitrate in kbits/s or qp
 
     FrameConfig FrameCfg = FrameConfig::IP;
     uint GopSize = 60; // 0: auto
