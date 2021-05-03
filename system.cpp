@@ -33,7 +33,7 @@ const char* AppName = "Train Engine";
 //----------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------
 
-const char* ErrorString(DWORD id)
+const char* ErrorString(HRESULT id)
 
 {
     thread_local static char buf[1024];
