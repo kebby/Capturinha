@@ -255,26 +255,14 @@ public:
         };
        
         NVERR(API.nvEncOpenEncodeSessionEx(&openparams, &Encoder));
-
-        //PacketThread = new Thread(Bind(this, &Encode_NVENC::PacketThreadFunc));
-    }
-
-    void PacketThreadFunc(Thread&t)
-    {
-
     }
 
     ~Encode_NVENC()
     {
-        NVERR(API.nvEncDestroyEncoder(Encoder));        
-
         Flush();
-
-        //delete PacketThread;
-
+        NVERR(API.nvEncDestroyEncoder(Encoder));
         cuCtxDestroy_v2(CudaContext);
     }
-
 
     void Init(uint sizeX, uint sizeY, uint rateNum, uint rateDen) override
     {
