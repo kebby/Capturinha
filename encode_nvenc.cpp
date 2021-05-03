@@ -258,7 +258,20 @@ public:
     ~Encode_NVENC()
     {
         Flush();
-        NVERR(API.nvEncDestroyEncoder(Encoder));
+      
+        OutBuffer* ob = nullptr;
+        while (FreeBuffers.Dequeue(ob))
+            delete ob;
+
+        Frame* f = nullptr;
+        while (FreeFrames.Dequeue(f))
+        {
+            cuMemFree(f->Buffer);
+            delete f;
+        }
+
+        API.nvEncDestroyEncoder(Encoder);
+        cuGraphicsUnregisterResource(TexResource);
         cuCtxDestroy_v2(CudaContext);
     }
 
@@ -419,6 +432,14 @@ public:
     void Flush() override
     {
         ReleaseFrame(CurrentFrame);
+
+        OutBuffer* ob = nullptr;
+        while (EncodingBuffers.Peek(ob) && ob->event.Wait(100))
+        {
+            EncodingBuffers.Dequeue(ob);
+            ReleaseFrame(ob->frame);
+            ReleaseOutBuffer(ob);
+        }
     }
 
     bool BeginGetPacket(uint8*& data, uint& size, uint timeoutMs, double &time) override
