@@ -119,7 +119,7 @@ public:
         child.SetFont(font);
     }
 
-    template<class T> void Dropdown(T& child, const RECT& r, Array<String> &strings)
+    void Dropdown(CComboBox& child, const RECT& r, Array<String> &strings)
     {
         RECT r2 = r;
         child.Create(m_hWnd, r2, NULL, WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS, 0);
@@ -289,7 +289,7 @@ public:
         Child(label11, r, "Container");
 
         r = Rect(line, aLeft, aTop, 60, line.Height(), aLeft, aTop, 325);
-        Array<String> containerStrs = { "avi", "mp4", "mov", "mkv" };
+        Array<String> containerStrs = { "mp4", "mov", "mkv" };
         Dropdown(container, r, containerStrs);
 
 

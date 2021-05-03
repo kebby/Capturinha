@@ -63,7 +63,7 @@ class ScreenCapture : public IScreenCapture
 
     void ProcessThreadFunc(Thread& thread)
     {
-        static const char* const extensions[] = { "avi", "mp4", "mov", "mkv" };
+        static const char* const extensions[] = { "mp4", "mov", "mkv" };
 
         String prefix = Config.Directory + "\\" + Config.NamePrefix;
 

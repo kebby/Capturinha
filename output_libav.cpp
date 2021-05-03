@@ -75,11 +75,12 @@ private:
         codecpar->chroma_location = AVCHROMA_LOC_UNSPECIFIED;
         codecpar->sample_aspect_ratio.num = codecpar->sample_aspect_ratio.den = 1;
         codecpar->field_order = AV_FIELD_PROGRESSIVE;
-        //if (codecpar->codec_id == AV_CODEC_ID_H264)
-        {
-            codecpar->extradata = (uint8*)firstFrame;
-            codecpar->extradata_size = firstFrameSize;
-        }
+
+        // For h.264 and HEVC, some of the muxers need the first frame
+        // in the extradata during encode, so make a copy        
+        codecpar->extradata = (uint8*)av_malloc(firstFrameSize);
+        codecpar->extradata_size = firstFrameSize;
+        memcpy(codecpar->extradata, firstFrame, firstFrameSize);
     }
 
     void InitAudio()
@@ -169,7 +170,7 @@ public:
         Errors.Clear();
         av_log_set_callback(OnLog);
 
-        static const char* const formats[] = { "avi", "mp4", "mov", "matroska" };
+        static const char* const formats[] = { "mp4", "mov", "matroska" };
 
         AVERR(avformat_alloc_output_context2(&Context, nullptr, formats[(int)para.CConfig->UseContainer] , para.filename));
         AVERR(avio_open(&Context->pb, para.filename, AVIO_FLAG_WRITE));
@@ -208,8 +209,6 @@ public:
             InitVideo(data, size);
             InitAudio();
             AVERR(avformat_write_header(Context, nullptr));
-            VideoStream->codecpar->extradata = nullptr;
-            VideoStream->codecpar->extradata_size = 0;
         }
 
         AVRational tb = { .num = (int)Para.RateDen, .den = (int)Para.RateNum };
