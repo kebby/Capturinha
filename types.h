@@ -269,7 +269,7 @@ public:
     ~RCPtr() { Clear(); }
 
     RCPtr& operator = (const RCPtr& p) { Clear(); ptr = p.ptr; if (ptr) ptr->AddRef(); return *this; }
-    RCPtr& operator = (RCPtr&& p) { Clear(); ptr = p.ptr; p.ptr = nullptr; return *this; }
+    RCPtr& operator = (RCPtr&& p) noexcept { Clear(); ptr = p.ptr; p.ptr = nullptr; return *this; }
     template <typename T2> RCPtr & operator =  (const RCPtr<T2>& pp)
     {
         Clear();
@@ -400,7 +400,7 @@ public:
     String(const char* p, int len=-1) { Make(p, len); }
     String(const wchar_t* p, int len = -1) { Make(p, len); }
     String(const String& s) { node = s.node; }
-    String(String&& s) { node = static_cast<RCPtr<Node>&&>(s.node); }
+    String(String&& s) noexcept { node = static_cast<RCPtr<Node>&&>(s.node); }
 
     static String PrintF(const char* format, ...);
     static String Concat(const String& s1, const String& s2);
@@ -410,7 +410,7 @@ public:
     String& operator = (const char* p) { Make(p); return *this; }
     String& operator = (const wchar_t* p) { Make(p); return *this; }
     String& operator = (const String& s) { node = s.node; return *this; }
-    String& operator = (String&& s) { node = static_cast<RCPtr<Node>&&>(s.node); return *this; }
+    String& operator = (String&& s) noexcept { node = static_cast<RCPtr<Node>&&>(s.node); return *this; }
 
     size_t Length() const { return node.IsValid() ? node->len : 0; }
     operator const char* () const { return node.IsValid() ? node->str : ""; }
@@ -440,7 +440,7 @@ public:
         wchar_t* ptr = nullptr;
     public:
         ~WCharProxy() { delete[] ptr; }
-        WCharProxy(WCharProxy&& p) { ptr = p.ptr; p.ptr = nullptr; }
+        WCharProxy(WCharProxy&& p) noexcept { ptr = p.ptr; p.ptr = nullptr; }
         operator const wchar_t* () const { return ptr ? ptr : L""; }
     } ToWChar() const;
 
@@ -453,8 +453,7 @@ private:
     RCPtr<Node> node;
 
     void Make(const char* p, int len=-1);
-    void Make(const wchar_t* p, int len = -1);
-    
+    void Make(const wchar_t* p, int len = -1);    
 };
 
 // StringBuilder class, just append strings and get the result at the end
@@ -508,7 +507,7 @@ private:
     const char* line;
     int ln = 0;
     Array<String> errors;
-    char buffer[1024];
+    char buffer[1024] = {};
     int bfill = 0;
 
     void Skip();
