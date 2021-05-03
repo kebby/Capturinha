@@ -75,7 +75,6 @@ class Encode_NVENC : public IEncode
 
     Frame* CurrentFrame = nullptr;
     OutBuffer* CurrentBuffer = nullptr;
-    uint BuffersInFlight = 0;
 
     void* Encoder = nullptr;
     NV_ENC_BUFFER_FORMAT EncodeFormat = NV_ENC_BUFFER_FORMAT_ARGB;
@@ -210,7 +209,6 @@ class Encode_NVENC : public IEncode
             break;
         }
 
-        AtomicInc(BuffersInFlight);
         EncodingBuffers.Enqueue(ob);
         EncodeEvent.Fire();
         FrameNo++;       
@@ -421,8 +419,6 @@ public:
     void Flush() override
     {
         ReleaseFrame(CurrentFrame);
-        while (BuffersInFlight)
-            Sleep(1);
     }
 
     bool BeginGetPacket(uint8*& data, uint& size, uint timeoutMs, double &time) override
@@ -461,7 +457,6 @@ public:
         ReleaseFrame(CurrentBuffer->frame);
         NVERR(API.nvEncUnlockBitstream(Encoder, CurrentBuffer->buffer));
         ReleaseOutBuffer(CurrentBuffer);
-        AtomicDec(BuffersInFlight);
     }
 
 };
