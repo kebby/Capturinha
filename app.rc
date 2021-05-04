@@ -52,7 +52,9 @@ END
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-IDR_MAINFRAME              ICON                    "appicon.ico"
+IDR_MAINFRAME           ICON                    "appicon.ico"
+
+MAINICON                ICON                    "appicon.ico"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -62,13 +64,13 @@ IDR_MAINFRAME              ICON                    "appicon.ico"
 
 STRINGTABLE
 BEGIN
-    IDR_MAINFRAME           "Capturinha 0.1"
+    IDR_MAINFRAME           "Capturinha 0.1.1"
 END
 
 #endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
 
-MAINICON ICON "appicon.ico"
+
 
 #ifndef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////

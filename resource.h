@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by ScreenCap.rc
+// Used by app.rc
 //
 #define IDR_MAINFRAME                   128
 

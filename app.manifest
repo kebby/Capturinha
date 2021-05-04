@@ -2,8 +2,8 @@
 <assembly manifestVersion="1.0" xmlns="urn:schemas-microsoft-com:asm.v1" xmlns:asmv3="urn:schemas-microsoft-com:asm.v3">
 
   <assemblyIdentity type="win32"
-                        name="org.kebby.ScreenCap"
-                        version="0.1.0.0"
+                        name="org.kebby.Capturinha"
+                        version="0.1.1.0"
                         processorArchitecture="amd64"
                         publicKeyToken="0000000000000000"
   />
