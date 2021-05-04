@@ -879,7 +879,7 @@ public:
 
     LRESULT OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
     {
-        bHandled = FALSE;
+        bHandled = TRUE;
         return 1;
     }
 
@@ -935,23 +935,19 @@ int Run(LPTSTR /*lpstrCmdLine*/ = NULL, int nCmdShow = SW_SHOWDEFAULT)
     DPI = GetDpiForSystem();
     RECT winRect = { .left = CW_USEDEFAULT , .top = CW_USEDEFAULT, .right = CW_USEDEFAULT+WithDpi(420), .bottom = CW_USEDEFAULT+WithDpi(380) };
 
-
     if (wndMain.CreateEx(0, &winRect, WS_DLGFRAME|WS_SYSMENU|WS_MINIMIZEBOX) == NULL)
     {
         ATLTRACE(_T("Main window creation failed!\n"));
         return 0;
     }
 
-    //DlgMessageFiler msgFilter;
-   //msgFilter.hWnd = wndMain;
-    //theLoop.AddMessageFilter(&msgFilter);
-
     wndMain.ShowWindow(nCmdShow);
 
     int nRet = theLoop.Run();
 
     _Module.RemoveMessageLoop();
-    return nRet;
+
+    return 0;
 }
 
 extern const char* AppName;
