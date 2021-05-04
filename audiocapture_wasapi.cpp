@@ -13,7 +13,7 @@
 #include <audioclient.h>
 #include <Functiondiscoverykeys_devpkey.h>
 
-extern const char* ErrorString(DWORD id);
+extern const char* ErrorString(HRESULT id);
 #if _DEBUG
 #define CHECK(x) { HRESULT _hr=(x); if(FAILED(_hr)) Fatal("%s(%d): WASAPI call failed: %s\nCall: %s\n",__FILE__,__LINE__,ErrorString(_hr),#x); }
 #else
@@ -136,7 +136,7 @@ public:
         CHECK(Client->GetMixFormat((WAVEFORMATEX**)&Format));
 
         // TODO? support for non-float samples and other channel configs than stereo
-        ASSERT(Format->Format.wFormatTag == WAVE_FORMAT_EXTENSIBLE && Format->Format.nChannels == 2 && Format->SubFormat == KSDATAFORMAT_SUBTYPE_IEEE_FLOAT);
+        ASSERT(Format->Format.wFormatTag == WAVE_FORMAT_EXTENSIBLE && Format->SubFormat == KSDATAFORMAT_SUBTYPE_IEEE_FLOAT);
         
         BytesPerSample = Format->Format.nChannels * Format->Format.wBitsPerSample / 8;
         RingSize = Format->Format.nSamplesPerSec * BytesPerSample; // 1 second for now

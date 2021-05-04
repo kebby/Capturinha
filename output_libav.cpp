@@ -189,7 +189,8 @@ public:
             swr_free(&Resample);
         }
        
-        AVERR(av_write_trailer(Context));
+        if (FrameNo)
+            AVERR(av_write_trailer(Context));
 
         avio_close(Context->pb);
 
