@@ -188,8 +188,9 @@ public:
             delete[] ResampleBuffer;
             swr_free(&Resample);
         }
-       
-        if (FrameNo)
+
+        AVERR(av_interleaved_write_frame(Context, 0));
+        if (!AudioContext || AudioWritten>0) // mkv muxer crashes otherwise...
             AVERR(av_write_trailer(Context));
 
         avio_close(Context->pb);
