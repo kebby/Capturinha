@@ -10,6 +10,12 @@
 
 struct CaptureConfig;
 
+enum BufferFormat
+{
+    BGRA8 = 0,  // interleaved 8 bits, B,G,R,A
+    NV12 = 1,   // YUV 4:2:0 8bits, Y plane followed by interleaved U,V
+};
+
 struct IEncode
 {
     virtual ~IEncode() {}

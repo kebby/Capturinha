@@ -348,7 +348,7 @@ public:
 
         Array<ShaderMacro> macros = 
         { 
-            ShaderMacro { "OUTFORMAT", String::PrintF("%d", 0) }
+            ShaderMacro { "OUTFORMAT", String::PrintF("%d", 1) }
         };
 
         auto shader = CompileShader(Shader::Type::Compute, source, "csc", macros, "color space conversion");
