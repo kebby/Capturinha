@@ -879,6 +879,7 @@ public:
 
     LRESULT OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
     {
+        Delete(Capture);
         bHandled = TRUE;
         return 1;
     }
