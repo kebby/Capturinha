@@ -25,12 +25,7 @@
 
 CAppModule _Module;
 
-
-CaptureConfig Config = 
-{
-    .Directory = "c:\\temp",
-    .NamePrefix = "capture",
-}; 
+CaptureConfig Config = {};
 
 IScreenCapture* Capture = 0;
 
@@ -194,7 +189,7 @@ public:
         r = Rect(line, aLeft, aTop, 100, line.Height(), aLeft, aTop, labelwidth);
         Dropdown(rateControl, r, rateStrs );
 
-        r = Rect(line, aLeft, aTop, 80, line.Height(), aLeft, aTop, 240, 4);
+        r = Rect(line, aLeft, aTop, 100, line.Height(), aLeft, aTop, 240, 4);
         Child(rateParamLabel, r, "");
 
         r = Rect(line, aLeft, aTop, 60, line.Height(), aLeft, aTop, 325);       
@@ -461,7 +456,7 @@ public:
             {
                 rateParamLabel.SetWindowTextA("Constant QP");
                 if (lastConfig.CodecCfg.UseBitrateControl != Config.CodecCfg.UseBitrateControl)
-                    Config.CodecCfg.BitrateParameter = 20;
+                    Config.CodecCfg.BitrateParameter = 24;
             }
             rateParam.SetWindowTextA(String::PrintF("%d", Config.CodecCfg.BitrateParameter));
         }

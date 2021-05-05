@@ -57,7 +57,7 @@ struct CaptureConfig
 {   
     // general
     String Directory;
-    String NamePrefix;
+    String NamePrefix = "capture";
     Container UseContainer = Container::Mov;
     bool BlinkScrollLock = true;
 
