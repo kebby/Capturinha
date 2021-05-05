@@ -192,6 +192,9 @@
   <ItemGroup>
     <Image Include="appicon.ico" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="colorconvert.hlsl" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
