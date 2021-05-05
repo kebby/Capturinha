@@ -15,6 +15,7 @@
 
 #include "ScreenCapture.h"
 
+#include "resource.h"
 
 class ScreenCapture : public IScreenCapture
 {
@@ -22,7 +23,7 @@ class ScreenCapture : public IScreenCapture
 
     IEncode* encoder = nullptr;
     IAudioCapture* audioCapture = nullptr;
-    AudioInfo audioInfo;
+    AudioInfo audioInfo = {};
     Thread* processThread = nullptr;
     Thread* captureThread = nullptr;
     uint sizeX = 0, sizeY = 0, rateNum = 0, rateDen = 0;
@@ -139,7 +140,7 @@ class ScreenCapture : public IScreenCapture
                     if (audio)
                     {
                         output->SubmitAudio(audioData, audio);
-                        aTimeSent += (double)audio / (para.Audio.BytesPerSample * para.Audio.SampleRate);
+                        aTimeSent += (double)audio / ((double)para.Audio.BytesPerSample * para.Audio.SampleRate);
                         CalcVU(audioData, audio);
                     }
                     avSkew += 0.03 * (aTimeSent - vTimeSent - avSkew);
@@ -277,7 +278,7 @@ class ScreenCapture : public IScreenCapture
 
                         if (deltaFrames)
                         {
-                            double curfps = (double)info.rateNum / (info.rateDen * deltaFrames);
+                            double curfps = (double)info.rateNum / ((double)info.rateDen * deltaFrames);
                             if (!fps) fps = curfps;
                             fps += 0.03 * (curfps - fps);
                         }
@@ -323,7 +324,7 @@ class ScreenCapture : public IScreenCapture
                     }
 
                     lastFrameTime += frameDuration;
-                    double curfps = (double)info.rateNum / (info.rateDen * (duplicated + 1));
+                    double curfps = (double)info.rateNum / ((double)info.rateDen * (duplicated + 1.0));
                     fps += 0.03 * (curfps - fps);
                 }
             }
@@ -342,6 +343,16 @@ public:
     ScreenCapture(const CaptureConfig& cfg) : Config(cfg)
     {
         InitD3D(Config.OutputIndex);
+
+        auto source = LoadResource(IDR_COLORCONVERT, TEXTFILE);
+
+        Array<ShaderMacro> macros = 
+        { 
+            ShaderMacro { "OUTFORMAT", String::PrintF("%d", 0) }
+        };
+
+        auto shader = CompileShader(Shader::Type::Compute, source, "csc", macros, "color space conversion");
+
         if (Config.CaptureAudio)
             audioCapture = CreateAudioCaptureWASAPI(Config);
         captureThread = new Thread(Bind(this, &ScreenCapture::CaptureThreadFunc));

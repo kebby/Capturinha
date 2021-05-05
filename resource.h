@@ -3,6 +3,8 @@
 // Used by app.rc
 //
 #define IDR_MAINFRAME                   128
+
+#define TEXTFILE                        256
 #define IDR_COLORCONVERT                204
 
 // Next default values for new objects
