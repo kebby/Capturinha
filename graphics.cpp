@@ -290,10 +290,12 @@ Shader::~Shader()
     delete P;
 }
 
-RCPtr<Shader> CompileShader(Shader::Type type, const Buffer *buffer, const char* entryPoint, const char* name)
+static const Array<ShaderMacro> emptyMacros;
+
+RCPtr<Shader> CompileShader(Shader::Type type, const Buffer *buffer, const char* entryPoint, const Array<ShaderMacro> &macros, const char* name)
 {
     const char* target = nullptr;
-    if (!name) name = "(unknown)";
+    if (!name) name = entryPoint;
 
     switch (type)
     {
@@ -306,7 +308,10 @@ RCPtr<Shader> CompileShader(Shader::Type type, const Buffer *buffer, const char*
     default: ASSERT0("unknown shader type");
     }
 
-    D3D_SHADER_MACRO macros[] = { NULL, NULL };
+    Array<D3D_SHADER_MACRO> d3dmacros;
+    for (auto m: macros)
+        d3dmacros.PushTail(D3D_SHADER_MACRO { m.name, m.value });
+    d3dmacros.PushTail(D3D_SHADER_MACRO { NULL, NULL });
 
     UINT flags = D3DCOMPILE_OPTIMIZATION_LEVEL3;
 #if _DEBUG
@@ -314,7 +319,7 @@ RCPtr<Shader> CompileShader(Shader::Type type, const Buffer *buffer, const char*
 #endif
 
     RCPtr<ID3DBlob> code, errors;
-    HRESULT hr = D3DCompile(buffer->ptr, buffer->size, name, macros, NULL, entryPoint, target, flags, 0, code, errors);
+    HRESULT hr = D3DCompile(buffer->ptr, buffer->size, name, &d3dmacros[0], NULL, entryPoint, target, flags, 0, code, errors);
 
     if (errors.IsValid())
         DPrintF("\n%s\n", errors->GetBufferPointer());
@@ -324,6 +329,21 @@ RCPtr<Shader> CompileShader(Shader::Type type, const Buffer *buffer, const char*
 
     RCPtr<Shader> shader(new Shader(type, code->GetBufferPointer(), code->GetBufferSize()));
     return shader;
+}
+
+RCPtr<Shader> CompileShader(Shader::Type type, const String& code, const char* entryPoint, const Array<ShaderMacro> &macros,  const char* name)
+{
+    return CompileShader(type, Buffer::FromMemory((void*)(const char*)code, code.Length(), false), entryPoint, macros, name);    
+}
+
+RCPtr<Shader> CompileShader(Shader::Type type, const Buffer *code, const char* entryPoint, const char* name)
+{
+    return CompileShader(type, code, entryPoint, emptyMacros, name);
+}
+
+RCPtr<Shader> CompileShader(Shader::Type type, const String& code, const char* entryPoint, const char* name)
+{
+    return CompileShader(type, Buffer::FromMemory((void*)(const char*)code, code.Length(), false), entryPoint, emptyMacros, name);
 }
 
 struct GpuBuffer::Priv
@@ -603,11 +623,6 @@ template <class TV> void Geometry<TV>::Draw(GState& state, const GBindings& bind
     DrawInternal(state, binds, instances, vb.Count(), ib.Count());
 }
 
-RCPtr<Shader> GetIntShader(Shader::Type type, const char* proc)
-{
-    auto source = LoadResource(0 ,0/* LOL */);
-    return CompileShader(type, source, proc, "simple.hlsl");
-}
 
 /*
 ScreenMode GetScreenMode()

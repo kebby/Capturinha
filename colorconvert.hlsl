@@ -1,39 +1,37 @@
 
-struct Particle
-{
-  float3 pos;
-  float created; // timestamp
-  float3 spd;
-  float pad0;
-};
+Texture2D TexIn;
+RWByteAddressBuffer Out;
 
-StructuredBuffer<Particle> PBuf : register(t0);
-RWStructuredBuffer<Particle> PBufOut : register(u0);
+// just so syntax highlighting works... :)
+#ifndef OUTFORMAT
+#define OUTFORMAT 1
+#endif
 
 float3 lin2srgb(float3 color)
 {
     return (color <= 0.0031308) ? (color * 12.92) : 1.055 * pow(max(0, color), 1 / 2.4) - 0.055;
 }
 
-cbuffer cb_particles : register(b0)
+cbuffer cb_csc : register(b0)
 {
-  float3 gravity;
-  float time;
-  float timeScale;
-  float3 pad;
+	float4x4 colormatrix;
 }
 
-[numthreads(256,1,1)]
-void particles(uint3 dtid: SV_DispatchThreadID)
+[numthreads(8,8,1)]
+void csc(uint3 dtid: SV_DispatchThreadID)
 {
-  Particle p = PBuf[dtid.x];
+	
+#if OUTFORMAT == 1 // NV12
+	
+	this shouldn't work
+	
+#elif OUTFORMAT == 2 // whatever
 
-  float t = timeScale * frac(time + p.created);
-  p.pos = p.pos + t * p.spd + t * t * gravity;
+#else
+	#error Unknown output format
+#endif
 
-  PBufOut[dtid.x] = p;
 }
-
 
 //---------------------------------------------------------------------------------
 //---------------------------------------------------------------------------------

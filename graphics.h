@@ -303,8 +303,15 @@ RCPtr<IDXGIAdapter> GetAdapter();
 RCPtr<Texture> LoadImg(const char *filename);
 RCPtr<Texture> CreateTexture(const TexturePara& para, const void* data);
 
-RCPtr<Shader> CompileShader(Shader::Type type, const Buffer* buffer, const char* entryPoint, const char* name);
-RCPtr<Shader> GetIntShader(Shader::Type type, const char* proc);
+struct ShaderMacro
+{
+    String name, value;
+};
+
+RCPtr<Shader> CompileShader(Shader::Type type, const Buffer* code, const char* entryPoint, const char* name = nullptr);
+RCPtr<Shader> CompileShader(Shader::Type type, const String& code, const char* entryPoint, const char* name = nullptr);
+RCPtr<Shader> CompileShader(Shader::Type type, const Buffer* code, const char* entryPoint, const Array<ShaderMacro> &macros, const char* name = nullptr);
+RCPtr<Shader> CompileShader(Shader::Type type, const String& code, const char* entryPoint, const Array<ShaderMacro> &macros, const char* name = nullptr);
 
 RCPtr<RenderTarget> AcquireRenderTarget(TexturePara para);
 RCPtr<RenderTarget> AcquireBackBuffer();
