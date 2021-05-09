@@ -98,6 +98,7 @@ public:
     CEdit prefix;
     CComboBox container;
     CButton blinkScrlLock;
+    CToolTipCtrl tooltips;
 
     DECLARE_WND_CLASS_EX("SetupForm", 0, COLOR_MENU);
 
@@ -298,6 +299,16 @@ public:
         r = Rect(cr, aRight, aBottom, 130, 25, aRight, aBottom);
         startCapture.Create(m_hWnd, r, "Start", WS_TABSTOP | WS_CHILD | WS_VISIBLE, 0);
         startCapture.SetFont(font);
+       
+        tooltips.Create(*this);        
+        TOOLINFO toolInfo = {
+            .cbSize = sizeof(toolInfo),
+            .uFlags = TTF_IDISHWND | TTF_SUBCLASS,
+            .hwnd = *this,
+            .uId = (UINT_PTR)(HWND)startCapture,
+            .lpszText = (LPTSTR)"Win-F9",
+        };
+        tooltips.AddTool(&toolInfo);
 
         lastConfig = Config;
         ConfigToControls(true);
@@ -493,6 +504,8 @@ public:
 
     CStatic statusText;
     CButton stopCapture;
+    CToolTipCtrl tooltips;
+
     double maxRate = 0;
     int stat = -1;
     int lastStat = -1;
@@ -531,6 +544,18 @@ public:
 
         r = Rect(cr, aRight, aBottom, 130, 25, aRight, aBottom);
         Child(stopCapture, r, "Stop");
+
+        tooltips.Create(*this);
+        TOOLINFO toolInfo = {
+            .cbSize = sizeof(toolInfo),
+            .uFlags = TTF_IDISHWND | TTF_SUBCLASS,
+            .hwnd = *this,
+            .uId = (UINT_PTR)(HWND)stopCapture,
+            .lpszText = (LPTSTR)"Win-F9",
+        };
+        tooltips.AddTool(&toolInfo);
+
+
 
         CMessageLoop* pLoop = _Module.GetMessageLoop();
         ATLASSERT(pLoop != NULL);
@@ -847,6 +872,7 @@ public:
 
     BEGIN_MSG_MAP(MainFrame)
         MESSAGE_HANDLER(WM_SETCAPTURE, OnSetCapture)
+        MESSAGE_HANDLER(WM_HOTKEY, OnHotKey)
         CHAIN_MSG_MAP(CFrameWindowImpl<MainFrame>)
         MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
         CHAIN_MSG_MAP(CUpdateUI<MainFrame>)
@@ -877,6 +903,16 @@ public:
         Delete(Capture);
         bHandled = TRUE;
         return 1;
+    }
+
+    LRESULT OnHotKey(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& bHandled)
+    {
+        switch (wParam)
+        {
+        case 1:
+            return OnSetCapture(0, Capture ? 0 : 1, 0, bHandled);
+        }
+        return 0;
     }
 
 
@@ -938,6 +974,8 @@ int Run(LPTSTR /*lpstrCmdLine*/ = NULL, int nCmdShow = SW_SHOWDEFAULT)
     }
 
     wndMain.ShowWindow(nCmdShow);
+
+    auto hr = RegisterHotKey(wndMain, 1, MOD_WIN | MOD_NOREPEAT, VK_F9);
 
     int nRet = theLoop.Run();
 
