@@ -1,3 +1,9 @@
+//
+// Copyright (C) Tammo Hinrichs 2021. All rights reserved.
+// Licensed under the MIT License. See LICENSE.md file for full license information
+//
+
+// color space conversion shader
 
 // just so syntax highlighting works... :)
 #ifndef OUTFORMAT
@@ -9,8 +15,9 @@ RWByteAddressBuffer Out;
 
 cbuffer cb_csc : register(b0)
 {
-    float4x4 colormatrix; // needs to have bpp baked in
-    uint pitch, height;
+    float4x4 colormatrix;    // needs to have bpp baked in (so eg. *255)
+    uint pitch;              // bytes per line
+    uint height;             // # of lines
 }
 
 groupshared float4 tile[8 * 8];
@@ -23,7 +30,7 @@ void csc(uint3 dispid : SV_DispatchThreadID, uint3 threadid : SV_GroupThreadID, 
     tile[8 * threadid.y + threadid.x] = mul(pixel, colormatrix);
     GroupMemoryBarrierWithGroupSync();
     
-#if OUTFORMAT == 1 	// NV12: 8bpp 4:2:0, plane 1: Y, plane 2: U/V interleaved
+#if OUTFORMAT == 1 	// NV12: 8bpp 4:2:0, plane 1: Y, plane 2: Cb/Cr interleaved
     
     if (!(threadid.x & 3))
     {
