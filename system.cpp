@@ -511,12 +511,9 @@ bool IsFullscreen()
 
 void SetScrollLock(bool on)
 {
-    BYTE keyState[256];
+    bool state = !!(GetKeyState(VK_SCROLL) & 1);
 
-    GetKeyboardState((LPBYTE)&keyState);
-
-    if ((on && !(keyState[VK_SCROLL] & 1)) ||
-        (!on && (keyState[VK_SCROLL] & 1)))
+    if (on!=state)
     {
         // Simulate a key press
         keybd_event(VK_SCROLL,

@@ -39,7 +39,7 @@ You'll be greeted by a configuration dialog. Select the screen you want to captu
 set up encoding and audio options in the middle, and choose an output directory, name and container format
 at the bottom.
 
-Now press "Start". Recording will begin immediately, or as soon as a program goes into fullscreen
+Now press "Start" (or press Win-F9). Recording will begin immediately, or as soon as a program goes into fullscreen
 (and will pause when that program leaves fullscreen again). If the screen mode changes, the currently 
 recording file will be closed and a new one will be opened.
 
