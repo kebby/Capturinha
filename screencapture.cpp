@@ -261,7 +261,7 @@ class ScreenCapture : public IScreenCapture
                         colorMatrix = {}; 
                         break;
                     default:
-                        colorMatrix = MakeRGB2YUV44(Rec709, 16.f / 255.f, 235.f / 255.f, 16.f / 255.f, 240.f / 255.f);
+                        colorMatrix = MakeRGB2YUV44(Rec709, fi.ymin, fi.ymax, fi.uvmin, fi.uvmax);
                     }
                     
                     encoder->Init(sizeX, sizeY, rateNum, rateDen, outBuffer);

@@ -38,7 +38,9 @@ static const ProfileDef Profiles[] =
     { NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_H264_PROFILE_MAIN_GUID },    
     { NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_H264_PROFILE_HIGH_GUID },
     { NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_H264_PROFILE_HIGH_444_GUID },
-    { NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_LOSSLESS_DEFAULT_GUID, NV_ENC_H264_PROFILE_HIGH_444_GUID },
+    //{ NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_LOSSLESS_DEFAULT_GUID, NV_ENC_H264_PROFILE_HIGH_444_GUID },
+    { NV_ENC_CODEC_HEVC_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_HEVC_PROFILE_MAIN_GUID },
+    { NV_ENC_CODEC_HEVC_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_HEVC_PROFILE_MAIN10_GUID },
     { NV_ENC_CODEC_HEVC_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_HEVC_PROFILE_MAIN_GUID },
     { NV_ENC_CODEC_HEVC_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_HEVC_PROFILE_MAIN10_GUID },
 };
@@ -276,10 +278,12 @@ public:
     {
         switch (Config.Profile)
         {
-        case CodecProfile::H264_HIGH_444: case CodecProfile::H264_LOSSLESS:
+        case CodecProfile::H264_HIGH_444: case CodecProfile::HEVC_MAIN_444:
             return BufferFormat::YUV444_8;
         case CodecProfile::HEVC_MAIN10:
             return BufferFormat::YUV420_16;
+        case CodecProfile::HEVC_MAIN10_444:
+            return BufferFormat::YUV444_16;
         default:
             return BufferFormat::NV12;
         }
@@ -382,6 +386,7 @@ public:
 
         switch (Config.Profile)
         {
+            /*
         case CodecProfile::H264_LOSSLESS:
             enccfg.encodeCodecConfig.h264Config.qpPrimeYZeroTransformBypassFlag = 1;
             //enccfg.encodeCodecConfig.h264Config.idrPeriod = enccfg.gopLength = 1;
@@ -389,12 +394,20 @@ public:
             enccfg.rcParams.constQP.qpIntra = enccfg.rcParams.constQP.qpInterB = enccfg.rcParams.constQP.qpInterP = 1;
             //params.tuningInfo = NV_ENC_TUNING_INFO_LOSSLESS;
             [[fallthrough]];
+            */
         case CodecProfile::H264_HIGH_444:
             enccfg.encodeCodecConfig.h264Config.chromaFormatIDC = 3;
             //enccfg.encodeCodecConfig.h264Config.separateColourPlaneFlag = 1;
             break;
         case CodecProfile::HEVC_MAIN10:
             enccfg.encodeCodecConfig.hevcConfig.pixelBitDepthMinus8 = 2;
+            break;
+        case CodecProfile::HEVC_MAIN_444:
+            enccfg.encodeCodecConfig.hevcConfig.chromaFormatIDC = 3;
+            break;
+        case CodecProfile::HEVC_MAIN10_444:
+            enccfg.encodeCodecConfig.hevcConfig.pixelBitDepthMinus8 = 2;
+            enccfg.encodeCodecConfig.hevcConfig.chromaFormatIDC = 3;
             break;
         }
 
