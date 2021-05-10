@@ -12,10 +12,8 @@ enum class CodecProfile
 {
     H264_MAIN,
     H264_HIGH,
-    /* Not yet - seems NVENC always converts RGBA to YUV 4:2:0 so we need color space conversion first
     H264_HIGH_444,
     H264_LOSSLESS,
-    */
     HEVC_MAIN,
     HEVC_MAIN10,
 };
@@ -26,7 +24,7 @@ enum class AudioCodec { PCM_S16, PCM_F32, MP3, AAC };
 enum class FrameConfig { I, IP, /* IBP, IBBP, */ };
 
 
-JSON_DEFINE_ENUM(CodecProfile,   ("h264_main", "h264_high", /* "h264_high_444", "h264_lossless", */ "hevc_main", "hevc_main10" ))
+JSON_DEFINE_ENUM(CodecProfile,   ("h264_main", "h264_high", "h264_high_444", "h264_lossless", "hevc_main", "hevc_main10" ))
 JSON_DEFINE_ENUM(BitrateControl, ("cbr", "constqp"))
 JSON_DEFINE_ENUM(Container,      ("mp4", "mov", "mkv"))
 JSON_DEFINE_ENUM(AudioCodec,     ("pcm_s16", "pcm_f32", "mp3", "aac"))

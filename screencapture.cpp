@@ -322,15 +322,11 @@ class ScreenCapture : public IScreenCapture
                     {
                         if (!preroll)
                         {
+                            auto fi = GetFormatInfo(encoder->GetBufferFormat(), sizeX, sizeY);
+
                             // color space conversion
                             CBuffer<CbConvert> cb;
-                            cb->colormatrix = (colorMatrix * Mat44::Scale(255.0f)).Transpose();
-
-                            Vec4 test(0.5, 0.5, 0.5, 1);
-                            Vec4 test2 = test * colorMatrix * Mat44::Scale(255.0f);
-
-
-                            auto fi = GetFormatInfo(encoder->GetBufferFormat(), sizeX, sizeY);
+                            cb->colormatrix = (colorMatrix * Mat44::Scale(fi.amp)).Transpose();
                             cb->pitch = fi.pitch;
                             cb->height = sizeY;
 

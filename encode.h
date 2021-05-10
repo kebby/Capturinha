@@ -43,6 +43,8 @@ struct FormatInfo
 {
     uint pitch;
     uint lines;
+    float amp;
+    float ymin, ymax, uvmin, uvmax;
 };
 
 FormatInfo GetFormatInfo(IEncode::BufferFormat fmt, uint sizeX, uint sizeY);

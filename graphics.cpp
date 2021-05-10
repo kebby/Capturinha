@@ -915,6 +915,16 @@ static RCPtr<Texture> capTex;
 static DXGI_OUTDUPL_DESC odd;
 static double frameCount = 0;
 
+static const DXGI_FORMAT scanoutFormats[] = {
+    DXGI_FORMAT_R16G16B16A16_FLOAT,
+    DXGI_FORMAT_R10G10B10A2_UNORM,
+    //DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM, // as soon as we can do WCG/HDR
+    DXGI_FORMAT_R8G8B8A8_UNORM,
+    //DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, // as soon as we can do WCG/HDR
+    DXGI_FORMAT_B8G8R8A8_UNORM,
+    //DXGI_FORMAT_B8G8R8A8_UNORM_SRGB, // as soon as we can do WCG/HDR
+};
+
 bool CaptureFrame(int timeoutMs, CaptureInfo &ci)
 {
     HRESULT hr;
@@ -922,7 +932,10 @@ bool CaptureFrame(int timeoutMs, CaptureInfo &ci)
     // get output duplication object
     if (!Dupl.IsValid())
     {
-        hr = Output.Output->DuplicateOutput(Dev, Dupl);
+        hr = Output.Output->DuplicateOutput1(Dev, 0, _countof(scanoutFormats), scanoutFormats, Dupl);
+        if (hr == DXGI_ERROR_UNSUPPORTED)
+            hr = Output.Output->DuplicateOutput(Dev, Dupl);
+
         if (hr == E_ACCESSDENIED)
         {
             // so far this only happens in the middle of a mode switch, try again later

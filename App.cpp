@@ -170,10 +170,8 @@ public:
         { 
             "H.264 Main profile",
             "H.264 High profile",
-            /* not yet, see header
             "H.264 4:4:4 High profile",
             "H.264 lossless",
-            */
             "HEVC Main profile",
             "HEVC Main10 profile",
         };
@@ -440,7 +438,6 @@ public:
 
         if (force || lastConfig.CodecCfg.Profile != Config.CodecCfg.Profile)
         {
-            /* not yet, see header
             if (Config.CodecCfg.Profile == CodecProfile::H264_LOSSLESS)
             {
                 rateControl.EnableWindow(false);
@@ -448,7 +445,7 @@ public:
                 Config.CodecCfg.UseBitrateControl = BitrateControl::CONSTQP;
                 Config.CodecCfg.BitrateParameter = 1;
             }
-            else */
+            else
             {
                 rateControl.EnableWindow(true);
                 rateParam.EnableWindow(true);

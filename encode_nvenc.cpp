@@ -37,10 +37,8 @@ static const ProfileDef Profiles[] =
 {
     { NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_H264_PROFILE_MAIN_GUID },    
     { NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_H264_PROFILE_HIGH_GUID },
-    /* not yet
     { NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_H264_PROFILE_HIGH_444_GUID },
     { NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_LOSSLESS_DEFAULT_GUID, NV_ENC_H264_PROFILE_HIGH_444_GUID },
-    */
     { NV_ENC_CODEC_HEVC_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_HEVC_PROFILE_MAIN_GUID },
     { NV_ENC_CODEC_HEVC_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_HEVC_PROFILE_MAIN10_GUID },
 };
@@ -276,7 +274,15 @@ public:
 
     BufferFormat GetBufferFormat()
     {
-        return BufferFormat::NV12;
+        switch (Config.Profile)
+        {
+        case CodecProfile::H264_HIGH_444: case CodecProfile::H264_LOSSLESS:
+            return BufferFormat::YUV444_8;
+        case CodecProfile::HEVC_MAIN10:
+            return BufferFormat::YUV420_16;
+        default:
+            return BufferFormat::NV12;
+        }
     }
 
     void Init(uint sizeX, uint sizeY, uint rateNum, uint rateDen, RCPtr<GpuByteBuffer> buffer) override
@@ -290,6 +296,9 @@ public:
         {
         case BufferFormat::BGRA8: EncodeFormat = NV_ENC_BUFFER_FORMAT_ARGB; break;
         case BufferFormat::NV12: EncodeFormat = NV_ENC_BUFFER_FORMAT_NV12; break;
+        case BufferFormat::YUV444_8: EncodeFormat = NV_ENC_BUFFER_FORMAT_YUV444; break;
+        case BufferFormat::YUV420_16: EncodeFormat = NV_ENC_BUFFER_FORMAT_YUV420_10BIT; break;
+        case BufferFormat::YUV444_16: EncodeFormat = NV_ENC_BUFFER_FORMAT_YUV444_10BIT; break;
         default:
             ASSERT0("unsupported buffer format");
         }
@@ -371,19 +380,23 @@ public:
             .encodeConfig = &enccfg,
         };
 
-        /* not yet, see header
         switch (Config.Profile)
         {
         case CodecProfile::H264_LOSSLESS:
             enccfg.encodeCodecConfig.h264Config.qpPrimeYZeroTransformBypassFlag = 1;
+            //enccfg.encodeCodecConfig.h264Config.idrPeriod = enccfg.gopLength = 1;
             enccfg.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP;
-            enccfg.rcParams.constQP.qpIntra = enccfg.rcParams.constQP.qpInterB = enccfg.rcParams.constQP.qpInterP = 0;
+            enccfg.rcParams.constQP.qpIntra = enccfg.rcParams.constQP.qpInterB = enccfg.rcParams.constQP.qpInterP = 1;
             //params.tuningInfo = NV_ENC_TUNING_INFO_LOSSLESS;
+            [[fallthrough]];
         case CodecProfile::H264_HIGH_444:
+            enccfg.encodeCodecConfig.h264Config.chromaFormatIDC = 3;
             //enccfg.encodeCodecConfig.h264Config.separateColourPlaneFlag = 1;
             break;
+        case CodecProfile::HEVC_MAIN10:
+            enccfg.encodeCodecConfig.hevcConfig.pixelBitDepthMinus8 = 2;
+            break;
         }
-        */
 
         NVERR(API.nvEncInitializeEncoder(Encoder, &params));
 

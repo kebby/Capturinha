@@ -25,6 +25,12 @@ uint getuint8(float4 p)
     return uint(round(p.x)) | (uint(round(p.y)) << 8) | (uint(round(p.z)) << 16) | (uint(round(p.w)) << 24);
 }
 
+// make uint2 with 2 words from 2 floats
+uint getuint16(float2 p)
+{
+    return uint(round(p.x)) | (uint(round(p.y)) << 16);
+}
+
 // Get UV for 4:2:0 subsampling
 float2 getuv420(uint addr)
 {
@@ -35,7 +41,7 @@ float2 getuv420(uint addr)
 
 // just so syntax highlighting works... :)
 #ifndef OUTFORMAT
-#define OUTFORMAT 1
+#define OUTFORMAT 4
 #endif
 
 // color space conversion
@@ -74,9 +80,60 @@ void csc(uint3 dispid : SV_DispatchThreadID, uint3 threadid : SV_GroupThreadID, 
             
 #elif OUTFORMAT == 2 // 8bpp planar YUV 4:4:4
         
+    if (!(threadid.x & 3))
+    {
+        // store Y for 4*1 pixels
+        float4 values = float4(tile[tileaddr].x, tile[tileaddr + 1].x, tile[tileaddr + 2].x, tile[tileaddr + 3].x);
+        uint addr = pitch_height.x * dispid.y + dispid.x;
+        Out.Store(addr, getuint8(values));
+        
+        // store U for 4*1 pixels
+        values = float4(tile[tileaddr].y, tile[tileaddr + 1].y, tile[tileaddr + 2].y, tile[tileaddr + 3].y);
+        addr = pitch_height.x * (pitch_height.y + dispid.y) + dispid.x;
+        Out.Store(addr, getuint8(values));
+        
+        // store V for 4*1 pixels
+        values = float4(tile[tileaddr].z, tile[tileaddr + 1].z, tile[tileaddr + 2].z, tile[tileaddr + 3].z);
+        addr = pitch_height.x * (2 * pitch_height.y + dispid.y) + dispid.x;
+        Out.Store(addr, getuint8(values));
+    }    
+    
 #elif OUTFORMAT == 3 // 16bpp YUV 4:2:0, plane 1: Y, plane 2: Cb/Cr interleaved
     
+    if (!(threadid.x & 1))
+    {
+        // store Y for 2*1 pixels
+        float2 values = float2(tile[tileaddr].x, tile[tileaddr + 1].x);
+        uint addr = pitch_height.x * dispid.y + 2 * dispid.x;
+        Out.Store(addr, getuint16(values));
+        
+        // store U/V for 2*2 pixels
+        if (!(threadid.y & 1))
+        {
+            uint addr = pitch_height.x * (pitch_height.y + (dispid.y / 2)) + 2 * dispid.x;
+            Out.Store(addr, getuint16(getuv420(tileaddr)));
+        }
+    }
+    
 #elif OUTFORMAT == 4 // 16bpp planar YUV 4:4:4
+    
+    if (!(threadid.x & 1))
+    {
+        // store Y for 2*1 pixels
+        float2 values = float2(tile[tileaddr].x, tile[tileaddr + 1].x);
+        uint addr = pitch_height.x * dispid.y + 2 * dispid.x;
+        Out.Store(addr, getuint16(values));
+        
+        // store U for 2*1 pixels
+        values = float2(tile[tileaddr].y, tile[tileaddr + 1].y);
+        addr = pitch_height.x * (pitch_height.y + dispid.y) + 2 * dispid.x;
+        Out.Store(addr, getuint16(values));
+        
+        // store V for 2*1 pixels
+        values = float2(tile[tileaddr].z, tile[tileaddr + 1].z);
+        addr = pitch_height.x * (2 * pitch_height.y + dispid.y) + 2 * dispid.x;
+        Out.Store(addr, getuint16(values));
+    }
     
 #else
 #error Unknown output format
