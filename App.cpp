@@ -776,7 +776,8 @@ public:
 
             // VU meter
             CRect vumeter(area.left, graph.bottom + 10, area.right, graph.bottom + 10 + 26);
-            PaintVU(dc, WithDpi(vumeter), stats);
+            if (Config.CaptureAudio)
+                PaintVU(dc, WithDpi(vumeter), stats);
 
             // info
             CRect line(area.left, vumeter.bottom + 20, area.right, area.bottom);

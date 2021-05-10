@@ -10,6 +10,7 @@
 #include "graphics.h"
 
 #include "audiocapture.h"
+#include "colormath.h"
 #include "encode.h"
 #include "output.h"
 
@@ -174,6 +175,15 @@ class ScreenCapture : public IScreenCapture
         delete output;
     }
 
+
+    struct CbConvert
+    {
+        Mat44 colormatrix;    // needs to have bpp baked in (so eg. *255)
+        uint pitch;           // bytes per line
+        uint height;          // # of lines
+        uint _pad[2];
+    };
+
     void CaptureThreadFunc(Thread& thread)
     {
         bool first = true;
@@ -186,6 +196,9 @@ class ScreenCapture : public IScreenCapture
 
         double vInSkew = 0;
         uint64 lastFrameCount = 0;
+
+        Mat44 colorMatrix;
+        RCPtr<GpuByteBuffer> outBuffer;
 
         while (thread.IsRunning())
         {
@@ -227,11 +240,31 @@ class ScreenCapture : public IScreenCapture
                     Delete(processThread);
                     Delete(encoder);
 
-//                  DPrintF("\n\n*************************** NEW\n\n\n");
+                    //                  DPrintF("\n\n*************************** NEW\n\n\n");
 
-                    
                     encoder = CreateEncodeNVENC(Config);
-                    encoder->Init(sizeX, sizeY, rateNum, rateDen);
+
+                    auto fmt = encoder->GetBufferFormat();
+                    auto fi = GetFormatInfo(fmt, sizeX, sizeY);
+                    outBuffer = new GpuByteBuffer(fi.lines * fi.pitch, GpuBuffer::Usage::GpuOnly);
+                   
+                    auto source = LoadResource(IDR_COLORCONVERT, TEXTFILE);
+                    Array<ShaderDefine> macros =
+                    {
+                        ShaderDefine { "OUTFORMAT", String::PrintF("%d", (int)fmt) }
+                    };
+                    Shader = CompileShader(Shader::Type::Compute, source, "csc", macros, "colorconvert.hlsl");
+
+                    switch (fmt)
+                    {
+                    case IEncode::BufferFormat::BGRA8: 
+                        colorMatrix = {}; 
+                        break;
+                    default:
+                        colorMatrix = MakeRGB2YUV44(Rec709, 16.f / 255.f, 235.f / 255.f, 16.f / 255.f, 240.f / 255.f);
+                    }
+                    
+                    encoder->Init(sizeX, sizeY, rateNum, rateDen, outBuffer);
                     first = true;
                     duplicated = 0;
                     over = 0;
@@ -289,7 +322,26 @@ class ScreenCapture : public IScreenCapture
                     {
                         if (!preroll)
                         {
-                            encoder->SubmitFrame(info.tex, info.time);
+                            // color space conversion
+                            CBuffer<CbConvert> cb;
+                            cb->colormatrix = (colorMatrix * Mat44::Scale(255.0f)).Transpose();
+
+                            Vec4 test(0.5, 0.5, 0.5, 1);
+                            Vec4 test2 = test * colorMatrix * Mat44::Scale(255.0f);
+
+
+                            auto fi = GetFormatInfo(encoder->GetBufferFormat(), sizeX, sizeY);
+                            cb->pitch = fi.pitch;
+                            cb->height = sizeY;
+
+                            CBindings bind;
+                            bind.res[0] = info.tex;
+                            bind.uav[0] = outBuffer;
+                            bind.cb[0] = &cb;
+
+                            Dispatch(Shader, bind, (sizeX + 7) / 8, (sizeY + 7) / 8, 1);
+
+                            encoder->SubmitFrame(info.time);
                             AtomicInc(Stats.FramesCaptured);
                         }
                         else
@@ -340,25 +392,19 @@ class ScreenCapture : public IScreenCapture
 
 public:
 
+    RCPtr<Shader> Shader;
+
+ 
     ScreenCapture(const CaptureConfig& cfg) : Config(cfg)
     {
         InitD3D(Config.OutputIndex);
-
-        auto source = LoadResource(IDR_COLORCONVERT, TEXTFILE);
-
-        Array<ShaderMacro> macros = 
-        { 
-            ShaderMacro { "OUTFORMAT", String::PrintF("%d", 1) }
-        };
-
-        auto shader = CompileShader(Shader::Type::Compute, source, "csc", macros, "color space conversion");
-
+       
         if (Config.CaptureAudio)
             audioCapture = CreateAudioCaptureWASAPI(Config);
         captureThread = new Thread(Bind(this, &ScreenCapture::CaptureThreadFunc));
 
         for (int i = 0; i < 32; i++)
-                Stats.VU[i] = i ? -1.0f : 0.0f;
+            Stats.VU[i] = i ? -1.0f : 0.0f;
     }
 
     ~ScreenCapture()

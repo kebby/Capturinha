@@ -290,9 +290,9 @@ Shader::~Shader()
     delete P;
 }
 
-static const Array<ShaderMacro> emptyMacros;
+static const Array<ShaderDefine> emptyMacros;
 
-RCPtr<Shader> CompileShader(Shader::Type type, const Buffer *buffer, const char* entryPoint, const Array<ShaderMacro> &macros, const char* name)
+RCPtr<Shader> CompileShader(Shader::Type type, const Buffer *buffer, const char* entryPoint, const Array<ShaderDefine> &macros, const char* name)
 {
     const char* target = nullptr;
     if (!name) name = entryPoint;
@@ -331,7 +331,7 @@ RCPtr<Shader> CompileShader(Shader::Type type, const Buffer *buffer, const char*
     return shader;
 }
 
-RCPtr<Shader> CompileShader(Shader::Type type, const String& code, const char* entryPoint, const Array<ShaderMacro> &macros,  const char* name)
+RCPtr<Shader> CompileShader(Shader::Type type, const String& code, const char* entryPoint, const Array<ShaderDefine> &macros,  const char* name)
 {
     return CompileShader(type, Buffer::FromMemory((void*)(const char*)code, code.Length(), false), entryPoint, macros, name);    
 }
@@ -368,14 +368,20 @@ struct GpuBuffer::Priv
         case Type::Constant: bind = D3D11_BIND_CONSTANT_BUFFER; misc = 0; return;
         case Type::Vertex: bind = D3D11_BIND_VERTEX_BUFFER; misc = 0; return;
         case Type::Index: bind = D3D11_BIND_INDEX_BUFFER; misc = 0; return;
-        case Type::Structured: 
+        case Type::Structured:
             bind = D3D11_BIND_SHADER_RESOURCE;
             if (usage != Usage::Immutable) bind |= D3D11_BIND_UNORDERED_ACCESS;
             misc = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
             return;
+
+        case Type::ByteBuffer:
+            bind = D3D11_BIND_SHADER_RESOURCE;
+            if (usage != Usage::Immutable) bind |= D3D11_BIND_UNORDERED_ACCESS;
+            misc = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
+            return;
         }
 
-        ASSERT0("unknown buffer kind");
+        ASSERT0("unknown buffer type");
     }
 
 };
@@ -398,11 +404,14 @@ void GpuBuffer::Upload(const void* data, uint size, uint stride, uint totalsize)
         .StructureByteStride = stride,
     };
 
+    if (P->type == Type::ByteBuffer)
+        desc.ByteWidth = totalsize;
+
     switch (P->usage)
     {
     case Usage::Immutable: ASSERT(data);  desc.Usage = D3D11_USAGE_IMMUTABLE; break;
-    case Usage::GpuOnly: ASSERT(!data);  desc.Usage = D3D11_USAGE_DEFAULT; desc.ByteWidth = totalsize; break;
-    case Usage::Dynamic: desc.Usage = D3D11_USAGE_DYNAMIC; break;
+    case Usage::GpuOnly: ASSERT(!data);  desc.Usage = D3D11_USAGE_DEFAULT; break;
+    case Usage::Dynamic: desc.Usage = D3D11_USAGE_DYNAMIC; desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE; break;
     }
 
     D3D11_SUBRESOURCE_DATA id =
@@ -418,26 +427,29 @@ ShaderResource::SR& GpuBuffer::GetSR(bool write, uint count)
     if (count && !write && !P->sr.srv)
     {
         D3D11_SHADER_RESOURCE_VIEW_DESC desc = {
-            .Format = DXGI_FORMAT_UNKNOWN,
+            .Format = (P->type == Type::ByteBuffer) ? DXGI_FORMAT_R32_TYPELESS : DXGI_FORMAT_UNKNOWN,
             .ViewDimension = D3D11_SRV_DIMENSION_BUFFER,
         };
         desc.Buffer.FirstElement = 0;
-        desc.Buffer.NumElements = count;
+        desc.Buffer.NumElements = (P->type == Type::ByteBuffer) ? (count + 3) / 4 : count;
+
         DXERR(Dev->CreateShaderResourceView(*P, &desc, P->sr.srv));
     }
     if (count && write && !P->sr.uav)
     {
         D3D11_UNORDERED_ACCESS_VIEW_DESC desc = {
-            .Format = DXGI_FORMAT_UNKNOWN,
+            .Format = (P->type == Type::ByteBuffer) ? DXGI_FORMAT_R32_TYPELESS : DXGI_FORMAT_UNKNOWN,
             .ViewDimension = D3D11_UAV_DIMENSION_BUFFER,
         };
         desc.Buffer.FirstElement = 0;
-        desc.Buffer.NumElements = count;
-        desc.Buffer.Flags = 0;
+        desc.Buffer.NumElements = (P->type == Type::ByteBuffer) ? (count + 3) / 4 : count;
+        desc.Buffer.Flags = (P->type == Type::ByteBuffer) ? D3D11_BUFFER_UAV_FLAG_RAW : 0;
         DXERR(Dev->CreateUnorderedAccessView(*P, &desc, P->sr.uav));
     }
     return P->sr;
 }
+
+RCPtr<ID3D11Buffer> GpuBuffer::GetBuffer() { return P->buf; }
 
 template<typename T> uint MakeLayout(D3D11_INPUT_ELEMENT_DESC* desc);
 

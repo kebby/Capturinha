@@ -10,19 +10,24 @@
 
 struct CaptureConfig;
 
-enum BufferFormat
-{
-    BGRA8 = 0,  // interleaved 8 bits, B,G,R,A
-    NV12 = 1,   // YUV 4:2:0 8bits, Y plane followed by interleaved U,V
-};
-
 struct IEncode
 {
+    enum class BufferFormat
+    {
+        BGRA8,      // interleaved 8 bits, B,G,R,A
+        NV12,       // YUV 4:2:0 16 bits, Y plane followed by interleaved U,V
+        YUV444_8,   // Planar YUV 4:4:4 8 bits
+        YUV420_16,  // YUV 4:2:0 16 bits, Y plane followed by interleaved U,V
+        YUV444_16,  // Planar YUV 4:4:4 16 bits
+    };
+
     virtual ~IEncode() {}
 
-    virtual void Init(uint sizeX, uint sizeY, uint rateNum, uint rateDen) = 0;
+    virtual BufferFormat GetBufferFormat() = 0;
 
-    virtual void SubmitFrame(RCPtr<Texture> tex, double time) = 0;
+    virtual void Init(uint sizeX, uint sizeY, uint rateNum, uint rateDen, RCPtr<GpuByteBuffer> buffer) = 0;
+
+    virtual void SubmitFrame(double time) = 0;
 
     virtual void DuplicateFrame() = 0;
 
@@ -33,3 +38,11 @@ struct IEncode
 };
 
 IEncode* CreateEncodeNVENC(const CaptureConfig &cfg);
+
+struct FormatInfo
+{
+    uint pitch;
+    uint lines;
+};
+
+FormatInfo GetFormatInfo(IEncode::BufferFormat fmt, uint sizeX, uint sizeY);

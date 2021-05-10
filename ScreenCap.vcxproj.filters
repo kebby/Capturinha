@@ -25,6 +25,9 @@
     <ClCompile Include="App.cpp">
       <Filter>UI</Filter>
     </ClCompile>
+    <ClCompile Include="encode_common.cpp">
+      <Filter>capture</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="nvEncodeAPI.h">

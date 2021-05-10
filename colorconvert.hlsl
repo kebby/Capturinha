@@ -4,11 +4,7 @@
 //
 
 // color space conversion shader
-
-// just so syntax highlighting works... :)
-#ifndef OUTFORMAT
-#define OUTFORMAT 1
-#endif
+//-----------------------------------------------------------------------------------------
 
 Texture2D<float4> TexIn;
 RWByteAddressBuffer Out;
@@ -16,51 +12,75 @@ RWByteAddressBuffer Out;
 cbuffer cb_csc : register(b0)
 {
     float4x4 colormatrix;    // needs to have bpp baked in (so eg. *255)
-    uint pitch;              // bytes per line
-    uint height;             // # of lines
+    uint4 pitch_height;
 }
 
 groupshared float4 tile[8 * 8];
 
+//-----------------------------------------------------------------------------------------
+
+// make uint with 4 bytes from 4 floats
+uint getuint8(float4 p)
+{
+    return uint(round(p.x)) | (uint(round(p.y)) << 8) | (uint(round(p.z)) << 16) | (uint(round(p.w)) << 24);
+}
+
+// Get UV for 4:2:0 subsampling
+float2 getuv420(uint addr)
+{
+    return (tile[addr].yz + tile[addr + 1].yz + tile[addr + 8].yz + tile[addr + 9].yz) / 4.0;
+}
+
+//-----------------------------------------------------------------------------------------
+
+// just so syntax highlighting works... :)
+#ifndef OUTFORMAT
+#define OUTFORMAT 1
+#endif
+
+// color space conversion
 [numthreads(8, 8, 1)]
 void csc(uint3 dispid : SV_DispatchThreadID, uint3 threadid : SV_GroupThreadID, uint3 groupid : SV_GroupID)
 {
-    // convert 8x8 pixels to output color space and store in tile memory
+    // convert 8x8 pixels to output color space and store in tile
     float4 pixel = TexIn.Load(int3(dispid.x, dispid.y, 0));
-    tile[8 * threadid.y + threadid.x] = mul(pixel, colormatrix);
+    pixel.w = 1;
+    
+    uint tileaddr = 8 * threadid.y + threadid.x;
+    tile[tileaddr] = mul(pixel, colormatrix);
     GroupMemoryBarrierWithGroupSync();
     
-#if OUTFORMAT == 1 	// NV12: 8bpp 4:2:0, plane 1: Y, plane 2: Cb/Cr interleaved
+#if OUTFORMAT == 0     // 8bpp BGRA
+    
+    uint addr = pitch_height.x * dispid.y + 4 * dispid.x;
+    Out.Store(addr, getuint8(tile[tileaddr].zyxw));
+    
+#elif OUTFORMAT == 1   // NV12: 8bpp YUV 4:2:0, plane 1: Y, plane 2: Cb/Cr interleaved
     
     if (!(threadid.x & 3))
     {
-        uint tileaddr = 8 * threadid.y + threadid.x;
-
-        // store y
+        // store Y for 4*1 pixels
         float4 values = float4(tile[tileaddr].x, tile[tileaddr + 1].x, tile[tileaddr + 2].x, tile[tileaddr + 3].x);
-        uint addr = pitch * dispid.y + dispid.x;
-        Out.Store4(addr, uint4(values));
+        uint addr = pitch_height.x * dispid.y + dispid.x;
+        Out.Store(addr, getuint8(values));
         
-        // store U/V (chroma sample location: top left)
+        // store U/V for 4*2 pixels
         if (!(threadid.y & 1))
         {
-            float4 values = float4(tile[tileaddr].y, tile[tileaddr].z, tile[tileaddr + 2].y, tile[tileaddr + 2].z);
-            uint addr = pitch * (height + (dispid.y / 2)) + dispid.x;
-            Out.Store4(addr, uint4(values));
+            uint addr = pitch_height.x * (pitch_height.y + (dispid.y / 2)) + dispid.x;
+            Out.Store(addr, getuint8(float4(getuv420(tileaddr), getuv420(tileaddr + 2))));
         }
     }
             
-#elif OUTFORMAT == 2 // whatever
-
+#elif OUTFORMAT == 2 // 8bpp planar YUV 4:4:4
+        
+#elif OUTFORMAT == 3 // 16bpp YUV 4:2:0, plane 1: Y, plane 2: Cb/Cr interleaved
+    
+#elif OUTFORMAT == 4 // 16bpp planar YUV 4:4:4
+    
 #else
-    #error Unknown output format
+#error Unknown output format
 #endif
 
 }
 
-//---------------------------------------------------------------------------------
-//---------------------------------------------------------------------------------
-
-/*
-        
-        */

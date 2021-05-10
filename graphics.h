@@ -10,8 +10,8 @@
 #include "math3d.h"
 
 struct IDXGIAdapter;
-struct ID3D11Device;
 struct ID3D11Texture2D;
+struct ID3D11Buffer;
 
 //---------------------------------------------------------------------------
 // shaders
@@ -49,11 +49,13 @@ public:
 
     SR& GetSR(bool write) override { return GetSR(write, 0); }
 
+    RCPtr<ID3D11Buffer> GetBuffer();
+
     struct Priv;
     Priv* P = nullptr;
 
 protected:
-    enum class Type { Vertex, Index, Constant, Structured };
+    enum class Type { Vertex, Index, Constant, Structured, ByteBuffer };
     GpuBuffer(Type type, Usage usage);
 
     virtual void Commit() = 0;
@@ -70,7 +72,12 @@ protected:
     uint cur = 0;
     T* data = nullptr;
 
-    TypedBuffer(Type type, uint n, GpuBuffer::Usage usage) : GpuBuffer(type, usage), num(n) {}
+    TypedBuffer(Type type, uint n, GpuBuffer::Usage usage) : GpuBuffer(type, usage), num(n) 
+    {
+        if (usage != Usage::Immutable)
+            Commit();
+    }
+
 public:
 
     void Clear()
@@ -125,13 +132,20 @@ public:
         : TypedBuffer<TS>(GpuBuffer::Type::Structured, nr, usage) {}
 };
 
+class GpuByteBuffer : public TypedBuffer<uint8>
+{
+public:
+    explicit GpuByteBuffer(int size, GpuBuffer::Usage usage = GpuBuffer::Usage::Immutable)
+        : TypedBuffer<uint8>(GpuBuffer::Type::ByteBuffer, size, usage) {}
+};
+
 template<class TCB> class CBuffer : public GpuBuffer
 {
 protected:
     void Commit() override { Upload(&data, sizeof(TCB)); }
 
 public:
-    TCB data;
+    TCB data = {};
 
     CBuffer() : GpuBuffer(Type::Constant, Usage::Immutable) {}
     CBuffer(const TCB& cb) : GpuBuffer(Type::Constant), data(cb) {}
@@ -303,15 +317,15 @@ RCPtr<IDXGIAdapter> GetAdapter();
 RCPtr<Texture> LoadImg(const char *filename);
 RCPtr<Texture> CreateTexture(const TexturePara& para, const void* data);
 
-struct ShaderMacro
+struct ShaderDefine
 {
     String name, value;
 };
 
 RCPtr<Shader> CompileShader(Shader::Type type, const Buffer* code, const char* entryPoint, const char* name = nullptr);
 RCPtr<Shader> CompileShader(Shader::Type type, const String& code, const char* entryPoint, const char* name = nullptr);
-RCPtr<Shader> CompileShader(Shader::Type type, const Buffer* code, const char* entryPoint, const Array<ShaderMacro> &macros, const char* name = nullptr);
-RCPtr<Shader> CompileShader(Shader::Type type, const String& code, const char* entryPoint, const Array<ShaderMacro> &macros, const char* name = nullptr);
+RCPtr<Shader> CompileShader(Shader::Type type, const Buffer* code, const char* entryPoint, const Array<ShaderDefine> &macros, const char* name = nullptr);
+RCPtr<Shader> CompileShader(Shader::Type type, const String& code, const char* entryPoint, const Array<ShaderDefine> &macros, const char* name = nullptr);
 
 RCPtr<RenderTarget> AcquireRenderTarget(TexturePara para);
 RCPtr<RenderTarget> AcquireBackBuffer();

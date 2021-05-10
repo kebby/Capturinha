@@ -13,6 +13,7 @@
   <ItemGroup>
     <ClCompile Include="App.cpp" />
     <ClCompile Include="audiocapture_wasapi.cpp" />
+    <ClCompile Include="encode_common.cpp" />
     <ClCompile Include="encode_nvenc.cpp" />
     <ClCompile Include="graphics.cpp" />
     <ClCompile Include="output_libav.cpp" />

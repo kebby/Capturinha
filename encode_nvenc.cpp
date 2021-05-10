@@ -3,8 +3,6 @@
 // Licensed under the MIT License. See LICENSE.md file for full license information
 //
 
-#include <stdio.h>
-
 #include "graphics.h"
 #include "encode.h"
 #include "screencapture.h"
@@ -17,7 +15,6 @@
 #include <cudaD3D11.h>
 #pragma comment (lib, "cuda.lib")
 #pragma comment (lib, "cudart.lib")
-
 
 static bool Inited = false;
 static NV_ENCODE_API_FUNCTION_LIST API = {};
@@ -67,7 +64,7 @@ class Encode_NVENC : public IEncode
         NV_ENC_OUTPUT_PTR buffer = nullptr;
     };
 
-    const VideoCodecConfig &Config;
+    const VideoCodecConfig& Config;
 
     Queue<Frame*, 32> FreeFrames;
     Queue<OutBuffer*, 32> FreeBuffers;
@@ -77,7 +74,7 @@ class Encode_NVENC : public IEncode
     OutBuffer* CurrentBuffer = nullptr;
 
     void* Encoder = nullptr;
-    NV_ENC_BUFFER_FORMAT EncodeFormat = NV_ENC_BUFFER_FORMAT_ARGB;
+    NV_ENC_BUFFER_FORMAT EncodeFormat = {};
     ThreadEvent EncodeEvent;
 
     uint SizeX = 0;
@@ -85,7 +82,7 @@ class Encode_NVENC : public IEncode
     uint FrameNo = 0;
 
     // intermediate texture (needed bc CUDA won't register shared textures)
-    RCPtr<RenderTarget> RT;
+    RCPtr<GpuByteBuffer> InBuffer;
 
     CUgraphicsResource TexResource = nullptr;
     CUcontext CudaContext = nullptr;
@@ -101,8 +98,8 @@ class Encode_NVENC : public IEncode
                 .Used = 1,
             };
 
-            uint pitch = SizeX * 4;
-            CUDAERR(cuMemAlloc(&frame->Buffer, pitch * SizeY));
+            auto fi = GetFormatInfo(GetBufferFormat(), SizeX, SizeY);
+            CUDAERR(cuMemAlloc(&frame->Buffer, (size_t)fi.pitch * fi.lines));
 
             NV_ENC_REGISTER_RESOURCE reg =
             {
@@ -110,9 +107,9 @@ class Encode_NVENC : public IEncode
                 .resourceType = NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR,
                 .width = SizeX,
                 .height = SizeY,
-                .pitch = pitch,
+                .pitch = fi.pitch,
                 .resourceToRegister = (void*)frame->Buffer,
-                .bufferFormat = NV_ENC_BUFFER_FORMAT_ARGB,
+                .bufferFormat = EncodeFormat,
                 .bufferUsage = NV_ENC_INPUT_IMAGE,
             };
             NVERR(API.nvEncRegisterResource(Encoder, &reg));
@@ -178,12 +175,13 @@ class Encode_NVENC : public IEncode
         ob->frame = CurrentFrame;
         AtomicInc(CurrentFrame->Used);
 
+        auto fi = GetFormatInfo(GetBufferFormat(), SizeX, SizeY);
         NV_ENC_PIC_PARAMS pic =
         {
             .version = NV_ENC_PIC_PARAMS_VER,
             .inputWidth = SizeX,
             .inputHeight = SizeY,
-            .inputPitch = SizeX,
+            .inputPitch = fi.pitch,
             .encodePicFlags = 0, // NV_ENC_PIC_FLAG_FORCEIDR | NV_ENC_PIC_FLAG_OUTPUT_SPSPPS
             .frameIdx = FrameNo,
             .inputTimeStamp = FrameNo,
@@ -227,6 +225,7 @@ public:
 
             // init NVENC API
             auto nvenclib = LoadLibrary("nvEncodeAPI64.dll");
+            ASSERT(nvenclib);
 
             typedef NVENCSTATUS(NVENCAPI* NvEncodeAPIGetMaxSupportedVersion_Type)(uint32_t*);
             typedef NVENCSTATUS(NVENCAPI* NvEncodeAPICreateInstance_Type)(NV_ENCODE_API_FUNCTION_LIST* functionList);
@@ -275,19 +274,27 @@ public:
         cuCtxDestroy_v2(CudaContext);
     }
 
-    void Init(uint sizeX, uint sizeY, uint rateNum, uint rateDen) override
+    BufferFormat GetBufferFormat()
+    {
+        return BufferFormat::NV12;
+    }
+
+    void Init(uint sizeX, uint sizeY, uint rateNum, uint rateDen, RCPtr<GpuByteBuffer> buffer) override
     {
         SizeX = sizeX;
         SizeY = sizeY;
 
-        // create intermediate surface
-        RT = AcquireRenderTarget(TexturePara {
-            .sizeX = SizeX,
-            .sizeY = SizeY,
-            .format = PixelFormat::BGRA8,
-        });
+        InBuffer = buffer;
 
-        CUDAERR(cuGraphicsD3D11RegisterResource(&TexResource, (ID3D11Texture2D*)RT->GetTex2D(), CU_GRAPHICS_REGISTER_FLAGS_NONE));
+        switch (GetBufferFormat())
+        {
+        case BufferFormat::BGRA8: EncodeFormat = NV_ENC_BUFFER_FORMAT_ARGB; break;
+        case BufferFormat::NV12: EncodeFormat = NV_ENC_BUFFER_FORMAT_NV12; break;
+        default:
+            ASSERT0("unsupported buffer format");
+        }
+
+        CUDAERR(cuGraphicsD3D11RegisterResource(&TexResource, (ID3D11Buffer*)InBuffer->GetBuffer(), CU_GRAPHICS_REGISTER_FLAGS_NONE));
         CUDAERR(cuGraphicsResourceSetMapFlags(TexResource, CU_GRAPHICS_MAP_RESOURCE_FLAGS_READ_ONLY));
 
         const ProfileDef profile = Profiles[(int)Config.Profile];
@@ -390,7 +397,7 @@ public:
         }
     }
 
-    void SubmitFrame(RCPtr<Texture> tex, double time) override
+    void SubmitFrame(double time) override
     {
         ReleaseFrame(CurrentFrame);
 
@@ -398,23 +405,23 @@ public:
         CurrentFrame = AcquireFrame();
         CurrentFrame->Used = 1;
         CurrentFrame->Time = time;
-
-        // copy to intermediate texture
-        RT->CopyFrom(tex);
-
+       
         // copy intermediate texture -> frame
-        CUDA_MEMCPY2D copy = 
-        { 
-            .srcMemoryType = CU_MEMORYTYPE_ARRAY,
+        auto fi = GetFormatInfo(GetBufferFormat(), SizeX, SizeY);
+        CUDA_MEMCPY2D copy =
+        {
+            .srcMemoryType = CU_MEMORYTYPE_DEVICE,
+            .srcPitch = fi.pitch,
             .dstMemoryType = CU_MEMORYTYPE_DEVICE,
             .dstDevice = CurrentFrame->Buffer,
-            .dstPitch = SizeX * 4,
-            .WidthInBytes = SizeX * 4,
-            .Height = SizeY,
+            .dstPitch = fi.pitch,
+            .WidthInBytes = fi.pitch,
+            .Height = fi.lines,
         };
 
+        size_t size = 0;
         CUDAERR(cuGraphicsMapResources(1, &TexResource, nullptr));
-        CUDAERR(cuGraphicsSubResourceGetMappedArray(&copy.srcArray, TexResource, 0, 0));
+        CUDAERR(cuGraphicsResourceGetMappedPointer(&copy.srcDevice, &size, TexResource));
         CUDAERR(cuMemcpy2DAsync(&copy, nullptr));
         CUDAERR(cuGraphicsUnmapResources(1, &TexResource, nullptr));
 
