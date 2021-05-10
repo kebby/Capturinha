@@ -59,9 +59,6 @@ The current configuration gets stored in a file called `config.json` in the prog
 
 (also, not listed by priority)
 
-* Full support for high quality formats (4:4:4 and high bit depths)
-* This requires: Compute shader based color space conversion to planar YUV. We need one blit anyway, and it seems
-  BGRA buffers are always converted to 8bit 4:2:0 by NVENC
 * Proper GPU capabilities and error handling. At the moment it just displays a message box and then bails.
 * Backends for Non-NVIDIA encoders
   * AMD Video Code Engine
