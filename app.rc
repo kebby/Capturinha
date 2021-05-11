@@ -72,7 +72,7 @@ IDR_COLORCONVERT         TEXTFILE                "colorconvert.hlsl"
 
 STRINGTABLE
 BEGIN
-    IDR_MAINFRAME           "Capturinha 0.1.1"
+    IDR_MAINFRAME           "Capturinha 0.2.0"
 END
 
 #endif    // English (United States) resources
