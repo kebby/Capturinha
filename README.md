@@ -70,7 +70,7 @@ powered machine, editing, archival, and uploading to video streaming sites (that
  Const QP is vastly preferred.
 
 The frame layout option should be kept at "I+P" unless you want to radically edit the resulting file - "I", aka "I frames only", 
-forgoes any "let's predict what the next frame could look like" magic amdstores each frame as complete image. Perfect for editing but absolutely devastating for bitrate or file size. The GOP length determines how
+forgoes any "let's predict what the next frame could look like" magic and stores each frame as complete image. Perfect for editing but absolutely devastating for bitrate or file size. The GOP length determines how
 many P frames (as in "predicted") go between two I frames, aka how many frames go by until the decoder resets to a known state. Increasing this
 value helps with bitrate a lot but it makes it harder to edit or even seek in the files, and you might experience that the image
 drifts/washes away and then "comes back" every so and so seconds. When in doubt, leave at the default.
