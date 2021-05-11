@@ -35,14 +35,14 @@ struct ProfileDef
 
 static const ProfileDef Profiles[] =
 {
-    { NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_H264_PROFILE_MAIN_GUID },    
-    { NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_H264_PROFILE_HIGH_GUID },
-    { NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_H264_PROFILE_HIGH_444_GUID },
+    { NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_LOW_LATENCY_HQ_GUID, NV_ENC_H264_PROFILE_MAIN_GUID },
+    { NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_LOW_LATENCY_HQ_GUID, NV_ENC_H264_PROFILE_HIGH_GUID },
+    { NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_LOW_LATENCY_HQ_GUID, NV_ENC_H264_PROFILE_HIGH_444_GUID },
     //{ NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_LOSSLESS_DEFAULT_GUID, NV_ENC_H264_PROFILE_HIGH_444_GUID },
-    { NV_ENC_CODEC_HEVC_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_HEVC_PROFILE_MAIN_GUID },
-    { NV_ENC_CODEC_HEVC_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_HEVC_PROFILE_MAIN10_GUID },
-    { NV_ENC_CODEC_HEVC_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_HEVC_PROFILE_MAIN_GUID },
-    { NV_ENC_CODEC_HEVC_GUID, NV_ENC_PRESET_HQ_GUID, NV_ENC_HEVC_PROFILE_MAIN10_GUID },
+    { NV_ENC_CODEC_HEVC_GUID, NV_ENC_PRESET_P1_GUID, NV_ENC_HEVC_PROFILE_MAIN_GUID },
+    { NV_ENC_CODEC_HEVC_GUID, NV_ENC_PRESET_P1_GUID, NV_ENC_HEVC_PROFILE_MAIN10_GUID },
+    { NV_ENC_CODEC_HEVC_GUID, NV_ENC_PRESET_P1_GUID, NV_ENC_HEVC_PROFILE_MAIN_GUID },
+    { NV_ENC_CODEC_HEVC_GUID, NV_ENC_PRESET_P1_GUID, NV_ENC_HEVC_PROFILE_MAIN10_GUID },
 };
 
 
@@ -353,7 +353,7 @@ public:
             enccfg.rcParams.constQP.qpIntra = enccfg.rcParams.constQP.qpInterB = enccfg.rcParams.constQP.qpInterP = Clamp(Config.BitrateParameter, 1u, 52u);
             break;
         case BitrateControl::CBR:
-            enccfg.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CBR_HQ;
+            enccfg.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CBR;
             enccfg.rcParams.averageBitRate = Min(Config.BitrateParameter * 1000, 500u * 1000 * 1000);
             break;
         }
@@ -383,6 +383,9 @@ public:
             .enablePTD = 1,
             .encodeConfig = &enccfg,
         };
+
+        if (profile.encodeGuid == NV_ENC_CODEC_HEVC_GUID)
+            params.tuningInfo = NV_ENC_TUNING_INFO_LOW_LATENCY;
 
         switch (Config.Profile)
         {
