@@ -30,19 +30,18 @@ static NV_ENCODE_API_FUNCTION_LIST API = {};
 
 struct ProfileDef
 {
-    GUID encodeGuid, presetGuid, profileGuid;
+    GUID encodeGuid, profileGuid;
 };
 
 static const ProfileDef Profiles[] =
 {
-    { NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_LOW_LATENCY_HQ_GUID, NV_ENC_H264_PROFILE_MAIN_GUID },
-    { NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_LOW_LATENCY_HQ_GUID, NV_ENC_H264_PROFILE_HIGH_GUID },
-    { NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_LOW_LATENCY_HQ_GUID, NV_ENC_H264_PROFILE_HIGH_444_GUID },
-    //{ NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_LOSSLESS_DEFAULT_GUID, NV_ENC_H264_PROFILE_HIGH_444_GUID },
-    { NV_ENC_CODEC_HEVC_GUID, NV_ENC_PRESET_P1_GUID, NV_ENC_HEVC_PROFILE_MAIN_GUID },
-    { NV_ENC_CODEC_HEVC_GUID, NV_ENC_PRESET_P1_GUID, NV_ENC_HEVC_PROFILE_MAIN10_GUID },
-    { NV_ENC_CODEC_HEVC_GUID, NV_ENC_PRESET_P1_GUID, NV_ENC_HEVC_PROFILE_MAIN_GUID },
-    { NV_ENC_CODEC_HEVC_GUID, NV_ENC_PRESET_P1_GUID, NV_ENC_HEVC_PROFILE_MAIN10_GUID },
+    { NV_ENC_CODEC_H264_GUID, NV_ENC_H264_PROFILE_MAIN_GUID },
+    { NV_ENC_CODEC_H264_GUID, NV_ENC_H264_PROFILE_HIGH_GUID },
+    { NV_ENC_CODEC_H264_GUID, NV_ENC_H264_PROFILE_HIGH_444_GUID },
+    { NV_ENC_CODEC_HEVC_GUID, NV_ENC_HEVC_PROFILE_MAIN_GUID },
+    { NV_ENC_CODEC_HEVC_GUID, NV_ENC_HEVC_PROFILE_MAIN10_GUID },
+    { NV_ENC_CODEC_HEVC_GUID, NV_ENC_HEVC_PROFILE_MAIN_GUID },
+    { NV_ENC_CODEC_HEVC_GUID, NV_ENC_HEVC_PROFILE_MAIN10_GUID },
 };
 
 
@@ -322,16 +321,29 @@ public:
         NVERR(API.nvEncGetEncodePresetCount(Encoder, profile.encodeGuid, &presetGuidCount));       
         NVERR(API.nvEncGetEncodePresetGUIDs(Encoder, profile.encodeGuid, guids, 50, &presetGuidCount));
 
+        GUID presetGuid;
+        if (profile.encodeGuid == NV_ENC_CODEC_HEVC_GUID)
+        {
+            if (sizeX <= 1920 && sizeY <= 1080)
+                presetGuid = NV_ENC_PRESET_P5_GUID;
+            else
+                presetGuid = NV_ENC_PRESET_P5_GUID;
+        }
+        else
+        {
+            presetGuid = NV_ENC_PRESET_LOW_LATENCY_HQ_GUID;
+        }
         bool found = false;
         for (uint i = 0; i < presetGuidCount; i++)
         {
-            if (guids[i] == profile.presetGuid)
+            if (guids[i] == presetGuid)
             {
                 found = true;
                 break;
             }
         }
-        GUID presetGuid = found ? profile.presetGuid : guids[0];
+        if (!found)
+            presetGuid = guids[0];
       
         // get preset config
         NV_ENC_PRESET_CONFIG presetConfig = 
@@ -389,15 +401,6 @@ public:
 
         switch (Config.Profile)
         {
-            /*
-        case CodecProfile::H264_LOSSLESS:
-            enccfg.encodeCodecConfig.h264Config.qpPrimeYZeroTransformBypassFlag = 1;
-            //enccfg.encodeCodecConfig.h264Config.idrPeriod = enccfg.gopLength = 1;
-            enccfg.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP;
-            enccfg.rcParams.constQP.qpIntra = enccfg.rcParams.constQP.qpInterB = enccfg.rcParams.constQP.qpInterP = 1;
-            //params.tuningInfo = NV_ENC_TUNING_INFO_LOSSLESS;
-            [[fallthrough]];
-            */
         case CodecProfile::H264_HIGH_444:
             enccfg.encodeCodecConfig.h264Config.chromaFormatIDC = 3;
             //enccfg.encodeCodecConfig.h264Config.separateColourPlaneFlag = 1;
