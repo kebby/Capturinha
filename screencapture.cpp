@@ -149,7 +149,7 @@ class ScreenCapture : public IScreenCapture
 
                 if (Config.BlinkScrollLock)
                 {
-                    bool blink = fmod(2 * GetTime(), 1) < 0.5f;
+                    bool blink = fmod(GetTime(), 1) < 0.5f;
                     if (blink != scrlOn)
                     {
                         SetScrollLock(blink);
