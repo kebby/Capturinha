@@ -59,6 +59,8 @@ struct CaptureConfig
 
     // video settings
     uint OutputIndex = 0; // 0: default
+    bool Upscale = false;
+    uint UpscaleTo = 2160;
     VideoCodecConfig CodecCfg;
     bool RecordOnlyFullscreen = true;
 
@@ -74,6 +76,8 @@ struct CaptureConfig
         JSON_ENUM(UseContainer)
         JSON_VALUE(BlinkScrollLock)
         JSON_VALUE(OutputIndex)
+        JSON_VALUE(Upscale)
+        JSON_VALUE(UpscaleTo)
         JSON_VALUE(CodecCfg)
         JSON_VALUE(RecordOnlyFullscreen)
         JSON_VALUE(CaptureAudio)

@@ -12,7 +12,7 @@ RWByteAddressBuffer Out;
 cbuffer cb_csc : register(b0)
 {
     float4x4 colormatrix;    // needs to have bpp baked in (so eg. *255)
-    uint4 pitch_height;
+    uint4 pitch_height_scale;
 }
 
 groupshared float4 tile[8 * 8];
@@ -42,6 +42,7 @@ float2 getuv420(uint addr)
 // just so syntax highlighting works... :)
 #ifndef OUTFORMAT
 #define OUTFORMAT 4
+#define UPSCALE 0
 #endif
 
 // color space conversion
@@ -49,7 +50,11 @@ float2 getuv420(uint addr)
 void csc(uint3 dispid : SV_DispatchThreadID, uint3 threadid : SV_GroupThreadID, uint3 groupid : SV_GroupID)
 {
     // convert 8x8 pixels to output color space and store in tile
+#if UPSCALE == 1
+    float4 pixel = TexIn.Load(int3(dispid.x / pitch_height_scale.z, dispid.y / pitch_height_scale.z, 0));
+#else
     float4 pixel = TexIn.Load(int3(dispid.x, dispid.y, 0));
+#endif
     pixel.w = 1;
     
     uint tileaddr = 8 * threadid.y + threadid.x;
@@ -58,7 +63,7 @@ void csc(uint3 dispid : SV_DispatchThreadID, uint3 threadid : SV_GroupThreadID, 
     
 #if OUTFORMAT == 0     // 8bpp BGRA
     
-    uint addr = pitch_height.x * dispid.y + 4 * dispid.x;
+    uint addr = pitch_height_scale.x * dispid.y + 4 * dispid.x;
     Out.Store(addr, getuint8(tile[tileaddr].zyxw));
     
 #elif OUTFORMAT == 1   // NV12: 8bpp YUV 4:2:0, plane 1: Y, plane 2: Cb/Cr interleaved
@@ -67,13 +72,13 @@ void csc(uint3 dispid : SV_DispatchThreadID, uint3 threadid : SV_GroupThreadID, 
     {
         // store Y for 4*1 pixels
         float4 values = float4(tile[tileaddr].x, tile[tileaddr + 1].x, tile[tileaddr + 2].x, tile[tileaddr + 3].x);
-        uint addr = pitch_height.x * dispid.y + dispid.x;
+        uint addr = pitch_height_scale.x * dispid.y + dispid.x;
         Out.Store(addr, getuint8(values));
         
         // store U/V for 4*2 pixels
         if (!(threadid.y & 1))
         {
-            uint addr = pitch_height.x * (pitch_height.y + (dispid.y / 2)) + dispid.x;
+            uint addr = pitch_height_scale.x * (pitch_height_scale.y + (dispid.y / 2)) + dispid.x;
             Out.Store(addr, getuint8(float4(getuv420(tileaddr), getuv420(tileaddr + 2))));
         }
     }
@@ -84,17 +89,17 @@ void csc(uint3 dispid : SV_DispatchThreadID, uint3 threadid : SV_GroupThreadID, 
     {
         // store Y for 4*1 pixels
         float4 values = float4(tile[tileaddr].x, tile[tileaddr + 1].x, tile[tileaddr + 2].x, tile[tileaddr + 3].x);
-        uint addr = pitch_height.x * dispid.y + dispid.x;
+        uint addr = pitch_height_scale.x * dispid.y + dispid.x;
         Out.Store(addr, getuint8(values));
         
         // store U for 4*1 pixels
         values = float4(tile[tileaddr].y, tile[tileaddr + 1].y, tile[tileaddr + 2].y, tile[tileaddr + 3].y);
-        addr = pitch_height.x * (pitch_height.y + dispid.y) + dispid.x;
+        addr = pitch_height_scale.x * (pitch_height_scale.y + dispid.y) + dispid.x;
         Out.Store(addr, getuint8(values));
         
         // store V for 4*1 pixels
         values = float4(tile[tileaddr].z, tile[tileaddr + 1].z, tile[tileaddr + 2].z, tile[tileaddr + 3].z);
-        addr = pitch_height.x * (2 * pitch_height.y + dispid.y) + dispid.x;
+        addr = pitch_height_scale.x * (2 * pitch_height_scale.y + dispid.y) + dispid.x;
         Out.Store(addr, getuint8(values));
     }    
     
@@ -104,13 +109,13 @@ void csc(uint3 dispid : SV_DispatchThreadID, uint3 threadid : SV_GroupThreadID, 
     {
         // store Y for 2*1 pixels
         float2 values = float2(tile[tileaddr].x, tile[tileaddr + 1].x);
-        uint addr = pitch_height.x * dispid.y + 2 * dispid.x;
+        uint addr = pitch_height_scale.x * dispid.y + 2 * dispid.x;
         Out.Store(addr, getuint16(values));
         
         // store U/V for 2*2 pixels
         if (!(threadid.y & 1))
         {
-            uint addr = pitch_height.x * (pitch_height.y + (dispid.y / 2)) + 2 * dispid.x;
+            uint addr = pitch_height_scale.x * (pitch_height_scale.y + (dispid.y / 2)) + 2 * dispid.x;
             Out.Store(addr, getuint16(getuv420(tileaddr)));
         }
     }
@@ -121,17 +126,17 @@ void csc(uint3 dispid : SV_DispatchThreadID, uint3 threadid : SV_GroupThreadID, 
     {
         // store Y for 2*1 pixels
         float2 values = float2(tile[tileaddr].x, tile[tileaddr + 1].x);
-        uint addr = pitch_height.x * dispid.y + 2 * dispid.x;
+        uint addr = pitch_height_scale.x * dispid.y + 2 * dispid.x;
         Out.Store(addr, getuint16(values));
         
         // store U for 2*1 pixels
         values = float2(tile[tileaddr].y, tile[tileaddr + 1].y);
-        addr = pitch_height.x * (pitch_height.y + dispid.y) + 2 * dispid.x;
+        addr = pitch_height_scale.x * (pitch_height_scale.y + dispid.y) + 2 * dispid.x;
         Out.Store(addr, getuint16(values));
         
         // store V for 2*1 pixels
         values = float2(tile[tileaddr].z, tile[tileaddr + 1].z);
-        addr = pitch_height.x * (2 * pitch_height.y + dispid.y) + 2 * dispid.x;
+        addr = pitch_height_scale.x * (2 * pitch_height_scale.y + dispid.y) + 2 * dispid.x;
         Out.Store(addr, getuint16(values));
     }
     

@@ -84,6 +84,9 @@ public:
     CButton startCapture;
     CComboBox videoOut;
     CButton recordWhenFS;
+    CButton upscale;
+    CEdit upscaleTo;
+    CStatic upscaleToLabel;
     CComboBox rateControl;
     CStatic rateParamLabel;
     CEdit rateParam;
@@ -155,13 +158,27 @@ public:
 
         line.OffsetRect(0, 25);
 
-        //------------- RecordOnlyFullscreen
+        //------------- Recording options
         r = Rect(line, aLeft, aTop, 300, line.Height(), aLeft, aTop, labelwidth);
         Child(recordWhenFS, r, "Only record when fullscreen", WS_TABSTOP | BS_AUTOCHECKBOX);
 
+        line.OffsetRect(0, 20);
+
+        r = Rect(line, aLeft, aTop, 170, line.Height(), aLeft, aTop, labelwidth);
+        Child(upscale, r, "Oldschool Upscale to at least", WS_TABSTOP | BS_AUTOCHECKBOX);
+
+        r = Rect(line, aLeft, aTop, 40, line.Height(), aLeft, aTop, 260);
+        Child(upscaleTo, r, "", ES_RIGHT | ES_NUMBER | WS_BORDER);
+
+        r = Rect(line, aLeft, aTop, 100, line.Height(), aLeft, aTop, 305, 1);
+        Child(upscaleToLabel, r, "lines");
+
+
         line.OffsetRect(0, 25);
-       
+
         //-------------- Codec profile
+        line.OffsetRect(0, 10);
+
         CStatic label2;
         r = Rect(line, 0, 0, labelwidth, line.Height(), 0, 0, 0, 4);
         Child(label2, r, "Video codec");
@@ -383,6 +400,8 @@ public:
     {
         Config.OutputIndex = videoOut.GetCurSel();
         Config.RecordOnlyFullscreen = !!recordWhenFS.GetCheck();
+        Config.Upscale = !!upscale.GetCheck();
+        Config.UpscaleTo = Clamp(GetInt(upscaleTo), 720, 4320);
         Config.CodecCfg.Profile = (CodecProfile)videoCodec.GetCurSel();
         Config.CodecCfg.UseBitrateControl = (BitrateControl)rateControl.GetCurSel();
         Config.CodecCfg.FrameCfg = (FrameConfig)frameLayout.GetCurSel();
@@ -420,6 +439,8 @@ public:
         {
             videoOut.SetCurSel(Config.OutputIndex);
             recordWhenFS.SetCheck(Config.RecordOnlyFullscreen);
+            upscale.SetCheck(Config.Upscale);
+            upscaleTo.SetWindowTextA(String::PrintF("%d", Config.UpscaleTo));
             videoCodec.SetCurSel((int)Config.CodecCfg.Profile);
             rateControl.SetCurSel((int)Config.CodecCfg.UseBitrateControl);
             rateParam.SetWindowTextA(String::PrintF("%d", Config.CodecCfg.BitrateParameter));
@@ -436,6 +457,10 @@ public:
         }
 
         // enable/disable options etc
+        if (force || lastConfig.Upscale != Config.Upscale)
+        {
+            upscaleTo.EnableWindow(Config.Upscale);
+        }
 
         if (force || lastConfig.CodecCfg.Profile != Config.CodecCfg.Profile)
         {
@@ -760,9 +785,7 @@ public:
         dc.Rectangle(&clr);
 
         area.InflateRect(-10, -10);
-
-       
-
+      
         if (Capture)
         {
             auto& stats = Capture->GetStats();
@@ -793,7 +816,7 @@ public:
                 PaintVU(dc, WithDpi(vumeter), stats);
 
             // info
-            CRect line(area.left, vumeter.bottom + 20, area.right, area.bottom);
+            CRect line(area.left, vumeter.bottom + 20 + 40, area.right, area.bottom);
             int lw = 80;
             PaintText(dc, "Current file", stats.Filename, line, lw);
 
@@ -954,7 +977,7 @@ int Run(LPTSTR /*lpstrCmdLine*/ = NULL, int nCmdShow = SW_SHOWDEFAULT)
     MainFrame wndMain;
 
     DPI = GetDpiForSystem();
-    RECT winRect = { .left = CW_USEDEFAULT , .top = CW_USEDEFAULT, .right = CW_USEDEFAULT+WithDpi(420), .bottom = CW_USEDEFAULT+WithDpi(380) };
+    RECT winRect = { .left = CW_USEDEFAULT , .top = CW_USEDEFAULT, .right = CW_USEDEFAULT+WithDpi(420), .bottom = CW_USEDEFAULT+WithDpi(420) };
 
     if (wndMain.CreateEx(0, &winRect, WS_DLGFRAME|WS_SYSMENU|WS_MINIMIZEBOX) == NULL)
     {

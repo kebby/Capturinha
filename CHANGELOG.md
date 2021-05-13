@@ -1,5 +1,9 @@
 ### Capturinha change log
 
+#### ???
+* Oldschool Upscale: Scales up the screen in integer increments until a 
+  certain target resolution is hit (or surpassed)
+
 #### 0.2.0: The Quality Update
 * Added Compute Shader based color space conversion
   * Less GPU and VRAM usage when encoding in 8 bit 4:2:0

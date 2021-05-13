@@ -181,7 +181,8 @@ class ScreenCapture : public IScreenCapture
         Mat44 colormatrix;    // needs to have bpp baked in (so eg. *255)
         uint pitch;           // bytes per line
         uint height;          // # of lines
-        uint _pad[2];
+        uint scale;           // upscale factor, only when UPSCALE is defined
+        uint _pad[1];
     };
 
     void CaptureThreadFunc(Thread& thread)
@@ -193,12 +194,15 @@ class ScreenCapture : public IScreenCapture
         double lastFrameTime = GetTime();
         double ltf2 = lastFrameTime;
         double frameDuration = 0;
+        uint upscale = 1;
 
         double vInSkew = 0;
         uint64 lastFrameCount = 0;
 
         Mat44 colorMatrix;
         RCPtr<GpuByteBuffer> outBuffer;
+
+        uint scrSizeX = 0, scrSizeY = 0;
 
         while (thread.IsRunning())
         {
@@ -225,14 +229,23 @@ class ScreenCapture : public IScreenCapture
                     continue;
                 }
 
-                if (sizeX != info.sizeX || sizeY != info.sizeY || rateNum != info.rateNum || rateDen != info.rateDen)
+                if (scrSizeX != info.sizeX || scrSizeY != info.sizeY || rateNum != info.rateNum || rateDen != info.rateDen)
                 {
                     // (re)init encoder and processing thread, starts new output file
-                    sizeX = info.sizeX;
-                    sizeY = info.sizeY;
+                    scrSizeX = sizeX = info.sizeX;
+                    scrSizeY = sizeY = info.sizeY;
                     rateNum = info.rateNum;
                     rateDen = info.rateDen;
                     frameDuration = (double)info.rateDen / info.rateNum;
+
+                    upscale = 1;
+                    if (Config.Upscale)
+                    {
+                        while (sizeY * upscale < Config.UpscaleTo)
+                            upscale++;
+                        sizeX *= upscale;
+                        sizeY *= upscale;
+                    }
 
                     if (encoder)
                         encoder->Flush();
@@ -249,11 +262,12 @@ class ScreenCapture : public IScreenCapture
                     outBuffer = new GpuByteBuffer(fi.lines * fi.pitch, GpuBuffer::Usage::GpuOnly);
                    
                     auto source = LoadResource(IDR_COLORCONVERT, TEXTFILE);
-                    Array<ShaderDefine> macros =
+                    Array<ShaderDefine> defines =
                     {
-                        ShaderDefine { "OUTFORMAT", String::PrintF("%d", (int)fmt) }
+                        ShaderDefine { "OUTFORMAT", String::PrintF("%d", (int)fmt) },
+                        ShaderDefine { "UPSCALE", upscale > 1 ? "1":"0" },
                     };
-                    Shader = CompileShader(Shader::Type::Compute, source, "csc", macros, "colorconvert.hlsl");
+                    Shader = CompileShader(Shader::Type::Compute, source, "csc", defines, "colorconvert.hlsl");
 
                     switch (fmt)
                     {
@@ -263,6 +277,7 @@ class ScreenCapture : public IScreenCapture
                     default:
                         colorMatrix = MakeRGB2YUV44(Rec709, fi.ymin, fi.ymax, fi.uvmin, fi.uvmax);
                     }
+                    colorMatrix = colorMatrix * Mat44::Scale(fi.amp);
                     
                     encoder->Init(sizeX, sizeY, rateNum, rateDen, outBuffer);
                     first = true;
@@ -305,7 +320,8 @@ class ScreenCapture : public IScreenCapture
                         for (int i = 0; i < dup; i++)
                         {
                             //DPrintF("%6.2f: dup1\n", time);
-                            encoder->DuplicateFrame();
+                            if (encoder)
+                                encoder->DuplicateFrame();
                             AtomicInc(Stats.FramesDuplicated);
                         }
 
@@ -326,9 +342,10 @@ class ScreenCapture : public IScreenCapture
 
                             // color space conversion
                             CBuffer<CbConvert> cb;
-                            cb->colormatrix = (colorMatrix * Mat44::Scale(fi.amp)).Transpose();
+                            cb->colormatrix = colorMatrix.Transpose();
                             cb->pitch = fi.pitch;
                             cb->height = sizeY;
+                            cb->scale = upscale;
 
                             CBindings bind;
                             bind.res[0] = info.tex;
