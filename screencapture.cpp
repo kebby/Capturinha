@@ -90,6 +90,7 @@ class ScreenCapture : public IScreenCapture
             .CConfig = &Config,
         };
 
+        Stats = {};
         Stats.Filename = filename;
         Stats.FPS = (double)rateNum / rateDen;
         Stats.SizeX = sizeX;
@@ -188,7 +189,6 @@ class ScreenCapture : public IScreenCapture
     void CaptureThreadFunc(Thread& thread)
     {
         bool first = true;
-        int preroll = 3;
         int duplicated = 0;
         int over = 0;
         double lastFrameTime = GetTime();
@@ -221,7 +221,7 @@ class ScreenCapture : public IScreenCapture
                 {
                     Delete(processThread);
                     Delete(encoder);
-                    sizeX = sizeY = 0;
+                    scrSizeX = scrSizeY = 0;
                     ReleaseFrame();
                     for (int i = 0; i < 32; i++)
                         if (Stats.VU[i] > 0)
@@ -283,9 +283,7 @@ class ScreenCapture : public IScreenCapture
                     first = true;
                     duplicated = 0;
                     over = 0;
-                    preroll = 3;
 
-                    Stats = {};
                     lastFrameCount = 0;
                 }
                 else
@@ -320,8 +318,7 @@ class ScreenCapture : public IScreenCapture
                         for (int i = 0; i < dup; i++)
                         {
                             //DPrintF("%6.2f: dup1\n", time);
-                            if (encoder)
-                                encoder->DuplicateFrame();
+                            encoder->DuplicateFrame();
                             AtomicInc(Stats.FramesDuplicated);
                         }
 
@@ -336,29 +333,24 @@ class ScreenCapture : public IScreenCapture
                     //DPrintF("%6.2f: submit\n", time);
                     if (deltaFrames)
                     {
-                        if (!preroll)
-                        {
-                            auto fi = GetFormatInfo(encoder->GetBufferFormat(), sizeX, sizeY);
+                        auto fi = GetFormatInfo(encoder->GetBufferFormat(), sizeX, sizeY);
 
-                            // color space conversion
-                            CBuffer<CbConvert> cb;
-                            cb->colormatrix = colorMatrix.Transpose();
-                            cb->pitch = fi.pitch;
-                            cb->height = sizeY;
-                            cb->scale = upscale;
+                        // color space conversion
+                        CBuffer<CbConvert> cb;
+                        cb->colormatrix = colorMatrix.Transpose();
+                        cb->pitch = fi.pitch;
+                        cb->height = sizeY;
+                        cb->scale = upscale;
 
-                            CBindings bind;
-                            bind.res[0] = info.tex;
-                            bind.uav[0] = outBuffer;
-                            bind.cb[0] = &cb;
+                        CBindings bind;
+                        bind.res[0] = info.tex;
+                        bind.uav[0] = outBuffer;
+                        bind.cb[0] = &cb;
 
-                            Dispatch(Shader, bind, (sizeX + 7) / 8, (sizeY + 7) / 8, 1);
+                        Dispatch(Shader, bind, (sizeX + 7) / 8, (sizeY + 7) / 8, 1);
 
-                            encoder->SubmitFrame(info.time);
-                            AtomicInc(Stats.FramesCaptured);
-                        }
-                        else
-                            preroll--;
+                        encoder->SubmitFrame(info.time);
+                        AtomicInc(Stats.FramesCaptured);
                     }
                 }
                 ReleaseFrame();

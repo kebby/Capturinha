@@ -788,7 +788,7 @@ public:
       
         if (Capture)
         {
-            auto& stats = Capture->GetStats();
+            auto stats = Capture->GetStats();
             stat = stats.Recording ? 1 : 0;
 
             // FPS graph    
