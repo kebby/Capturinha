@@ -174,6 +174,7 @@ class ScreenCapture : public IScreenCapture
             SetScrollLock(false);
 
         delete output;
+        delete[] audioData;
     }
 
 
@@ -253,8 +254,6 @@ class ScreenCapture : public IScreenCapture
                     Delete(processThread);
                     Delete(encoder);
 
-                    //                  DPrintF("\n\n*************************** NEW\n\n\n");
-
                     encoder = CreateEncodeNVENC(Config);
 
                     auto fmt = encoder->GetBufferFormat();
@@ -304,7 +303,6 @@ class ScreenCapture : public IScreenCapture
 
                         if (dup < 0)
                         {
-                            //DPrintF("%6.2f: OVER %d\n", time, -dup);
                             over -= dup;
                             dup = 0;
                         }
@@ -317,7 +315,6 @@ class ScreenCapture : public IScreenCapture
 
                         for (int i = 0; i < dup; i++)
                         {
-                            //DPrintF("%6.2f: dup1\n", time);
                             encoder->DuplicateFrame();
                             AtomicInc(Stats.FramesDuplicated);
                         }
@@ -330,7 +327,6 @@ class ScreenCapture : public IScreenCapture
                         }
                     }
 
-                    //DPrintF("%6.2f: submit\n", time);
                     if (deltaFrames)
                     {
                         auto fi = GetFormatInfo(encoder->GetBufferFormat(), sizeX, sizeY);
@@ -357,8 +353,6 @@ class ScreenCapture : public IScreenCapture
 
                 // (it's that easy)
                 duplicated = 0;
-                //DPrintF("%6.2f (%4.2f): got %d, dup %d, over %d, avskew %5.2fms, vskew %5.2ff\n", time, deltaf, info.frameCount, duplicated, over, 1000. * Stats.AVSkew, vInSkew);
-
             }
 
             if (encoder && !first)
@@ -369,12 +363,10 @@ class ScreenCapture : public IScreenCapture
                 {
                     if (over)
                     {
-                        //DPrintF("%6.2f: comp\n", time);
                         over--;
                     }
                     else
                     {
-                        //DPrintF("%6.2f: dup2\n", time);
                         encoder->DuplicateFrame();
                         AtomicInc(Stats.FramesDuplicated);
                         duplicated++;

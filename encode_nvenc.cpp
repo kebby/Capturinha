@@ -20,8 +20,8 @@ static bool Inited = false;
 static NV_ENCODE_API_FUNCTION_LIST API = {};
 
 #if _DEBUG
-#define CUDAERR(x) { auto ret = (x); if(ret != CUDA_SUCCESS) { const char *err; cuGetErrorString(ret, &err); Fatal("%s(%d): CUDA call failed: %s\nCall: %s\n",__FILE__,__LINE__,err,#x); } }
-#define NVERR(x) { if((x)!= NV_ENC_SUCCESS) Fatal("%s(%d): NVENC call failed: %s\nCall: %s\n",__FILE__,__LINE__,API.nvEncGetLastErrorString(Encoder),#x); }
+#define CUDAERR(x) { auto ret = (x); if(ret != CUDA_SUCCESS) { const char *err; cuGetErrorString(ret, &err); Fatal("%s(%d): CUDA call failed: %s (%d)\nCall: %s\n",__FILE__,__LINE__,err,ret,#x); } }
+#define NVERR(x) { auto _ret=(x); if(_ret!= NV_ENC_SUCCESS) Fatal("%s(%d): NVENC call failed: %s (%d)\nCall: %s\n",__FILE__,__LINE__,API.nvEncGetLastErrorString(Encoder),_ret,#x); }
 #else
 #define CUDAERR(x) { auto _ret = (x);  if(_ret != CUDA_SUCCESS) { const char *err; cuGetErrorString(x, &err); Fatal("%s(%d): CUDA call failed (%08x)",__FILE__,__LINE__,_ret); } }
 #define NVERR(x) { auto _ret=(x);  if(_ret != NV_ENC_SUCCESS) Fatal("%s(%d): NVENC call failed (%08x)",__FILE__,__LINE__,_ret); }
@@ -86,12 +86,11 @@ class Encode_NVENC : public IEncode
     CUgraphicsResource TexResource = nullptr;
     CUcontext CudaContext = nullptr;
 
-    Frame *AcquireFrame()
+    Frame *AcquireFrame(bool alloc = false)
     {
         Frame* frame = nullptr;
-        if (!FreeFrames.Dequeue(frame))
+        if (alloc ||!FreeFrames.Dequeue(frame))
         {
-
             frame = new Frame
             {
                 .Used = 1,
@@ -123,6 +122,7 @@ class Encode_NVENC : public IEncode
             frame->Map.mappedResource = nullptr;
         }
 
+        frame->Used = 1;
         return frame;
     }
 
@@ -137,10 +137,10 @@ class Encode_NVENC : public IEncode
         frame = nullptr;
     }
 
-    OutBuffer* AcquireOutBuffer()
+    OutBuffer* AcquireOutBuffer(bool alloc = false)
     {
         OutBuffer* buffer;
-        if (!FreeBuffers.Dequeue(buffer))
+        if (alloc || !FreeBuffers.Dequeue(buffer))
         {           
             NV_ENC_CREATE_BITSTREAM_BUFFER create
             {
@@ -256,17 +256,24 @@ public:
     ~Encode_NVENC()
     {
         Flush();
-      
-        OutBuffer* ob = nullptr;
-        while (FreeBuffers.Dequeue(ob))
-            delete ob;
 
         Frame* f = nullptr;
         while (FreeFrames.Dequeue(f))
         {
+            if (f->Map.mappedResource)
+                NVERR(API.nvEncUnmapInputResource(Encoder, f->Map.mappedResource));
+            NVERR(API.nvEncUnregisterResource(Encoder, f->Map.registeredResource));
             cuMemFree(f->Buffer);
             delete f;
         }
+
+        OutBuffer* ob = nullptr;
+        while (FreeBuffers.Dequeue(ob))
+        {
+            API.nvEncDestroyBitstreamBuffer(Encoder, ob->buffer);
+            delete ob;
+        }
+
 
         API.nvEncDestroyEncoder(Encoder);
         cuGraphicsUnregisterResource(TexResource);
@@ -327,7 +334,7 @@ public:
             if (sizeX <= 1920 && sizeY <= 1080)
                 presetGuid = NV_ENC_PRESET_P5_GUID;
             else
-                presetGuid = NV_ENC_PRESET_P5_GUID;
+                presetGuid = NV_ENC_PRESET_P1_GUID;
         }
         else
         {
@@ -422,9 +429,9 @@ public:
         // prealloc a few frames and buffers
         for (int i = 0; i < 3; i++)
         {
-            auto frame = AcquireFrame();
+            auto frame = AcquireFrame(true);
             ReleaseFrame(frame);
-            auto buffer = AcquireOutBuffer();
+            auto buffer = AcquireOutBuffer(true);
             ReleaseOutBuffer(buffer);
         }
     }
@@ -435,7 +442,6 @@ public:
 
         // get a frame        
         CurrentFrame = AcquireFrame();
-        CurrentFrame->Used = 1;
         CurrentFrame->Time = time;
        
         // copy intermediate texture -> frame
