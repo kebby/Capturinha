@@ -77,6 +77,11 @@ drifts/washes away and then "comes back" every so and so seconds. When in doubt,
 
 (No, B frames are currently not supported, simply because they don't help too much with the use cases Capturinha has, and can make playback worse)
 
+The "Oldschool upscale" feature will scale up the captured screen in integer increments and without filtering until a target number
+of lines is reached or surpassed - eg. capturing a 640x480 screen with the option set to 2160 lines will result in a 3200x2400 sized
+video. That way you can upload your oldschool or low res productions or your freshly captured emulator run in a way that unlocks the 
+good resolutions and bitrates on the video platform of your choice.
+
 ##### Tips
 * The MP4 container can't contain PCM audio, so trying this combination will result in an error.
 * You can leave "only record when fullscreen" on and then just let Capturinha run minimized - 
