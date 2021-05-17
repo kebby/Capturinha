@@ -23,8 +23,8 @@ static NV_ENCODE_API_FUNCTION_LIST API = {};
 #define CUDAERR(x) { auto ret = (x); if(ret != CUDA_SUCCESS) { const char *err; cuGetErrorString(ret, &err); Fatal("%s(%d): CUDA call failed: %s\nCall: %s\n",__FILE__,__LINE__,err,#x); } }
 #define NVERR(x) { if((x)!= NV_ENC_SUCCESS) Fatal("%s(%d): NVENC call failed: %s\nCall: %s\n",__FILE__,__LINE__,API.nvEncGetLastErrorString(Encoder),#x); }
 #else
-#define CUDAERR(x) { auto _ret = (x);  if(_ret != CUDA_SUCCESS) { const char *err; cuGetErrorString(x, &err); Fatal("%s(%d): CUDA call failed (%08x)",__FILE__,__LINE__,_ret); } }
-#define NVERR(x) { auto _ret=(x);  if(_ret != NV_ENC_SUCCESS) Fatal("%s(%d): NVENC call failed (%08x)",__FILE__,__LINE__,_ret); }
+#define CUDAERR(x) { auto ret = (x); if(ret != CUDA_SUCCESS) { const char *err; cuGetErrorString(ret, &err); Fatal("%s(%d): CUDA call failed: %s\n",__FILE__,__LINE__,err); } }
+#define NVERR(x) { if((x)!= NV_ENC_SUCCESS) Fatal("%s(%d): NVENC call failed: %s\n",__FILE__,__LINE__,API.nvEncGetLastErrorString(Encoder)); }
 #endif
 
 

@@ -17,7 +17,7 @@ extern const char* ErrorString(HRESULT id);
 #if _DEBUG
 #define CHECK(x) { HRESULT _hr=(x); if(FAILED(_hr)) Fatal("%s(%d): WASAPI call failed: %s\nCall: %s\n",__FILE__,__LINE__,ErrorString(_hr),#x); }
 #else
-#define CHECK(x) { HRESULT _hr=(x); if(FAILED(_hr)) Fatal("%s(%d): WASAPI call failed (%08x)",__FILE__,__LINE__,_hr); }
+#define CHECK(x) { HRESULT _hr=(x); if(FAILED(_hr)) Fatal("%s(%d): WASAPI call failed: %s\n",__FILE__,__LINE__,ErrorString(_hr)); }
 #endif
 
 static constexpr int REFPERSEC = 10000000;
@@ -128,7 +128,7 @@ public:
         RCPtr<IAudioRenderClient> renderClient;
         CHECK(PlaybackClient->GetService(__uuidof(IAudioRenderClient), renderClient));
         CHECK(renderClient->GetBuffer(outBufferSize, &outBuffer));
-        memset(outBuffer, 0, outBufferSize * outFormat->nBlockAlign);
+        memset(outBuffer, 0, (size_t)outBufferSize * outFormat->nBlockAlign);
         CHECK(PlaybackClient->Start());
 
         //  initialize client for loopback recording

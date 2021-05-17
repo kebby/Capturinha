@@ -40,7 +40,7 @@ extern const char* ErrorString(HRESULT id);
 #if _DEBUG
 #define DXERR(x) { HRESULT _hr=(x); if(FAILED(_hr)) Fatal("%s(%d): D3D call failed: %s\nCall: %s\n",__FILE__,__LINE__,ErrorString(_hr),#x); }
 #else
-#define DXERR(x) { HRESULT _hr=(x); if(FAILED(_hr)) Fatal("%s(%d): D3D call failed (%08x)",__FILE__,__LINE__,_hr); }
+#define DXERR(x) { HRESULT _hr=(x); if(FAILED(_hr)) Fatal("%s(%d): D3D call failed: %s\n",__FILE__,__LINE__,ErrorString(_hr)); }
 #endif
 
 
