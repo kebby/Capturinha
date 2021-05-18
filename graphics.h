@@ -293,6 +293,8 @@ struct CaptureInfo
     RCPtr<Texture> tex;
     uint sizeX;
     uint sizeY;
+    uint offsX;
+    uint offsY;
     uint rateNum;
     uint rateDen;
     uint64 frameCount;
@@ -300,6 +302,7 @@ struct CaptureInfo
 };
 
 bool CaptureFrame(int timeoutMs, CaptureInfo &info);
+bool CaptureWindow(int timeoutMs, void* window, CaptureInfo &info);
 void ReleaseFrame();
 
 //---------------------------------------------------------------------------

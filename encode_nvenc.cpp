@@ -21,7 +21,7 @@ static NV_ENCODE_API_FUNCTION_LIST API = {};
 
 #if _DEBUG
 #define CUDAERR(x) { auto ret = (x); if(ret != CUDA_SUCCESS) { const char *err; cuGetErrorString(ret, &err); Fatal("%s(%d): CUDA call failed: %s\nCall: %s\n",__FILE__,__LINE__,err,#x); } }
-#define NVERR(x) { if((x)!= NV_ENC_SUCCESS) Fatal("%s(%d): NVENC call failed: %s\nCall: %s\n",__FILE__,__LINE__,API.nvEncGetLastErrorString(Encoder),#x); }
+#define NVERR(x) { auto _ret = (x); if(_ret!= NV_ENC_SUCCESS) { const char *err = API.nvEncGetLastErrorString(Encoder); Fatal("%s(%d): NVENC call failed: %s\nCall: %s\n",__FILE__,__LINE__,err,#x); } }
 #else
 #define CUDAERR(x) { auto ret = (x); if(ret != CUDA_SUCCESS) { const char *err; cuGetErrorString(ret, &err); Fatal("%s(%d): CUDA call failed: %s\n",__FILE__,__LINE__,err); } }
 #define NVERR(x) { if((x)!= NV_ENC_SUCCESS) Fatal("%s(%d): NVENC call failed: %s\n",__FILE__,__LINE__,API.nvEncGetLastErrorString(Encoder)); }
@@ -78,6 +78,8 @@ class Encode_NVENC : public IEncode
 
     uint SizeX = 0;
     uint SizeY = 0;
+    uint BufSizeX = 0;
+    uint BufSizeY = 0;
     uint FrameNo = 0;
 
     // intermediate texture (needed bc CUDA won't register shared textures)
@@ -91,21 +93,20 @@ class Encode_NVENC : public IEncode
         Frame* frame = nullptr;
         if (!FreeFrames.Dequeue(frame))
         {
-
             frame = new Frame
             {
                 .Used = 1,
             };
 
-            auto fi = GetFormatInfo(GetBufferFormat(), SizeX, SizeY);
+            auto fi = GetFormatInfo(GetBufferFormat(), BufSizeX, BufSizeY);
             CUDAERR(cuMemAlloc(&frame->Buffer, (size_t)fi.pitch * fi.lines));
 
             NV_ENC_REGISTER_RESOURCE reg =
             {
                 .version = NV_ENC_REGISTER_RESOURCE_VER,
                 .resourceType = NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR,
-                .width = SizeX,
-                .height = SizeY,
+                .width = BufSizeX,
+                .height = BufSizeY,
                 .pitch = fi.pitch,
                 .resourceToRegister = (void*)frame->Buffer,
                 .bufferFormat = EncodeFormat,
@@ -174,7 +175,7 @@ class Encode_NVENC : public IEncode
         ob->frame = CurrentFrame;
         AtomicInc(CurrentFrame->Used);
 
-        auto fi = GetFormatInfo(GetBufferFormat(), SizeX, SizeY);
+        auto fi = GetFormatInfo(GetBufferFormat(), BufSizeX, BufSizeY);
         NV_ENC_PIC_PARAMS pic =
         {
             .version = NV_ENC_PIC_PARAMS_VER,
@@ -288,10 +289,12 @@ public:
         }
     }
 
-    void Init(uint sizeX, uint sizeY, uint rateNum, uint rateDen, RCPtr<GpuByteBuffer> buffer) override
+    void Init(uint sizeX, uint sizeY, uint bufSizeX, uint bufSizeY, uint rateNum, uint rateDen, RCPtr<GpuByteBuffer> buffer) override
     {
         SizeX = sizeX;
         SizeY = sizeY;
+        BufSizeX = bufSizeX;
+        BufSizeY = bufSizeY;
 
         InBuffer = buffer;
 
@@ -439,7 +442,7 @@ public:
         CurrentFrame->Time = time;
        
         // copy intermediate texture -> frame
-        auto fi = GetFormatInfo(GetBufferFormat(), SizeX, SizeY);
+        auto fi = GetFormatInfo(GetBufferFormat(), BufSizeX, BufSizeY);
         CUDA_MEMCPY2D copy =
         {
             .srcMemoryType = CU_MEMORYTYPE_DEVICE,

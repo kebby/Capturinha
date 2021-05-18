@@ -28,6 +28,7 @@ class ScreenCapture : public IScreenCapture
     Thread* processThread = nullptr;
     Thread* captureThread = nullptr;
     uint sizeX = 0, sizeY = 0, rateNum = 0, rateDen = 0;
+    uint bufSizeX = 0, bufSizeY = 0;
 
     CaptureStats Stats = {};
     double avSkew = 0;
@@ -183,7 +184,10 @@ class ScreenCapture : public IScreenCapture
         uint pitch;           // bytes per line
         uint height;          // # of lines
         uint scale;           // upscale factor, only when UPSCALE is defined
-        uint _pad[1];
+        uint _pad0;
+        uint offsetX;         // pixel offset into input texture
+        uint offsetY;
+        uint _pad1[2];
     };
 
     void CaptureThreadFunc(Thread& thread)
@@ -210,7 +214,7 @@ class ScreenCapture : public IScreenCapture
             Stats.Recording = record;
 
             CaptureInfo info;
-            if (CaptureFrame(2, info))
+            if (CaptureWindow(2, 0, info))
             {
                 double time = GetTime();
                 double deltaf = (time - ltf2) * (double)info.rateNum / info.rateDen;
@@ -219,6 +223,7 @@ class ScreenCapture : public IScreenCapture
 
                 if (!record)
                 {
+                    info.tex.Clear();
                     Delete(processThread);
                     Delete(encoder);
                     scrSizeX = scrSizeY = 0;
@@ -254,11 +259,12 @@ class ScreenCapture : public IScreenCapture
                     Delete(encoder);
 
                     //                  DPrintF("\n\n*************************** NEW\n\n\n");
-
                     encoder = CreateEncodeNVENC(Config);
 
+                    bufSizeX = Align(sizeX, 8u);
+                    bufSizeY = Align(sizeY, 8u);
                     auto fmt = encoder->GetBufferFormat();
-                    auto fi = GetFormatInfo(fmt, sizeX, sizeY);
+                    auto fi = GetFormatInfo(fmt, bufSizeX, bufSizeY);
                     outBuffer = new GpuByteBuffer(fi.lines * fi.pitch, GpuBuffer::Usage::GpuOnly);
                    
                     auto source = LoadResource(IDR_COLORCONVERT, TEXTFILE);
@@ -279,7 +285,7 @@ class ScreenCapture : public IScreenCapture
                     }
                     colorMatrix = colorMatrix * Mat44::Scale(fi.amp);
                     
-                    encoder->Init(sizeX, sizeY, rateNum, rateDen, outBuffer);
+                    encoder->Init(sizeX, sizeY, bufSizeX, bufSizeY, rateNum, rateDen, outBuffer);
                     first = true;
                     duplicated = 0;
                     over = 0;
@@ -333,14 +339,16 @@ class ScreenCapture : public IScreenCapture
                     //DPrintF("%6.2f: submit\n", time);
                     if (deltaFrames)
                     {
-                        auto fi = GetFormatInfo(encoder->GetBufferFormat(), sizeX, sizeY);
+                        auto fi = GetFormatInfo(encoder->GetBufferFormat(), bufSizeX, bufSizeY);
 
                         // color space conversion
                         CBuffer<CbConvert> cb;
                         cb->colormatrix = colorMatrix.Transpose();
                         cb->pitch = fi.pitch;
-                        cb->height = sizeY;
+                        cb->height = bufSizeY;
                         cb->scale = upscale;
+                        cb->offsetX = info.offsX;
+                        cb->offsetY = info.offsY;
 
                         CBindings bind;
                         bind.res[0] = info.tex;
@@ -353,6 +361,7 @@ class ScreenCapture : public IScreenCapture
                         AtomicInc(Stats.FramesCaptured);
                     }
                 }
+                info.tex.Clear();
                 ReleaseFrame();
 
                 // (it's that easy)

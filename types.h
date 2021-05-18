@@ -37,6 +37,7 @@ template<typename T> constexpr T Max(T a, T b) { return a > b ? a : b; }
 template<typename T> constexpr T Clamp(T v, T min, T max) { return Min(Max(v, min), max); }
 template<typename T> constexpr T Lerp(float v, T a, T b) { return a * (1 - v) + b * v; }
 template<typename T> constexpr T Lerp(double v, T a, T b) { return a * (1 - v) + b * v; }
+template<typename T> constexpr T Align(T x, T to) { return ((x + to - 1) / to) * to; }
 
 template<typename T> constexpr T Smooth(T x) { return (3 * x - 2) * x * x; }
 constexpr float Smoothstep(float v, float min, float max) { return Smooth(Clamp((v - min) / (max - min), 0.f, 1.f)); }

@@ -762,6 +762,14 @@ static RCPtr<Texture> CreateTexture(RCPtr<ID3D11Texture2D> &from)
     return tex;
 }
 
+static RCPtr<Texture> GetSharedTexture(HANDLE shareHandle)
+{
+    RCPtr<ID3D11Texture2D> d3dtex;
+    DXERR(Dev->OpenSharedResource(shareHandle, __uuidof(ID3D11Texture2D), d3dtex));
+
+    return CreateTexture(d3dtex);
+}
+
 RCPtr<Texture> CreateTexture(const TexturePara& para, const void* data)
 {
     RCPtr<Texture> tex = new Texture();
@@ -914,6 +922,7 @@ static int64 lastFrameTime = 0;
 static RCPtr<Texture> capTex;
 static DXGI_OUTDUPL_DESC odd;
 static double frameCount = 0;
+static bool isWindow = false;
 
 static const DXGI_FORMAT scanoutFormats[] = {
     DXGI_FORMAT_R16G16B16A16_FLOAT,
@@ -1005,9 +1014,134 @@ bool CaptureFrame(int timeoutMs, CaptureInfo &ci)
     return true;
 }
 
+typedef BOOL(WINAPI* PFNDWMGETDXSHAREDSURFACE) (
+    HWND hwnd,
+    HANDLE* phSurface,
+    LUID* pAdapterLuid,
+    ULONG* pFmtWindow,
+    ULONG* pPresentFlags,
+    ULONGLONG* pWin32kUpdateId
+);
+
+static PFNDWMGETDXSHAREDSURFACE DwmGetDxSharedSurface = nullptr;
+uint64 lastUpdateId = 0;
+HWND capwnd;
+HMONITOR capMonitor;
+int rateNum = 0;
+int rateDen = 1;
+
+bool CaptureWindow(int timeoutMs, void* window, CaptureInfo& ci)
+{   
+    if (!DwmGetDxSharedSurface)
+    {
+        DwmGetDxSharedSurface = (PFNDWMGETDXSHAREDSURFACE)GetProcAddress(LoadLibrary("user32.dll"), "DwmGetDxSharedSurface");
+    }
+
+    capwnd = GetForegroundWindow();
+    DXGI_ADAPTER_DESC adesc = {};
+    Output.Adapter->GetDesc(&adesc);
+
+    HANDLE handle = INVALID_HANDLE_VALUE;
+    LUID adapterLuid;
+    ULONG fmt = 0;
+    ULONG pflags = 0;
+    ULONGLONG updateId = 0;
+
+    for (int i = 0; i < timeoutMs + 1; i++)
+    {
+        HRESULT hr = DwmGetDxSharedSurface(capwnd, &handle, &adapterLuid, &fmt, &pflags, &updateId);
+        if (handle == INVALID_HANDLE_VALUE || adesc.AdapterLuid.HighPart != adapterLuid.HighPart || adesc.AdapterLuid.LowPart != adapterLuid.LowPart) 
+            return false;
+        if (updateId != lastUpdateId)
+            break;
+    }
+    if (updateId == lastUpdateId)
+        return false;
+    lastUpdateId = updateId;
+
+    auto ticks = GetTicks();
+    LARGE_INTEGER qpf;
+    QueryPerformanceFrequency(&qpf);
+    if (!lastFrameTime) lastFrameTime = ticks;
+    double delta = (double)(ticks - lastFrameTime) / (double)qpf.QuadPart;
+    lastFrameTime = ticks;
+    frameCount += delta * rateNum / rateDen;
+
+    RCPtr<Texture> tex = GetSharedTexture(handle);
+    HMONITOR monitor = MonitorFromWindow(capwnd, MONITOR_DEFAULTTONEAREST);
+    if (monitor != capMonitor)
+    {
+        MONITORINFOEX minfo = {};
+        minfo.cbSize = sizeof(MONITORINFOEX);
+        GetMonitorInfo(monitor, &minfo);
+
+        DEVMODE mode = {};
+        EnumDisplaySettings(minfo.szDevice, ENUM_CURRENT_SETTINGS, &mode);
+        rateNum = mode.dmDisplayFrequency;
+        rateDen = 1;
+
+        for (auto out : AllOutputs)
+        {
+            DXGI_OUTPUT_DESC desc = {};
+            out.Output->GetDesc(&desc);
+            if (desc.Monitor == monitor)
+            {
+                D3D11_TEXTURE2D_DESC tdesc = {};
+                tex->P->tex->GetDesc(&tdesc);
+
+                DXGI_MODE_DESC refmode =
+                {
+                    .Width = mode.dmPelsWidth,
+                    .Height = mode.dmPelsHeight,
+                    .Format = tdesc.Format,
+                };
+                refmode.RefreshRate.Numerator = rateNum;
+                refmode.RefreshRate.Denominator = rateDen;
+
+                DXGI_MODE_DESC match = {};
+                if (SUCCEEDED(out.Output->FindClosestMatchingMode(&refmode, &match, Dev)))
+                {
+                    rateNum = match.RefreshRate.Numerator;
+                    rateDen = match.RefreshRate.Denominator;
+                }
+
+                break;
+            }
+        }
+    };
+
+  
+    RECT client = {};
+    RECT wrect = {};
+    POINT topleft = {};
+    GetClientRect(capwnd, &client);    
+    GetWindowRect(capwnd, &wrect);
+    ClientToScreen(capwnd, &topleft);
+  
+    ci.tex = tex;
+    ci.sizeX = client.right;
+    ci.sizeY = client.bottom;
+    ci.rateNum = rateNum;
+    ci.rateDen = rateDen;
+    ci.frameCount = round(frameCount);
+    ci.time = (double)ticks / (double)qpf.QuadPart;
+    ci.offsX = topleft.x - wrect.left;
+    ci.offsY = topleft.y - wrect.top;
+
+    isWindow = true;
+    return true;
+}
+
+
 void ReleaseFrame()
 {
-    Dupl->ReleaseFrame();
+
+    //HRESULT hr = DwmDxUpdateWindowSharedSurface(capwnd, updateId, 0, 0, NULL);
+
+    capTex.Clear();
+
+    if (!isWindow)
+        Dupl->ReleaseFrame();
 }
 
 void Clear(RenderTarget* rt, Vec4 color)

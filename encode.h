@@ -25,7 +25,7 @@ struct IEncode
 
     virtual BufferFormat GetBufferFormat() = 0;
 
-    virtual void Init(uint sizeX, uint sizeY, uint rateNum, uint rateDen, RCPtr<GpuByteBuffer> buffer) = 0;
+    virtual void Init(uint sizeX, uint sizeY, uint bufSizeX, uint bufSizeY, uint rateNum, uint rateDen, RCPtr<GpuByteBuffer> buffer) = 0;
 
     virtual void SubmitFrame(double time) = 0;
 

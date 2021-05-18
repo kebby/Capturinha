@@ -13,6 +13,7 @@ cbuffer cb_csc : register(b0)
 {
     float4x4 colormatrix;    // needs to have bpp baked in (so eg. *255)
     uint4 pitch_height_scale;
+    uint4 offset;
 }
 
 groupshared float4 tile[8 * 8];
@@ -41,7 +42,7 @@ float2 getuv420(uint addr)
 
 // just so syntax highlighting works... :)
 #ifndef OUTFORMAT
-#define OUTFORMAT 4
+#define OUTFORMAT 2
 #define UPSCALE 0
 #endif
 
@@ -51,9 +52,9 @@ void csc(uint3 dispid : SV_DispatchThreadID, uint3 threadid : SV_GroupThreadID, 
 {
     // convert 8x8 pixels to output color space and store in tile
 #if UPSCALE == 1
-    float4 pixel = TexIn.Load(int3(dispid.x / pitch_height_scale.z, dispid.y / pitch_height_scale.z, 0));
+    float4 pixel = TexIn.Load(int3(dispid.x / pitch_height_scale.z + offset.x, dispid.y / pitch_height_scale.z + offset.y, 0));
 #else
-    float4 pixel = TexIn.Load(int3(dispid.x, dispid.y, 0));
+    float4 pixel = TexIn.Load(int3(dispid.x + offset.x, dispid.y + offset.y, 0));
 #endif
     pixel.w = 1;
     
