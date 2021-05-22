@@ -1000,6 +1000,12 @@ extern const char* AppName;
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR lpstrCmdLine, int nCmdShow)
 {
+    const Array<int> test = { 1,2,3,4,5 };
+    auto test2 = test
+        .Where([](int i) {return i > 2; })
+        .Select<String>([](int i) { return String::PrintF("lol %d", i); })
+        .ToArray();
+
     HRESULT hRes = ::CoInitializeEx(NULL, COINIT_MULTITHREADED);  
     ATLASSERT(SUCCEEDED(hRes));
 

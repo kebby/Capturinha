@@ -52,184 +52,6 @@ template<typename a1, typename ... args> constexpr int NumArgs(a1, args... a) { 
 
 template<typename T> void Delete(T*& ptr) { delete ptr; ptr = nullptr; }
 
-// containers
-// -------------------------------------------------------------------------------
-
-template<typename T> class Array
-{
-private:
-    T* mem = nullptr;
-    size_t size = 0;
-    size_t capacity = 0;
-
-    void Construct(size_t at) { new(&mem[at]) T(); }
-    void Construct(size_t at, const T& value) { new(&mem[at]) T(value); }
-    void Construct(size_t at, T&& value) { new(&mem[at]) T(value); }
-    template<class Tv> void Construct(size_t at, Tv value) { new(&mem[at]) T(value); }
-    template<class Tv, class ... args> void Construct(size_t at, Tv v, args ...a) { Construct(at, v); Construct(at + 1, a...); }
-    void Destruct(size_t at) { mem[at].T::~T(); }
-    
-    void Grow(size_t to)
-    {
-        if (to <= capacity) return;
-        T* oldptr = mem;
-        capacity = Max(2*capacity, to);
-        if (!capacity) capacity = 1;
-        mem = (T*)new uint8[capacity * sizeof(T)];
-        for (size_t i = 0; i < size; i++)
-        {
-            T& elem = ((T*)oldptr)[i];
-            Construct(i, (T&&)elem);
-            elem.T::~T();
-        }
-        delete[] (uint8*)oldptr;
-    }
-    
-    void PrepareInsert(size_t at, size_t count)
-    {
-        ASSERT(at <= size);
-        Grow(at + count);
-        for (size_t i = size-at; i --> 0;)
-        {
-            if (at + i + count >= size)
-                Construct(at + i + count, (T&&)mem[at + i]);
-            else
-                mem[at + i + count] = (T&&)mem[at + i];
-            Destruct(at + i);
-        }
-        size += count;
-    }
-
-public:
-    Array() {}
-    explicit Array(size_t cap) { Grow(cap); }
-    template<class ... args> Array(args ...a) { PushTail(a...); }
-
-    Array(const Array& a)
-    {
-        Grow(a.capacity);
-        for (size_t i = 0; i < a.size; i++)
-            PushTail(a[i]);
-    }
-
-    Array(Array&& a) : mem(a.mem),size(a.size), capacity(a.capacity)
-    {
-        a.size = a.capacity = 0;
-        a.mem = nullptr;            
-    }
-    ~Array() { Clear(); delete[] (uint8*)mem; }
-
-    Array& operator = (const Array &arr)
-    {
-        Clear();
-        Grow(arr.capacity);
-        for (size_t i = 0; i < arr.size; i++)
-            PushTail(arr[i]);
-        return *this;
-    }
-
-    
-    void Clear() { SetSize(0); }
-
-    void SetSize(size_t s)
-    {
-        Grow(s);
-        while (size < s)
-            Construct(size++);
-        while (size > s)
-            Destruct(--size);
-    }
-  
-    template<class ... args> void Insert(size_t at, args ...a) { PrepareInsert(at, NumArgs(a...)); Construct(at, a...); }
-    template<class ... args> void PushHead(args ...a) { Insert(0, a...); }
-    template<class ... args> void PushTail(args ...a) { Insert(size, a...); }
-    template<class Ta> Array& operator += (Ta arg) { Insert(size, arg); return *this; }
-
-    T RemAtUnordered(size_t index)
-    {
-        T ret = Get(index);
-        size--;
-        if (index<size)
-            mem[index] = (T&&)mem[size];
-        Destruct(size);
-        return ret;
-    }
-
-    T RemAt(size_t index)
-    {
-        T ret = Get(index);
-        size--;
-        while (index < size)
-        {
-            mem[index] = (T&&)mem[index + 1];
-            index++;
-        }
-        Destruct(size);
-        return ret;
-    }
-
-    T PopHead() { return RemAt(0); }
-    T PopTail() { return RemAt(size-1); }
-
-    template<class TPred> void RemIf(TPred pred)
-    {
-        int di = 0;
-        for (int i = 0; i < size; i++)
-            if (!pred(mem[i]))
-            {
-                if (di != i)
-                    mem[di] = (T&&)mem[i];
-                di++;
-            }
-        for (int i = di; i < size; i++)
-            Destruct(i);
-        size = di;
-    }
-
-    template<class TPred> void RemIfUnordered(TPred pred)
-    {
-        for (int i = 0; i < size; )
-            if (pred(mem[i]))
-            {
-                size--;
-                if (i != size)
-                    mem[i] = (T&&)mem[size];
-                Destruct(size);
-            }
-            else
-                i++;
-    }
-
-    void Rem(const T& v) { RemIf([&](const T& x) { return x == v; }); }
-    void RemUnordered(const T& v) { RemIfUnordered([&](const T& x) { return x == v; }); }
-
-    const T& Get(size_t i) const { ASSERT(i < size); return ((T*)mem)[i]; }
-    T& Get(size_t i) { ASSERT(i < size); return ((T*)mem)[i]; }
-
-    T& operator[](size_t i) { return Get(i); }
-    const T& operator[](size_t i) const { return Get(i); }
-    size_t Count() const { return size; }
-    bool operator ! () const { return !size; }
-
-    bool operator == (const Array& arr) const
-    {
-        if (size != arr.size) return false;
-        for (int i = 0; i < size; i++)
-            if (mem[i] != arr.mem[i])
-                return false;
-        return true;
-    }
-
-    bool operator != (const Array& arr) const { return !(*this == arr); }
-};
-
-// for..in support
-template<typename T> T* begin(Array<T> &arr) { return arr.Count() ? &arr[0] : nullptr; }
-template<typename T> T* end(Array<T> &arr) { return arr.Count() ? (&arr[0])+arr.Count() : nullptr; }
-template<typename T> const T* begin(const Array<T>& arr) { return arr.Count() ? &arr[0] : nullptr; }
-template<typename T> const T* end(const Array<T>& arr) { return arr.Count() ? (&arr[0]) + arr.Count() : nullptr; }
-
-template<typename TP> void DeleteAll(Array<TP*>& array) { for (TP* p : array) delete p; array.Clear(); }
 
 // Atomics
 //----------------------------------------------------------------------------------------------
@@ -367,6 +189,297 @@ public:
     constexpr bool operator!() const { return !IsValid(); }
     void Clear() { ptr.Clear(); }
 };
+
+// iterators
+// -------------------------------------------------------------------------------
+
+template<typename T> class Array;
+
+template<typename T> class IEnumerable
+{
+protected:
+    struct Iterator
+    {
+        virtual ~Iterator() {};
+        virtual void Begin() {}
+        virtual T* Next() { return nullptr; };
+    };
+
+    Func<Iterator* (void)> GetIterator = []() { return new Iterator; };
+
+    struct BaseIterator : Iterator
+    {
+        const IEnumerable& ienum;
+        Iterator* it = nullptr;
+        BaseIterator(const IEnumerable& ie) : ienum(ie) {}
+        ~BaseIterator() { delete it; }
+        void Begin() override { delete it; it = this->ienum.GetIterator(); it->Begin(); }
+        T* Next() override { return it->Next(); }
+    };
+
+    IEnumerable(Func<Iterator* (void)> getIt) : GetIterator(getIt) {}
+
+private:
+
+    template <typename TPred> struct WhereIterator : BaseIterator
+    {
+        const TPred& Pred;
+        WhereIterator(const IEnumerable& ie, const TPred &pred) : BaseIterator(ie), Pred(pred) {}
+        T* Next() override
+        {
+            while (T* ptr = this->it->Next())
+                if (Pred(*ptr))
+                    return ptr;
+            return nullptr;
+        }
+    };
+
+    template <typename TOut, typename TSel> struct SelectIterator : IEnumerable<TOut>::Iterator
+    {
+        const IEnumerable& ienum;
+        const TSel& Sel;
+        Iterator* it = nullptr;
+        TOut value;
+
+        SelectIterator(const IEnumerable& ie, const TSel& sel) : ienum(ie), Sel(sel) {}
+        void Begin() override { delete it; it = this->ienum.GetIterator(); it->Begin(); }
+        TOut* Next() override
+        {
+            T* ptr = this->it->Next();
+            if (!ptr) return nullptr;
+            value = Sel(*ptr);
+            return &value;
+        }
+    };
+
+public:
+
+    friend class IEnumerable;
+
+    IEnumerable() {}
+
+    Array<T> ToArray() const
+    {
+        Array<T> ret;
+        BaseIterator it(*this);
+        it.Begin();
+        while (T* ptr = it.Next())
+            ret.PushTail(*ptr);
+        return ret;
+    }
+
+    template <typename TPred> const IEnumerable Where(const TPred& pred) const
+    {
+        return IEnumerable([&]() { return new WhereIterator(*this, pred); });
+    }
+
+    template <typename TOut, typename TSel> const IEnumerable<TOut> Select(const TSel& sel) const
+    {
+        return IEnumerable<TOut>([&]() { return new SelectIterator<TOut, TSel>(*this, sel); });
+    }
+
+};
+
+template<typename T, typename TOuter> class IEnumerableImpl : public IEnumerable<T>
+{
+protected:
+    IEnumerableImpl() { this->GetIterator = Bind((TOuter*)this, &TOuter::GetIteratorImpl); }
+};
+
+
+
+// containers
+// -------------------------------------------------------------------------------
+
+template<typename T> class Array : public IEnumerableImpl<T, Array<T>>
+{
+private:
+    T* mem = nullptr;
+    size_t size = 0;
+    size_t capacity = 0;
+
+    void Construct(size_t at) { new(&mem[at]) T(); }
+    void Construct(size_t at, const T& value) { new(&mem[at]) T(value); }
+    void Construct(size_t at, T&& value) { new(&mem[at]) T(value); }
+    template<class Tv> void Construct(size_t at, Tv value) { new(&mem[at]) T(value); }
+    template<class Tv, class ... args> void Construct(size_t at, Tv v, args ...a) { Construct(at, v); Construct(at + 1, a...); }
+    void Destruct(size_t at) { mem[at].T::~T(); }
+
+    void Grow(size_t to)
+    {
+        if (to <= capacity) return;
+        T* oldptr = mem;
+        capacity = Max(2 * capacity, to);
+        if (!capacity) capacity = 1;
+        mem = (T*)new uint8[capacity * sizeof(T)];
+        for (size_t i = 0; i < size; i++)
+        {
+            T& elem = ((T*)oldptr)[i];
+            Construct(i, (T&&)elem);
+            elem.T::~T();
+        }
+        delete[](uint8*)oldptr;
+    }
+
+    void PrepareInsert(size_t at, size_t count)
+    {
+        ASSERT(at <= size);
+        Grow(at + count);
+        for (size_t i = size - at; i-- > 0;)
+        {
+            if (at + i + count >= size)
+                Construct(at + i + count, (T&&)mem[at + i]);
+            else
+                mem[at + i + count] = (T&&)mem[at + i];
+            Destruct(at + i);
+        }
+        size += count;
+    }
+
+    struct ArrayIterator : IEnumerable<T>::Iterator
+    {
+        const Array& arr;
+        size_t index = 0;
+
+        ArrayIterator(const Array& a) : arr(a) {}
+        void Begin() override { index = 0; };
+        T* Next() override { return index >= arr.size ? nullptr : arr.mem + index++; };
+    };
+
+public:
+    Array() {}
+    explicit Array(size_t cap) { Grow(cap); }
+    template<class ... args> Array(args ...a) { PushTail(a...); }
+
+    Array(const Array& a)
+    {
+        Grow(a.capacity);
+        for (size_t i = 0; i < a.size; i++)
+            PushTail(a[i]);
+    }
+
+    Array(Array&& a) : mem(a.mem), size(a.size), capacity(a.capacity)
+    {
+        a.size = a.capacity = 0;
+        a.mem = nullptr;
+    }
+    ~Array() { Clear(); delete[](uint8*)mem; }
+
+    Array& operator = (const Array& arr)
+    {
+        Clear();
+        Grow(arr.capacity);
+        for (size_t i = 0; i < arr.size; i++)
+            PushTail(arr[i]);
+        return *this;
+    }
+
+
+    void Clear() { SetSize(0); }
+
+    void SetSize(size_t s)
+    {
+        Grow(s);
+        while (size < s)
+            Construct(size++);
+        while (size > s)
+            Destruct(--size);
+    }
+
+    template<class ... args> void Insert(size_t at, args ...a) { PrepareInsert(at, NumArgs(a...)); Construct(at, a...); }
+    template<class ... args> void PushHead(args ...a) { Insert(0, a...); }
+    template<class ... args> void PushTail(args ...a) { Insert(size, a...); }
+    template<class Ta> Array& operator += (Ta arg) { Insert(size, arg); return *this; }
+
+    T RemAtUnordered(size_t index)
+    {
+        T ret = Get(index);
+        size--;
+        if (index < size)
+            mem[index] = (T&&)mem[size];
+        Destruct(size);
+        return ret;
+    }
+
+    T RemAt(size_t index)
+    {
+        T ret = Get(index);
+        size--;
+        while (index < size)
+        {
+            mem[index] = (T&&)mem[index + 1];
+            index++;
+        }
+        Destruct(size);
+        return ret;
+    }
+
+    T PopHead() { return RemAt(0); }
+    T PopTail() { return RemAt(size - 1); }
+
+    template<class TPred> void RemIf(TPred pred)
+    {
+        int di = 0;
+        for (int i = 0; i < size; i++)
+            if (!pred(mem[i]))
+            {
+                if (di != i)
+                    mem[di] = (T&&)mem[i];
+                di++;
+            }
+        for (int i = di; i < size; i++)
+            Destruct(i);
+        size = di;
+    }
+
+    template<class TPred> void RemIfUnordered(TPred pred)
+    {
+        for (int i = 0; i < size; )
+            if (pred(mem[i]))
+            {
+                size--;
+                if (i != size)
+                    mem[i] = (T&&)mem[size];
+                Destruct(size);
+            }
+            else
+                i++;
+    }
+
+    void Rem(const T& v) { RemIf([&](const T& x) { return x == v; }); }
+    void RemUnordered(const T& v) { RemIfUnordered([&](const T& x) { return x == v; }); }
+
+    const T& Get(size_t i) const { ASSERT(i < size); return ((T*)mem)[i]; }
+    T& Get(size_t i) { ASSERT(i < size); return ((T*)mem)[i]; }
+
+    T& operator[](size_t i) { return Get(i); }
+    const T& operator[](size_t i) const { return Get(i); }
+    size_t Count() const { return size; }
+    bool operator ! () const { return !size; }
+
+    bool operator == (const Array& arr) const
+    {
+        if (size != arr.size) return false;
+        for (int i = 0; i < size; i++)
+            if (mem[i] != arr.mem[i])
+                return false;
+        return true;
+    }
+
+    bool operator != (const Array& arr) const { return !(*this == arr); }
+
+    // IEnumerable support
+    IEnumerable<T>::Iterator* GetIteratorImpl() { return new ArrayIterator(*this); }  
+};
+
+// for..in support
+template<typename T> T* begin(Array<T>& arr) { return arr.Count() ? &arr[0] : nullptr; }
+template<typename T> T* end(Array<T>& arr) { return arr.Count() ? (&arr[0]) + arr.Count() : nullptr; }
+template<typename T> const T* begin(const Array<T>& arr) { return arr.Count() ? &arr[0] : nullptr; }
+template<typename T> const T* end(const Array<T>& arr) { return arr.Count() ? (&arr[0]) + arr.Count() : nullptr; }
+
+template<typename TP> void DeleteAll(Array<TP*>& array) { for (TP* p : array) delete p; array.Clear(); }
+
 
 // Buffers
 // -------------------------------------------------------------------------------
