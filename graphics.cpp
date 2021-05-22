@@ -1047,6 +1047,15 @@ bool CaptureWindow(int timeoutMs, void* window, CaptureInfo& ci)
     ULONG pflags = 0;
     ULONGLONG updateId = 0;
 
+    RECT client = {};
+    RECT wrect = {};
+    POINT topleft = {};
+    GetClientRect(capwnd, &client);
+    GetWindowRect(capwnd, &wrect);
+    ClientToScreen(capwnd, &topleft);
+
+    DPrintF("%08x %d %d\n", capwnd, client.right, client.bottom);
+
     for (int i = 0; i < timeoutMs + 1; i++)
     {
         HRESULT hr = DwmGetDxSharedSurface(capwnd, &handle, &adapterLuid, &fmt, &pflags, &updateId);
@@ -1111,13 +1120,7 @@ bool CaptureWindow(int timeoutMs, void* window, CaptureInfo& ci)
     };
 
   
-    RECT client = {};
-    RECT wrect = {};
-    POINT topleft = {};
-    GetClientRect(capwnd, &client);    
-    GetWindowRect(capwnd, &wrect);
-    ClientToScreen(capwnd, &topleft);
-  
+    
     ci.tex = tex;
     ci.sizeX = client.right;
     ci.sizeY = client.bottom;
