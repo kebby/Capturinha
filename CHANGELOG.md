@@ -1,9 +1,10 @@
 ### Capturinha change log
 
-#### ???
+#### 0.3.0: Scale up those pixels!
 * Oldschool Upscale: Scales up the screen in integer increments until a 
   certain target resolution is hit (or surpassed)
 * More memory management fixes
+* Fixed Direct3D error on some machines
 * Error box shows full error text (instead of just a code) now also in release builds
 
 #### 0.2.0: The Quality Update
