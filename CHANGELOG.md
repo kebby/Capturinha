@@ -3,6 +3,8 @@
 #### ???
 * Oldschool Upscale: Scales up the screen in integer increments until a 
   certain target resolution is hit (or surpassed)
+* More memory management fixes
+* Error box shows full error text (instead of just a code) now also in release builds
 
 #### 0.2.0: The Quality Update
 * Added Compute Shader based color space conversion

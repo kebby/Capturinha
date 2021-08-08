@@ -34,12 +34,13 @@ const char* AppName = "Train Engine";
 //----------------------------------------------------------------------------------------------
 
 const char* ErrorString(HRESULT id)
-
 {
     thread_local static char buf[1024];
     FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
         NULL, id, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
         buf, sizeof(buf), NULL);
+    if (!buf[0])
+        sprintf_s(buf, "0x%08x", id);
     return buf;
 }
 

@@ -652,14 +652,13 @@ public:
         CRect textRect3(area.right-d20, area.bottom, area.right, area.bottom + d10);
         dc.DrawTextA("0", -1, &textRect3, DT_RIGHT);
 
-
         CBrush peak;
         peak.CreateSolidBrush(CRef(Vec3(1, 0.3f, 0.3f)));
         dc.SelectStockPen(NULL_PEN);
         dc.SelectBrush(peak);
 
         int nch;
-        for (nch = 0; stats.VU[nch] >= 0; nch++) {}
+        for (nch = 0; nch<32 && stats.VU[nch] >= 0; nch++) {}
        
         for (int ch = 0; ch < nch; ch++)
         {

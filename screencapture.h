@@ -110,8 +110,8 @@ struct CaptureStats
     uint FramesCaptured;
     uint FramesDuplicated;      
 
-    float VU[32] = {};
-    float VUPeak[32] = {};
+    float VU[32] = { -1.f };
+    float VUPeak[32] = { -1.f };
 
     String Filename;
 };

@@ -40,7 +40,7 @@ extern const char* ErrorString(HRESULT id);
 #if _DEBUG
 #define DXERR(x) { HRESULT _hr=(x); if(FAILED(_hr)) Fatal("%s(%d): D3D call failed: %s\nCall: %s\n",__FILE__,__LINE__,ErrorString(_hr),#x); }
 #else
-#define DXERR(x) { HRESULT _hr=(x); if(FAILED(_hr)) Fatal("%s(%d): D3D call failed (%08x)",__FILE__,__LINE__,_hr); }
+#define DXERR(x) { HRESULT _hr=(x); if(FAILED(_hr)) Fatal("%s(%d): D3D call failed: %s\n",__FILE__,__LINE__,ErrorString(_hr)); }
 #endif
 
 
@@ -842,17 +842,15 @@ void InitD3D(int outputIndex)
 
     Output = AllOutputs[outputIndex];
    
-    printf("Using output: %s\n", (const char*)Output.DisplayName);
-    
     // create device and upgrade
     const D3D_FEATURE_LEVEL levels[] = { D3D_FEATURE_LEVEL_12_1, D3D_FEATURE_LEVEL_12_0, D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0 };
     UINT flags = 0;
-    //#ifdef _DEBUG
+ #ifdef _DEBUG
     flags |= D3D11_CREATE_DEVICE_DEBUG;
-    //#endif
+ #endif
     RCPtr<ID3D11Device> dev0;
     RCPtr<ID3D11DeviceContext> ctx0;
-    DXERR(D3D11CreateDevice(Output.Adapter, Output.Adapter.IsValid() ? D3D_DRIVER_TYPE_UNKNOWN : D3D_DRIVER_TYPE_HARDWARE, NULL, flags, levels, _countof(levels), D3D11_SDK_VERSION, dev0, &FeatureLevel, ctx0));
+    DXERR(D3D11CreateDevice(Output.Adapter, Output.Adapter.IsValid() ? D3D_DRIVER_TYPE_UNKNOWN : D3D_DRIVER_TYPE_HARDWARE , NULL, flags, levels, _countof(levels), D3D11_SDK_VERSION, dev0, &FeatureLevel, ctx0));
     Dev = dev0;
     Ctx = ctx0;
 
