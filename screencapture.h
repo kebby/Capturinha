@@ -90,6 +90,8 @@ struct CaptureConfig
 
 struct CaptureStats
 {
+    enum class CaptureFormat { Unknown, P8, P10, P16, P16F };
+
     struct Frame
     {
         double FPS;
@@ -100,7 +102,8 @@ struct CaptureStats
     bool Recording;
 
     int SizeX;
-    int SizeY;   
+    int SizeY;
+    CaptureFormat Fmt;
     double Time;
     double FPS;
     double AvgBitrate;

@@ -28,6 +28,7 @@ class ScreenCapture : public IScreenCapture
     Thread* processThread = nullptr;
     Thread* captureThread = nullptr;
     uint sizeX = 0, sizeY = 0, rateNum = 0, rateDen = 0;
+    PixelFormat pixfmt = PixelFormat::None;
 
     CaptureStats Stats = {};
     double avSkew = 0;
@@ -95,6 +96,15 @@ class ScreenCapture : public IScreenCapture
         Stats.FPS = (double)rateNum / rateDen;
         Stats.SizeX = sizeX;
         Stats.SizeY = sizeY;
+        switch (pixfmt)
+        {
+        case PixelFormat::RGBA8: case PixelFormat::BGRA8: case PixelFormat::RGBA8sRGB: case PixelFormat::BGRA8sRGB: Stats.Fmt = CaptureStats::CaptureFormat::P8; break;
+        case PixelFormat::RGB10A2: Stats.Fmt = CaptureStats::CaptureFormat::P10; break;
+        case PixelFormat::RGBA16: Stats.Fmt = CaptureStats::CaptureFormat::P16; break;
+        case PixelFormat::RGBA16F: Stats.Fmt = CaptureStats::CaptureFormat::P16F; break;
+        default: Stats.Fmt = CaptureStats::CaptureFormat::Unknown;
+        }
+        
         
         IOutput* output = CreateOutputLibAV(para);
 
@@ -232,13 +242,14 @@ class ScreenCapture : public IScreenCapture
                     continue;
                 }
 
-                if (scrSizeX != info.sizeX || scrSizeY != info.sizeY || rateNum != info.rateNum || rateDen != info.rateDen)
+                if (scrSizeX != info.sizeX || scrSizeY != info.sizeY || rateNum != info.rateNum || rateDen != info.rateDen || pixfmt != info.tex->para.format)
                 {
                     // (re)init encoder and processing thread, starts new output file
                     scrSizeX = sizeX = info.sizeX;
                     scrSizeY = sizeY = info.sizeY;
                     rateNum = info.rateNum;
                     rateDen = info.rateDen;
+                    pixfmt = info.tex->para.format;
                     frameDuration = (double)info.rateDen / info.rateNum;
 
                     upscale = 1;
