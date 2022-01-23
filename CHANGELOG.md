@@ -1,5 +1,9 @@
 ### Capturinha change log
 
+#### 0.4.0: High Dynamic Range
+* Added HDR capture - if the screen is set to HDR we will now faithfully 
+  encode it in full Rec.2100 glory (HEVC 10 bit profiles only)
+
 #### 0.3.0: Scale up those pixels!
 * Oldschool Upscale: Scales up the screen in integer increments until a 
   certain target resolution is hit (or surpassed)

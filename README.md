@@ -13,7 +13,7 @@ Yes, there are a lot of screen capture tools around, built into Windows and GPU 
 but during testing I found them all lacking. There are either commercial solutions where the 
 "Free" tier is so bad it's pretty much unusable and doesn't inspire you to shell out money 
 for the real product, and the solutions built into Windows or the graphics driver lack configuration 
-options such as choosing a constant quality encoding mode or even what codec to use - 
+options such as choosing a constant quality encoding mode or even what codec to use (let alone HDR support) - 
 and all of them dropped frames like hot potatoes. So, having had some experience with graphics 
 programming in general and with using NVENC and the FFmpeg libraries for encoding and muxing video 
 and audio in particular, I thought "how hard can it be?"
@@ -63,6 +63,8 @@ to a video streaming site, as far as I know none of them support these high qual
 fidelity will be lost (the files will upload and play just fine though) - so encoding in the "normal" profiles is good enough for that. 
 Also you'll need at least a GTX 1060 to unlock these modes for HEVC.
 
+Note that in order to capture a HDR screen, you need to use one of the two Main10 profiles.
+
 The "Const QP" rate control mode encodes in constant quality while wildly varying the bitrate according to how much is happening on screen. 
 The values go from 1 (best) to 52 (worst), and a value of 24 for h.264 and 28 for HEVC is already really good. Use this mode when you
 don't want to put a file directly onto the internet or play on limited/mobile devices - for presentation from a sufficiently
@@ -83,6 +85,8 @@ video. That way you can upload your oldschool or low res productions or your fre
 good resolutions and bitrates on the video platform of your choice.
 
 ##### Tips
+* If you try to upload HDR captures to YouTube, have patience - it takes additional time to 
+  process these, and there isn't any indicator for this after the HD versions have been processed.
 * The MP4 container can't contain PCM audio, so trying this combination will result in an error.
 * You can leave "only record when fullscreen" on and then just let Capturinha run minimized - 
   everything that goes into fullscreen will be recorded into its own file in the background.
@@ -111,4 +115,3 @@ good resolutions and bitrates on the video platform of your choice.
   when the app to record is already gone
 * Optionally capture the mouse cursor (needs to be rendered into the target texture)
 * Region of Interest or single window capture (only if it's in the foreground)
-* As soon as it becomes relevant: HDR capture (using HEVC)

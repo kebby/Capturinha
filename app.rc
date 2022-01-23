@@ -59,10 +59,10 @@ MAINICON                ICON                    "appicon.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //
-// Text
+// 256
 //
 
-IDR_COLORCONVERT         TEXTFILE                "colorconvert.hlsl"
+IDR_COLORCONVERT        256                     "colorconvert.hlsl"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -72,7 +72,7 @@ IDR_COLORCONVERT         TEXTFILE                "colorconvert.hlsl"
 
 STRINGTABLE
 BEGIN
-    IDR_MAINFRAME           "Capturinha 0.3.0"
+    IDR_MAINFRAME           "Capturinha 0.4.0"
 END
 
 #endif    // English (United States) resources
