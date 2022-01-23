@@ -32,6 +32,7 @@ public:
 class ShaderResource : public RCObj
 {
 public:
+    virtual ~ShaderResource() {}
     struct SR;
     virtual SR& GetSR(bool write) = 0;
 };
