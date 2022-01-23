@@ -515,18 +515,16 @@ void SetScrollLock(bool on)
     bool state = !!(GetKeyState(VK_SCROLL) & 1);
 
     if (on!=state)
-    {
-        // Simulate a key press
-        keybd_event(VK_SCROLL,
-            0x45,
-            KEYEVENTF_EXTENDEDKEY | 0,
-            0);
+    { 
+        INPUT inputs[2] = {};
+        inputs[0].type = INPUT_KEYBOARD;
+        inputs[0].ki.wVk = VK_SCROLL;
 
-        // Simulate a key release
-        keybd_event(VK_SCROLL,
-            0x45,
-            KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP,
-            0);
+        inputs[1].type = INPUT_KEYBOARD;
+        inputs[1].ki.wVk = VK_SCROLL;
+        inputs[1].ki.dwFlags = KEYEVENTF_KEYUP;
+
+        SendInput(2, inputs, sizeof(INPUT));
     }
 }
 //----------------------------------------------------------------------------------------------

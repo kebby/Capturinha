@@ -86,6 +86,8 @@ good resolutions and bitrates on the video platform of your choice.
 * The MP4 container can't contain PCM audio, so trying this combination will result in an error.
 * You can leave "only record when fullscreen" on and then just let Capturinha run minimized - 
   everything that goes into fullscreen will be recorded into its own file in the background.
+* Some applications that play loose with Windows' message loop (such as tiny intros) may not
+  work correctly (eg. fail to go into fullscreen properly) when "Flash Scroll Lock" is on.
 * If you experience audio/video drift, try using HDMI or DisplayPort audio. Those usually keep
   audio and video in sync (in contrast to GPUs and sound cards using their own clock each).
 * There seems to be an issue with 10bit screens and certain 8bit fullscreen modes regarding the

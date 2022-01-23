@@ -37,7 +37,7 @@ struct IEncode
     virtual void EndGetPacket() = 0;
 };
 
-IEncode* CreateEncodeNVENC(const CaptureConfig &cfg);
+IEncode* CreateEncodeNVENC(const CaptureConfig &cfg, bool isHdr);
 
 struct FormatInfo
 {

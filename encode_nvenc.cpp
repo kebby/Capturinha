@@ -20,8 +20,8 @@ static bool Inited = false;
 static NV_ENCODE_API_FUNCTION_LIST API = {};
 
 #if _DEBUG
-#define CUDAERR(x) { auto ret = (x); if(ret != CUDA_SUCCESS) { const char *err; cuGetErrorString(ret, &err); Fatal("%s(%d): CUDA call failed: %s\nCall: %s\n",__FILE__,__LINE__,err,#x); } }
-#define NVERR(x) { if((x)!= NV_ENC_SUCCESS) Fatal("%s(%d): NVENC call failed: %s\nCall: %s\n",__FILE__,__LINE__,API.nvEncGetLastErrorString(Encoder),#x); }
+#define CUDAERR(x) { auto ret = (x); if(ret != CUDA_SUCCESS) { const char *err; cuGetErrorString(ret, &err); Fatal("%s(%d): CUDA call failed: %s (%d)\nCall: %s\n",__FILE__,__LINE__,err,ret,#x); } }
+#define NVERR(x) { auto _ret=(x); if(_ret!= NV_ENC_SUCCESS) Fatal("%s(%d): NVENC call failed: %s (%d)\nCall: %s\n",__FILE__,__LINE__,API.nvEncGetLastErrorString(Encoder),_ret,#x); }
 #else
 #define CUDAERR(x) { auto ret = (x); if(ret != CUDA_SUCCESS) { const char *err; cuGetErrorString(ret, &err); Fatal("%s(%d): CUDA call failed: %s\n",__FILE__,__LINE__,err); } }
 #define NVERR(x) { if((x)!= NV_ENC_SUCCESS) Fatal("%s(%d): NVENC call failed: %s\n",__FILE__,__LINE__,API.nvEncGetLastErrorString(Encoder)); }
@@ -64,6 +64,7 @@ class Encode_NVENC : public IEncode
     };
 
     const VideoCodecConfig& Config;
+    bool IsHDR;
 
     Queue<Frame*, 32> FreeFrames;
     Queue<OutBuffer*, 32> FreeBuffers;
@@ -86,12 +87,11 @@ class Encode_NVENC : public IEncode
     CUgraphicsResource TexResource = nullptr;
     CUcontext CudaContext = nullptr;
 
-    Frame *AcquireFrame()
+    Frame *AcquireFrame(bool alloc = false)
     {
         Frame* frame = nullptr;
-        if (!FreeFrames.Dequeue(frame))
+        if (alloc ||!FreeFrames.Dequeue(frame))
         {
-
             frame = new Frame
             {
                 .Used = 1,
@@ -123,6 +123,7 @@ class Encode_NVENC : public IEncode
             frame->Map.mappedResource = nullptr;
         }
 
+        frame->Used = 1;
         return frame;
     }
 
@@ -137,10 +138,10 @@ class Encode_NVENC : public IEncode
         frame = nullptr;
     }
 
-    OutBuffer* AcquireOutBuffer()
+    OutBuffer* AcquireOutBuffer(bool alloc = false)
     {
         OutBuffer* buffer;
-        if (!FreeBuffers.Dequeue(buffer))
+        if (alloc || !FreeBuffers.Dequeue(buffer))
         {           
             NV_ENC_CREATE_BITSTREAM_BUFFER create
             {
@@ -214,7 +215,7 @@ class Encode_NVENC : public IEncode
 
 public:
 
-    Encode_NVENC(const VideoCodecConfig &cfg) : Config(cfg)
+    Encode_NVENC(const VideoCodecConfig &cfg, bool isHdr) : Config(cfg), IsHDR(isHdr)
     {
         // init cuda/nvenc api on first run
         if (!Inited)
@@ -256,17 +257,24 @@ public:
     ~Encode_NVENC()
     {
         Flush();
-      
-        OutBuffer* ob = nullptr;
-        while (FreeBuffers.Dequeue(ob))
-            delete ob;
 
         Frame* f = nullptr;
         while (FreeFrames.Dequeue(f))
         {
+            if (f->Map.mappedResource)
+                NVERR(API.nvEncUnmapInputResource(Encoder, f->Map.mappedResource));
+            NVERR(API.nvEncUnregisterResource(Encoder, f->Map.registeredResource));
             cuMemFree(f->Buffer);
             delete f;
         }
+
+        OutBuffer* ob = nullptr;
+        while (FreeBuffers.Dequeue(ob))
+        {
+            API.nvEncDestroyBitstreamBuffer(Encoder, ob->buffer);
+            delete ob;
+        }
+
 
         API.nvEncDestroyEncoder(Encoder);
         cuGraphicsUnregisterResource(TexResource);
@@ -309,6 +317,11 @@ public:
         CUDAERR(cuGraphicsD3D11RegisterResource(&TexResource, (ID3D11Buffer*)InBuffer->GetBuffer(), CU_GRAPHICS_REGISTER_FLAGS_NONE));
         CUDAERR(cuGraphicsResourceSetMapFlags(TexResource, CU_GRAPHICS_MAP_RESOURCE_FLAGS_READ_ONLY));
 
+        if (IsHDR && (Config.Profile != CodecProfile::HEVC_MAIN10 && Config.Profile != CodecProfile::HEVC_MAIN10_444))
+        {
+            ASSERT0("HDR capture is only supported when using a 10 bits per pixel profile");
+        }
+
         const ProfileDef profile = Profiles[(int)Config.Profile];
 
         GUID guids[50];
@@ -327,7 +340,7 @@ public:
             if (sizeX <= 1920 && sizeY <= 1080)
                 presetGuid = NV_ENC_PRESET_P5_GUID;
             else
-                presetGuid = NV_ENC_PRESET_P5_GUID;
+                presetGuid = NV_ENC_PRESET_P1_GUID;
         }
         else
         {
@@ -373,10 +386,31 @@ public:
         if (profile.encodeGuid == NV_ENC_CODEC_HEVC_GUID)
         {
             enccfg.encodeCodecConfig.hevcConfig.idrPeriod = enccfg.gopLength = Config.GopSize;
+            auto& vuipara = enccfg.encodeCodecConfig.hevcConfig.hevcVUIParameters;
+            vuipara.videoSignalTypePresentFlag = 1;
+            vuipara.colourDescriptionPresentFlag = 1;
+            if (IsHDR)
+            {
+                vuipara.colourPrimaries = 9; // Rec.2020
+                vuipara.transferCharacteristics = 16; // Rec.2084
+                vuipara.colourMatrix = 9; // Rec.2020 non-constant (wtf?)
+            }
+            else
+            {
+                vuipara.colourPrimaries = 1; // Rec. 709
+                vuipara.transferCharacteristics = 13; // sRGB
+                vuipara.colourMatrix = 1; // Rec. 709
+            }
         }
         else
         {
-            enccfg.encodeCodecConfig.h264Config.idrPeriod = enccfg.gopLength = Config.GopSize;
+            enccfg.encodeCodecConfig.h264Config.idrPeriod = enccfg.gopLength = Config.GopSize;        
+            auto& vuipara = enccfg.encodeCodecConfig.h264Config.h264VUIParameters;
+            vuipara.videoSignalTypePresentFlag = 1;
+            vuipara.colourDescriptionPresentFlag = 1;
+            vuipara.colourPrimaries = 1; // Rec. 709
+            vuipara.transferCharacteristics = 13; // sRGB
+            vuipara.colourMatrix = 1; // Rec. 709
         }
        
         // initialize encoder
@@ -422,9 +456,9 @@ public:
         // prealloc a few frames and buffers
         for (int i = 0; i < 3; i++)
         {
-            auto frame = AcquireFrame();
+            auto frame = AcquireFrame(true);
             ReleaseFrame(frame);
-            auto buffer = AcquireOutBuffer();
+            auto buffer = AcquireOutBuffer(true);
             ReleaseOutBuffer(buffer);
         }
     }
@@ -435,7 +469,6 @@ public:
 
         // get a frame        
         CurrentFrame = AcquireFrame();
-        CurrentFrame->Used = 1;
         CurrentFrame->Time = time;
        
         // copy intermediate texture -> frame
@@ -521,4 +554,4 @@ public:
 
 };
 
-IEncode* CreateEncodeNVENC(const CaptureConfig &cfg) { return new Encode_NVENC(cfg.CodecCfg); }
+IEncode* CreateEncodeNVENC(const CaptureConfig &cfg, bool isHdr) { return new Encode_NVENC(cfg.CodecCfg, isHdr); }
