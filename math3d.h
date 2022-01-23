@@ -14,7 +14,7 @@ struct Vec2
     float x, y;
 
     constexpr inline Vec2() : x(0), y(0) {}
-    constexpr inline Vec2(float v) : x(v), y(v) {}
+    constexpr inline explicit Vec2(float v) : x(v), y(v) {}
     constexpr inline Vec2(float x, float y) : x(x), y(y) {}
     constexpr inline Vec2(const Vec2& v) : x(v.x), y(v.y) {}
 
@@ -40,7 +40,7 @@ struct Vec3
     float x, y, z;
 
     constexpr inline Vec3() : x(0), y(0), z(0) {}
-    constexpr inline Vec3(float v) : x(v), y(v), z(v) {}
+    constexpr inline explicit Vec3(float v) : x(v), y(v), z(v) {}
     constexpr inline Vec3(float x, float y, float z) : x(x), y(y), z(z) {}
     constexpr inline Vec3(const Vec2& xy, float z) : x(xy.x), y(xy.y), z(z) {}
     constexpr inline Vec3(const Vec3& v) : x(v.x), y(v.y), z(v.z) {}
@@ -65,7 +65,7 @@ struct Vec3
 struct Vec3P : Vec3 
 {
     constexpr inline Vec3P() : Vec3() {}
-    constexpr inline Vec3P(float v) : Vec3(v) {}
+    constexpr inline explicit Vec3P(float v) : Vec3(v) {}
     constexpr inline Vec3P(float x, float y, float z) : Vec3(x,y,z) {}
     constexpr inline Vec3P(const Vec2& xy, float z) : Vec3(xy, z) {}
     constexpr inline Vec3P(const Vec3& v) : Vec3(v) {}
@@ -76,7 +76,7 @@ struct Vec4
     float x, y, z, w;
 
     constexpr inline Vec4() : x(0), y(0), z(0), w(0) {}
-    constexpr inline Vec4(float v) : x(v), y(v), z(v), w(v) {}
+    constexpr inline explicit Vec4(float v) : x(v), y(v), z(v), w(v) {}
     constexpr inline Vec4(float x, float y, float z, float w) : x(x), y(y), z(z), w(w) {}
     constexpr inline Vec4(const Vec2& xy, float z, float w) : x(xy.x), y(xy.y), z(z), w(w) {}
     constexpr inline Vec4(const Vec2& xy, const Vec2& zw) : x(xy.x), y(xy.y), z(zw.x), w(zw.y) {}
@@ -123,7 +123,7 @@ struct Mat22
 {
     Vec2 i, j;
 
-    constexpr inline Mat22(bool id = true) : i(id ? 1.f : 0.f, 0), j(0, id ? 1.f : 0.f) {}
+    constexpr inline explicit Mat22(bool id = true) : i(id ? 1.f : 0.f, 0), j(0, id ? 1.f : 0.f) {}
     constexpr inline Mat22(const Vec2& _i, const Vec2& _j) : i(_i), j(_j) {}
     constexpr inline Mat22(const Mat22& m) : i(m.i), j(m.j) {}
 
@@ -186,7 +186,7 @@ struct Mat33
 {
     Vec3 i, j, k;
 
-    constexpr inline Mat33(bool id = true) : i(id ? 1.f : 0.f, 0, 0), j(0, id ? 1.f : 0.f, 0), k(0, 0, id ? 1.f : 0.f) {}
+    constexpr inline explicit Mat33(bool id = true) : i(id ? 1.f : 0.f, 0, 0), j(0, id ? 1.f : 0.f, 0), k(0, 0, id ? 1.f : 0.f) {}
     constexpr inline Mat33(const Vec3& _i, const Vec3& _j, const Vec3& _k) : i(_i), j(_j), k(_k) {}
     constexpr inline Mat33(const Mat33& m) : i(m.i), j(m.j), k(m.k) {}
 

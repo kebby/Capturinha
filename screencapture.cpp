@@ -272,7 +272,7 @@ class ScreenCapture : public IScreenCapture
                     switch (fmt)
                     {
                     case IEncode::BufferFormat::BGRA8: 
-                        colorMatrix = {}; 
+                        colorMatrix = { true }; 
                         break;
                     default:
                         colorMatrix = MakeRGB2YUV44(Rec709, fi.ymin, fi.ymax, fi.uvmin, fi.uvmax);
