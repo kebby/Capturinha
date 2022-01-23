@@ -64,6 +64,7 @@ class Encode_NVENC : public IEncode
     };
 
     const VideoCodecConfig& Config;
+    bool IsHDR;
 
     Queue<Frame*, 32> FreeFrames;
     Queue<OutBuffer*, 32> FreeBuffers;
@@ -214,7 +215,7 @@ class Encode_NVENC : public IEncode
 
 public:
 
-    Encode_NVENC(const VideoCodecConfig &cfg) : Config(cfg)
+    Encode_NVENC(const VideoCodecConfig &cfg, bool isHdr) : Config(cfg), IsHDR(isHdr)
     {
         // init cuda/nvenc api on first run
         if (!Inited)
@@ -316,6 +317,11 @@ public:
         CUDAERR(cuGraphicsD3D11RegisterResource(&TexResource, (ID3D11Buffer*)InBuffer->GetBuffer(), CU_GRAPHICS_REGISTER_FLAGS_NONE));
         CUDAERR(cuGraphicsResourceSetMapFlags(TexResource, CU_GRAPHICS_MAP_RESOURCE_FLAGS_READ_ONLY));
 
+        if (IsHDR && (Config.Profile != CodecProfile::HEVC_MAIN10 && Config.Profile != CodecProfile::HEVC_MAIN10_444))
+        {
+            ASSERT0("HDR capture is only supported when using a 10 bits per pixel profile");
+        }
+
         const ProfileDef profile = Profiles[(int)Config.Profile];
 
         GUID guids[50];
@@ -380,10 +386,31 @@ public:
         if (profile.encodeGuid == NV_ENC_CODEC_HEVC_GUID)
         {
             enccfg.encodeCodecConfig.hevcConfig.idrPeriod = enccfg.gopLength = Config.GopSize;
+            auto& vuipara = enccfg.encodeCodecConfig.hevcConfig.hevcVUIParameters;
+            vuipara.videoSignalTypePresentFlag = 1;
+            vuipara.colourDescriptionPresentFlag = 1;
+            if (IsHDR)
+            {
+                vuipara.colourPrimaries = 9; // Rec.2020
+                vuipara.transferCharacteristics = 16; // Rec.2084
+                vuipara.colourMatrix = 9; // Rec.2020 non-constant (wtf?)
+            }
+            else
+            {
+                vuipara.colourPrimaries = 1; // Rec. 709
+                vuipara.transferCharacteristics = 13; // sRGB
+                vuipara.colourMatrix = 1; // Rec. 709
+            }
         }
         else
         {
-            enccfg.encodeCodecConfig.h264Config.idrPeriod = enccfg.gopLength = Config.GopSize;
+            enccfg.encodeCodecConfig.h264Config.idrPeriod = enccfg.gopLength = Config.GopSize;        
+            auto& vuipara = enccfg.encodeCodecConfig.h264Config.h264VUIParameters;
+            vuipara.videoSignalTypePresentFlag = 1;
+            vuipara.colourDescriptionPresentFlag = 1;
+            vuipara.colourPrimaries = 1; // Rec. 709
+            vuipara.transferCharacteristics = 13; // sRGB
+            vuipara.colourMatrix = 1; // Rec. 709
         }
        
         // initialize encoder
@@ -527,4 +554,4 @@ public:
 
 };
 
-IEncode* CreateEncodeNVENC(const CaptureConfig &cfg) { return new Encode_NVENC(cfg.CodecCfg); }
+IEncode* CreateEncodeNVENC(const CaptureConfig &cfg, bool isHdr) { return new Encode_NVENC(cfg.CodecCfg, isHdr); }

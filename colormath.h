@@ -1,5 +1,5 @@
 //
-// Copyright (C) Tammo Hinrichs 2021. All rights reserved.
+// Copyright (C) Tammo Hinrichs 2021-2022. All rights reserved.
 // Licensed under the MIT License. See LICENSE.md file for full license information
 //
 
@@ -8,18 +8,27 @@
 #include "types.h"
 #include "math3d.h"
 
-constexpr Vec3 CIExyz(const Vec2& xy) { return { xy, 1 - (xy.x + xy.y) }; }
-constexpr Mat33 MakeRGB2XYZ(const Vec2& r, const Vec2& g, const Vec2& b) { return Mat33(CIExyz(r), CIExyz(g), CIExyz(b)); }
-constexpr Vec3 CIExy2XYZ(const Vec2& xy) { return CIExyz(xy) / xy.y; }
+constexpr inline Vec3 CIExyz(const Vec2& xy) { return { xy, 1 - (xy.x + xy.y) }; }
 
 struct ColorSpace
 {
     Vec2 r, g, b, white; // CIE xy points
 
-    constexpr Vec3 GetK() const
+    constexpr Mat33 GetRGB2xyz() const { return { CIExyz(r), CIExyz(g), CIExyz(b) }; }
+    constexpr Mat33 Getxyz2RGB() const { return GetRGB2xyz().Inverse(); }
+
+    constexpr Mat33 GetRGB2XYZ() const
     {
-        return Vec3 { r.y, g.y, b.y } * (CIExy2XYZ(white) * MakeRGB2XYZ(r, g, b).Inverse());
+        Mat33 r2x = GetRGB2xyz();
+        Vec3 scale = (CIExyz(white) / white.y) * r2x.Inverse();
+        return { r2x.i * scale.x, r2x.j * scale.y, r2x.k * scale.z };
     }
+
+    constexpr Mat33 GetXYZ2RGB() const { return GetRGB2XYZ().Inverse(); }
+
+    constexpr Vec3 GetK() const { return GetRGB2XYZ().Transpose().j; }
+
+    constexpr Mat33 GetConvertTo(const ColorSpace& to) const { return GetRGB2XYZ() * to.GetXYZ2RGB(); }
 };
 
 constexpr inline Mat33 MakeRGB2YPbPr(const Vec3& k)

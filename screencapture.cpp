@@ -180,11 +180,12 @@ class ScreenCapture : public IScreenCapture
 
     struct CbConvert
     {
-        Mat44 colormatrix;    // needs to have bpp baked in (so eg. *255)
+        Mat44 yuvmatrix;      // convert from RGB to YUV, needs to have bpp baked in (so eg. *255)
         uint pitch;           // bytes per line
         uint height;          // # of lines
         uint scale;           // upscale factor, only when UPSCALE is defined
         uint _pad[1];
+        Mat44 colormatrix;    // convert to ST 2020 and normalize to 10000 nits
     };
 
     void CaptureThreadFunc(Thread& thread)
@@ -200,7 +201,7 @@ class ScreenCapture : public IScreenCapture
         double vInSkew = 0;
         uint64 lastFrameCount = 0;
 
-        Mat44 colorMatrix;
+        Mat44 yuvMatrix;
         RCPtr<GpuByteBuffer> outBuffer;
 
         uint scrSizeX = 0, scrSizeY = 0;
@@ -215,6 +216,7 @@ class ScreenCapture : public IScreenCapture
             {
                 double time = GetTime();
                 double deltaf = (time - ltf2) * (double)info.rateNum / info.rateDen;
+                bool hdr = info.tex->para.format == PixelFormat::RGBA16F;
 
                 lastFrameTime = ltf2 = time;
 
@@ -254,7 +256,7 @@ class ScreenCapture : public IScreenCapture
                     Delete(processThread);
                     Delete(encoder);
 
-                    encoder = CreateEncodeNVENC(Config);
+                    encoder = CreateEncodeNVENC(Config, hdr);
 
                     auto fmt = encoder->GetBufferFormat();
                     auto fi = GetFormatInfo(fmt, sizeX, sizeY);
@@ -265,18 +267,19 @@ class ScreenCapture : public IScreenCapture
                     {
                         ShaderDefine { "OUTFORMAT", String::PrintF("%d", (int)fmt) },
                         ShaderDefine { "UPSCALE", upscale > 1 ? "1":"0" },
+                        ShaderDefine { "HDR", hdr ? "1" : "0"  },
                     };
                     Shader = CompileShader(Shader::Type::Compute, source, "csc", defines, "colorconvert.hlsl");
 
                     switch (fmt)
                     {
                     case IEncode::BufferFormat::BGRA8: 
-                        colorMatrix = {}; 
+                        yuvMatrix = {}; 
                         break;
                     default:
-                        colorMatrix = MakeRGB2YUV44(Rec709, fi.ymin, fi.ymax, fi.uvmin, fi.uvmax);
+                        yuvMatrix = MakeRGB2YUV44(hdr ? Rec2020 : Rec709, fi.ymin, fi.ymax, fi.uvmin, fi.uvmax);
                     }
-                    colorMatrix = colorMatrix * Mat44::Scale(fi.amp);
+                    yuvMatrix = yuvMatrix * Mat44::Scale(fi.amp);
                     
                     encoder->Init(sizeX, sizeY, rateNum, rateDen, outBuffer);
                     first = true;
@@ -333,10 +336,11 @@ class ScreenCapture : public IScreenCapture
 
                         // color space conversion
                         CBuffer<CbConvert> cb;
-                        cb->colormatrix = colorMatrix.Transpose();
+                        cb->yuvmatrix = yuvMatrix.Transpose();
                         cb->pitch = fi.pitch;
                         cb->height = sizeY;
                         cb->scale = upscale;
+                        cb->colormatrix = Mat44(Rec709.GetConvertTo(Rec2020) * Mat33::Scale(80.f / 10000.0f), 0).Transpose();
 
                         CBindings bind;
                         bind.res[0] = info.tex;
