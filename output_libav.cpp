@@ -67,12 +67,24 @@ private:
         codecpar->bit_rate = Para.CConfig->CodecCfg.UseBitrateControl == BitrateControl::CBR ? Para.CConfig->CodecCfg.BitrateParameter * 1000 : 0;
         codecpar->width = Para.SizeX;
         codecpar->height = Para.SizeY;
-        codecpar->bits_per_coded_sample = 24;
-        codecpar->color_range = AVCOL_RANGE_MPEG;
-        codecpar->color_primaries = AVCOL_PRI_BT709;
-        codecpar->color_trc = AVCOL_TRC_BT709;
-        codecpar->color_space = AVCOL_SPC_BT709;
-        codecpar->chroma_location = AVCHROMA_LOC_UNSPECIFIED;
+        if (Para.Hdr)
+        {
+            codecpar->bits_per_coded_sample = 30;
+            codecpar->color_range = AVCOL_RANGE_MPEG;
+            codecpar->color_primaries = AVCOL_PRI_BT2020;
+            codecpar->color_trc = AVCOL_TRC_SMPTE2084;
+            codecpar->color_space = AVCOL_SPC_BT2020_NCL;
+            codecpar->chroma_location = AVCHROMA_LOC_UNSPECIFIED;
+        }
+        else
+        {
+            codecpar->bits_per_coded_sample = 24;
+            codecpar->color_range = AVCOL_RANGE_MPEG;
+            codecpar->color_primaries = AVCOL_PRI_BT709;
+            codecpar->color_trc = AVCOL_TRC_IEC61966_2_1;
+            codecpar->color_space = AVCOL_SPC_BT709;
+            codecpar->chroma_location = AVCHROMA_LOC_UNSPECIFIED;
+        }
         codecpar->sample_aspect_ratio.num = codecpar->sample_aspect_ratio.den = 1;
         codecpar->field_order = AV_FIELD_PROGRESSIVE;
 

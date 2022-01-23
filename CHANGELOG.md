@@ -2,6 +2,7 @@
 
 ### 0.4.1: Maintenance release 
 * Show recorded pixel format in statistics view
+* Fix wrong video format in MKV EBML chunk when recording HDR
 
 #### 0.4.0: High Dynamic Range
 * Added HDR capture - if the screen is set to HDR we will now faithfully 

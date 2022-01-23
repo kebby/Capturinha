@@ -16,6 +16,13 @@
 #pragma comment (lib, "cuda.lib")
 #pragma comment (lib, "cudart.lib")
 
+extern "C"
+{
+    // for the VUI settings
+#include <libavutil/pixfmt.h>
+}
+
+
 static bool Inited = false;
 static NV_ENCODE_API_FUNCTION_LIST API = {};
 
@@ -391,15 +398,15 @@ public:
             vuipara.colourDescriptionPresentFlag = 1;
             if (IsHDR)
             {
-                vuipara.colourPrimaries = 9; // Rec.2020
-                vuipara.transferCharacteristics = 16; // Rec.2084
-                vuipara.colourMatrix = 9; // Rec.2020 non-constant (wtf?)
+                vuipara.colourPrimaries = AVCOL_PRI_BT2020; 
+                vuipara.transferCharacteristics = AVCOL_TRC_SMPTE2084; 
+                vuipara.colourMatrix = AVCOL_SPC_BT2020_NCL;
             }
             else
             {
-                vuipara.colourPrimaries = 1; // Rec. 709
-                vuipara.transferCharacteristics = 13; // sRGB
-                vuipara.colourMatrix = 1; // Rec. 709
+                vuipara.colourPrimaries = AVCOL_PRI_BT709;
+                vuipara.transferCharacteristics = AVCOL_TRC_IEC61966_2_1;
+                vuipara.colourMatrix = AVCOL_SPC_BT709; 
             }
         }
         else
@@ -408,9 +415,9 @@ public:
             auto& vuipara = enccfg.encodeCodecConfig.h264Config.h264VUIParameters;
             vuipara.videoSignalTypePresentFlag = 1;
             vuipara.colourDescriptionPresentFlag = 1;
-            vuipara.colourPrimaries = 1; // Rec. 709
-            vuipara.transferCharacteristics = 13; // sRGB
-            vuipara.colourMatrix = 1; // Rec. 709
+            vuipara.colourPrimaries = AVCOL_PRI_BT709;
+            vuipara.transferCharacteristics = AVCOL_TRC_IEC61966_2_1;
+            vuipara.colourMatrix = AVCOL_SPC_BT709;
         }
        
         // initialize encoder

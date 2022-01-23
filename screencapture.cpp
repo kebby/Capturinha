@@ -87,6 +87,7 @@ class ScreenCapture : public IScreenCapture
             .SizeY = sizeY,
             .RateNum = rateNum,
             .RateDen = rateDen,
+            .Hdr = (pixfmt == PixelFormat::RGBA16F),
             .Audio = audioInfo,
             .CConfig = &Config,
         };

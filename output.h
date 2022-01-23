@@ -27,6 +27,7 @@ struct OutputPara
     uint SizeY;
     uint RateNum;
     uint RateDen;
+    bool Hdr;
 
     AudioInfo Audio;
 
