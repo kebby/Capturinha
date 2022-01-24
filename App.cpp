@@ -823,7 +823,7 @@ public:
             int lw = 80;
             PaintText(dc, "Current file", stats.Filename, line, lw);
 
-            PaintText(dc, "Resolution", String::PrintF("%dx%d @ %.4g fps, %s%s", stats.SizeX, stats.SizeY, stats.FPS, stats.HDR?" HDR":"", formats[(int)stats.Fmt]), line, lw);
+            PaintText(dc, "Resolution", String::PrintF("%dx%d @ %.4g fps, %s%s", stats.SizeX, stats.SizeY, stats.FPS, stats.HDR?" HDR ":"", formats[(int)stats.Fmt]), line, lw);
 
             int s = (int)stats.Time;
             int m = s / 60; s = s % 60;

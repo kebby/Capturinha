@@ -915,13 +915,11 @@ static DXGI_OUTDUPL_DESC odd;
 static double frameCount = 0;
 
 static const DXGI_FORMAT scanoutFormats[] = {
+    DXGI_FORMAT_R16G16B16A16_UINT,
     DXGI_FORMAT_R16G16B16A16_FLOAT,
     DXGI_FORMAT_R10G10B10A2_UNORM,
-    //DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM, // as soon as we can do WCG/HDR
     DXGI_FORMAT_R8G8B8A8_UNORM,
-    //DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, // as soon as we can do WCG/HDR
     DXGI_FORMAT_B8G8R8A8_UNORM,
-    //DXGI_FORMAT_B8G8R8A8_UNORM_SRGB, // as soon as we can do WCG/HDR
 };
 
 bool CaptureFrame(int timeoutMs, CaptureInfo &ci)
