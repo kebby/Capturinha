@@ -59,7 +59,7 @@ float3 lin2ST2084(float3 y)
 
 // color space conversion
 [numthreads(8, 8, 1)]
-void csc(uint3 dispid : SV_DispatchThreadID, uint3 threadid : SV_GroupThreadID, uint3 groupid : SV_GroupID)
+void csc(uint3 dispid : SV_DispatchThreadID, uint3 threadid : SV_GroupThreadID)
 {
     // convert 8x8 pixels to output color space and store in tile
 #if UPSCALE == 1
@@ -70,6 +70,7 @@ void csc(uint3 dispid : SV_DispatchThreadID, uint3 threadid : SV_GroupThreadID, 
     pixel.w = 1;
     
 #if HDR == 1
+    // convert from source color space to ST-2020, and apply the ST-2048 transfer curve
     pixel.xyz = lin2ST2084(mul(pixel, colormatrix).xyz);
 #endif
 

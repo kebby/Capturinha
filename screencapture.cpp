@@ -343,9 +343,11 @@ class ScreenCapture : public IScreenCapture
                             fps += 0.03 * (curfps - fps);
                         }
                     }
-
+                  
                     if (deltaFrames)
                     {
+                        constexpr auto hdrConvertMatrix = Mat44(Rec709.GetConvertTo(Rec2020) * Mat33::Scale(80.f / 10000.0f), Vec3(0)).Transpose();
+
                         auto fi = GetFormatInfo(encoder->GetBufferFormat(), sizeX, sizeY);
 
                         // color space conversion
@@ -354,7 +356,7 @@ class ScreenCapture : public IScreenCapture
                         cb->pitch = fi.pitch;
                         cb->height = sizeY;
                         cb->scale = upscale;
-                        cb->colormatrix = Mat44(Rec709.GetConvertTo(Rec2020) * Mat33::Scale(80.f / 10000.0f), Vec3(0)).Transpose();
+                        cb->colormatrix = hdrConvertMatrix;
 
                         CBindings bind;
                         bind.res[0] = info.tex;
@@ -409,7 +411,6 @@ public:
 
     RCPtr<Shader> Shader;
 
- 
     ScreenCapture(const CaptureConfig& cfg) : Config(cfg)
     {
         InitD3D(Config.OutputIndex);
