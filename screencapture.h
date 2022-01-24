@@ -104,6 +104,7 @@ struct CaptureStats
     int SizeX;
     int SizeY;
     CaptureFormat Fmt;
+    bool HDR;
     double Time;
     double FPS;
     double AvgBitrate;

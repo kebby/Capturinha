@@ -70,11 +70,10 @@ void csc(uint3 dispid : SV_DispatchThreadID, uint3 threadid : SV_GroupThreadID, 
     pixel.w = 1;
     
 #if HDR == 1
-    pixel.xyz = lin2ST2084(mul(pixel.xyz, colormatrix));
+    pixel.xyz = lin2ST2084(mul(pixel, colormatrix).xyz);
 #endif
 
     uint tileaddr = 8 * threadid.y + threadid.x;
-
     tile[tileaddr] = mul(pixel, yuvmatrix);
 
     GroupMemoryBarrierWithGroupSync();

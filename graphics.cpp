@@ -910,6 +910,7 @@ RCPtr<IDXGIAdapter> GetAdapter() { return Output.Adapter; }
 
 static int64 lastFrameTime = 0;
 static RCPtr<Texture> capTex;
+static DXGI_OUTPUT_DESC1 outdesc;
 static DXGI_OUTDUPL_DESC odd;
 static double frameCount = 0;
 
@@ -943,6 +944,7 @@ bool CaptureFrame(int timeoutMs, CaptureInfo &ci)
         DXERR(hr);
 
         Dupl->GetDesc(&odd);
+        Output.Output->GetDesc1(&outdesc);
         //printf("new dupl %dx%d @ %d:%d\n", odd.ModeDesc.Width, odd.ModeDesc.Height, odd.ModeDesc.RefreshRate.Numerator, odd.ModeDesc.RefreshRate.Denominator);
     }
 
@@ -996,6 +998,7 @@ bool CaptureFrame(int timeoutMs, CaptureInfo &ci)
     ci.tex = capTex;
     ci.sizeX = ci.tex->para.sizeX;
     ci.sizeY = ci.tex->para.sizeY;
+    ci.isHdr = (outdesc.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020);
     ci.rateNum = odd.ModeDesc.RefreshRate.Numerator;
     ci.rateDen = odd.ModeDesc.RefreshRate.Denominator;
     ci.frameCount = (uint64)round(frameCount);

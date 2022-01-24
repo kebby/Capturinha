@@ -294,6 +294,7 @@ struct CaptureInfo
     RCPtr<Texture> tex;
     uint sizeX;
     uint sizeY;
+    bool isHdr;
     uint rateNum;
     uint rateDen;
     uint64 frameCount;

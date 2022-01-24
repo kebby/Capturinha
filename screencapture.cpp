@@ -29,6 +29,7 @@ class ScreenCapture : public IScreenCapture
     Thread* captureThread = nullptr;
     uint sizeX = 0, sizeY = 0, rateNum = 0, rateDen = 0;
     PixelFormat pixfmt = PixelFormat::None;
+    bool isHdr = false;
 
     CaptureStats Stats = {};
     double avSkew = 0;
@@ -87,7 +88,7 @@ class ScreenCapture : public IScreenCapture
             .SizeY = sizeY,
             .RateNum = rateNum,
             .RateDen = rateDen,
-            .Hdr = (pixfmt == PixelFormat::RGBA16F),
+            .Hdr = isHdr,
             .Audio = audioInfo,
             .CConfig = &Config,
         };
@@ -97,6 +98,7 @@ class ScreenCapture : public IScreenCapture
         Stats.FPS = (double)rateNum / rateDen;
         Stats.SizeX = sizeX;
         Stats.SizeY = sizeY;
+        Stats.HDR = isHdr;
         switch (pixfmt)
         {
         case PixelFormat::RGBA8: case PixelFormat::BGRA8: case PixelFormat::RGBA8sRGB: case PixelFormat::BGRA8sRGB: Stats.Fmt = CaptureStats::CaptureFormat::P8; break;
@@ -226,8 +228,7 @@ class ScreenCapture : public IScreenCapture
             if (CaptureFrame(2, info))
             {
                 double time = GetTime();
-                double deltaf = (time - ltf2) * (double)info.rateNum / info.rateDen;
-                bool hdr = info.tex->para.format == PixelFormat::RGBA16F;
+                double deltaf = (time - ltf2) * (double)info.rateNum / info.rateDen;                
 
                 lastFrameTime = ltf2 = time;
 
@@ -243,7 +244,7 @@ class ScreenCapture : public IScreenCapture
                     continue;
                 }
 
-                if (scrSizeX != info.sizeX || scrSizeY != info.sizeY || rateNum != info.rateNum || rateDen != info.rateDen || pixfmt != info.tex->para.format)
+                if (scrSizeX != info.sizeX || scrSizeY != info.sizeY || rateNum != info.rateNum || rateDen != info.rateDen || pixfmt != info.tex->para.format || isHdr != info.isHdr)
                 {
                     // (re)init encoder and processing thread, starts new output file
                     scrSizeX = sizeX = info.sizeX;
@@ -251,6 +252,7 @@ class ScreenCapture : public IScreenCapture
                     rateNum = info.rateNum;
                     rateDen = info.rateDen;
                     pixfmt = info.tex->para.format;
+                    isHdr = info.isHdr;
                     frameDuration = (double)info.rateDen / info.rateNum;
 
                     upscale = 1;
@@ -268,7 +270,7 @@ class ScreenCapture : public IScreenCapture
                     Delete(processThread);
                     Delete(encoder);
 
-                    encoder = CreateEncodeNVENC(Config, hdr);
+                    encoder = CreateEncodeNVENC(Config, isHdr);
 
                     auto fmt = encoder->GetBufferFormat();
                     auto fi = GetFormatInfo(fmt, sizeX, sizeY);
@@ -279,7 +281,7 @@ class ScreenCapture : public IScreenCapture
                     {
                         ShaderDefine { "OUTFORMAT", String::PrintF("%d", (int)fmt) },
                         ShaderDefine { "UPSCALE", upscale > 1 ? "1":"0" },
-                        ShaderDefine { "HDR", hdr ? "1" : "0"  },
+                        ShaderDefine { "HDR", (isHdr && pixfmt == PixelFormat::RGBA16F) ? "1" : "0"  },
                     };
                     Shader = CompileShader(Shader::Type::Compute, source, "csc", defines, "colorconvert.hlsl");
 
@@ -289,7 +291,7 @@ class ScreenCapture : public IScreenCapture
                         yuvMatrix = {}; 
                         break;
                     default:
-                        yuvMatrix = MakeRGB2YUV44(hdr ? Rec2020 : Rec709, fi.ymin, fi.ymax, fi.uvmin, fi.uvmax);
+                        yuvMatrix = MakeRGB2YUV44(isHdr ? Rec2020 : Rec709, fi.ymin, fi.ymax, fi.uvmin, fi.uvmax);
                     }
                     yuvMatrix = yuvMatrix * Mat44::Scale(fi.amp);
                     
