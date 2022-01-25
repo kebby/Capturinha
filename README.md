@@ -87,7 +87,13 @@ good resolutions and bitrates on the video platform of your choice.
 ##### Tips
 * If you try to upload HDR captures to YouTube, have patience - it takes additional time to 
   process these, and there isn't any indicator for this after the HD versions have been processed.
+* If you're capturing in HDR and what you're capturing queries the display capabilities and adjusts 
+  the image accordingly, this is what's getting captured. So if you intend to have a video 
+  with the most colors and shiny, either connect a better screen or if you can, relax the 
+  restrictions in the code so your engine uses the maximum possible gamut and brightness.
 * The MP4 container can't contain PCM audio, so trying this combination will result in an error.
+* In the same vein, trying to encode audio as MP3 will bail out if you're set to more than 48KHz.
+  Better use PCM or AAC in this case.
 * You can leave "only record when fullscreen" on and then just let Capturinha run minimized - 
   everything that goes into fullscreen will be recorded into its own file in the background.
 * Some applications that play loose with Windows' message loop (such as tiny intros) may not
