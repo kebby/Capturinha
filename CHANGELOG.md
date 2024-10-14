@@ -4,6 +4,7 @@
 * Dependencies are now handled by vcpkg
 * Updated to ffmpeg 7
 * Use ffnvcodec package instead of NVIDIA Video/CUDA SDKs
+* Query the proper monitor name for the screen dropdown
 
 ### 0.4.1: Maintenance release 
 * Show recorded pixel format in statistics view
