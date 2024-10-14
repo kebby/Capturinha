@@ -54,66 +54,6 @@
     <ClInclude Include="screencapture.h">
       <Filter>capture</Filter>
     </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlapp.h">
-      <Filter>dependencies\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlcrack.h">
-      <Filter>dependencies\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlctrls.h">
-      <Filter>dependencies\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlctrlw.h">
-      <Filter>dependencies\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlctrlx.h">
-      <Filter>dependencies\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlddx.h">
-      <Filter>dependencies\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atldlgs.h">
-      <Filter>dependencies\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atldwm.h">
-      <Filter>dependencies\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlfind.h">
-      <Filter>dependencies\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlframe.h">
-      <Filter>dependencies\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlgdi.h">
-      <Filter>dependencies\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlmisc.h">
-      <Filter>dependencies\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlprint.h">
-      <Filter>dependencies\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlres.h">
-      <Filter>dependencies\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlribbon.h">
-      <Filter>dependencies\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlscrl.h">
-      <Filter>dependencies\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlsplit.h">
-      <Filter>dependencies\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atltheme.h">
-      <Filter>dependencies\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atluser.h">
-      <Filter>dependencies\WTL</Filter>
-    </ClInclude>
-    <ClInclude Include="packages\wtl.10.0.10320\lib\native\include\atlwinx.h">
-      <Filter>dependencies\WTL</Filter>
-    </ClInclude>
     <ClInclude Include="resource.h" />
     <ClInclude Include="json.h">
       <Filter>base</Filter>
@@ -132,12 +72,6 @@
     <Filter Include="capture">
       <UniqueIdentifier>{d6300db1-8c54-4978-89ad-e31d20a2a215}</UniqueIdentifier>
     </Filter>
-    <Filter Include="dependencies">
-      <UniqueIdentifier>{0c582e1b-c35c-41fb-94d3-e5f4b8faca83}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="dependencies\WTL">
-      <UniqueIdentifier>{2113dfc2-3b33-4fd8-a289-a6e7479a6f4a}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="app.manifest" />
@@ -151,15 +85,8 @@
     <None Include="colorconvert.hlsl">
       <Filter>capture</Filter>
     </None>
-    <None Include="vcpkg.json">
-      <Filter>dependencies</Filter>
-    </None>
-    <None Include="vcpkg-configuration.json">
-      <Filter>dependencies</Filter>
-    </None>
-    <None Include="packages.config">
-      <Filter>dependencies</Filter>
-    </None>
+    <None Include="vcpkg-configuration.json" />
+    <None Include="vcpkg.json" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="app.rc" />
