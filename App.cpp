@@ -1010,12 +1010,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR lpstr
     AppName = appName;
 
     // check for FFmpeg presence
-    HMODULE dll = LoadLibrary("avcodec-58.dll");
+    HMODULE dll = LoadLibrary("avcodec-61.dll");
     if (!dll)
     {
         char directory[MAX_PATH + 1];
         GetCurrentDirectory(MAX_PATH + 1, directory);
-        Fatal("The FFmpeg DLLs are missing\n\nPlease download an FFmpeg 4.x build (64 bit, shared version), and place the DLLs from the bin folder into %s.", directory);
+        Fatal("The FFmpeg DLLs are missing\n\nPlease download an FFmpeg 7.x build (64 bit, shared version), and place the DLLs from the bin folder into %s.", directory);
     }
 
     // check for CUDA presence
