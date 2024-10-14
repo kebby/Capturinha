@@ -977,7 +977,7 @@ static const DXGI_FORMAT scanoutFormats[] = {
     DXGI_FORMAT_B8G8R8A8_UNORM,
 };
 
-bool CaptureFrame(int timeoutMs, CaptureInfo &ci)
+bool CaptureFrame(int timeoutMs, CaptureInfo& ci)
 {
     HRESULT hr;
 
@@ -1004,14 +1004,19 @@ bool CaptureFrame(int timeoutMs, CaptureInfo &ci)
     // try to get next frame
     RCPtr<IDXGIResource> frame;
     DXGI_OUTDUPL_FRAME_INFO info = {};
+
+    static LARGE_INTEGER t1{};
+
     for (;;)
     { 
+        if (!t1.QuadPart) QueryPerformanceCounter(&t1);
         hr = Dupl->AcquireNextFrame(timeoutMs, &info, frame);
 
         if (hr == DXGI_ERROR_WAIT_TIMEOUT)
             return false;
         if (hr == DXGI_ERROR_ACCESS_LOST || hr == DXGI_ERROR_INVALID_CALL)
         {
+            DPrintF("Lost display interface!");
             // we lost the interface or it has somehow become invalid, bail and try again next time
             capTex.Clear();
             Dupl.Clear();
@@ -1027,14 +1032,31 @@ bool CaptureFrame(int timeoutMs, CaptureInfo &ci)
         ReleaseFrame();
     }
 
+    LARGE_INTEGER t2;
+    QueryPerformanceCounter(&t2);
+
     LARGE_INTEGER qpf;
     QueryPerformanceFrequency(&qpf);
     if (!lastFrameTime)
         lastFrameTime = info.LastPresentTime.QuadPart;
     double delta = (double)(info.LastPresentTime.QuadPart - lastFrameTime) / (double)qpf.QuadPart;
     lastFrameTime = info.LastPresentTime.QuadPart;
+
+    static int frc = 0;
+    static double lastt1 = 0, lastt2 = 0;
+    double t1d = ((double)t1.QuadPart / (double)qpf.QuadPart);
+    double t2d = ((double)t2.QuadPart / (double)qpf.QuadPart);
+
+
+    DPrintF("%5d: t1 %.3f (%.3f), t2 %.3f (%.3f), delta %.3f\n", frc++, t1d, t1d-lastt1, t2d, t2d-lastt2, delta);
+
+    lastt1 = t1d;
+    lastt2 = t2d;
+    t1.QuadPart = 0;
+
     if (delta < 0)
     {
+        DPrintF("Negative delta!");
         ReleaseFrame();
         return false;
     }
@@ -1074,7 +1096,7 @@ void ClearDepth(RenderTarget* rt, float d)
     Ctx->ClearDepthStencilView(rt->P->GetDSV(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, d, 0);
 }
 
-RCPtr<RenderTarget> AcquireRenderTarget(TexturePara para)
+RCPtr<RenderTarget> AcquireRenderTarget(const TexturePara &para)
 {
     //if (!para.sizeX) para.sizeX = screenMode.width;
     //if (!para.sizeY) para.sizeY = screenMode.height;

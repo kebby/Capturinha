@@ -329,7 +329,7 @@ RCPtr<Shader> CompileShader(Shader::Type type, const String& code, const char* e
 RCPtr<Shader> CompileShader(Shader::Type type, const Buffer* code, const char* entryPoint, const Array<ShaderDefine> &macros, const char* name = nullptr);
 RCPtr<Shader> CompileShader(Shader::Type type, const String& code, const char* entryPoint, const Array<ShaderDefine> &macros, const char* name = nullptr);
 
-RCPtr<RenderTarget> AcquireRenderTarget(TexturePara para);
+RCPtr<RenderTarget> AcquireRenderTarget(const TexturePara &para);
 RCPtr<RenderTarget> AcquireBackBuffer();
 
 void Clear(RenderTarget* rt, Vec4 color);
