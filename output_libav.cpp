@@ -53,7 +53,7 @@ private:
     uint ResampleFill = 0;
 
     int FrameNo = 0;
-    int AudioWritten = 0;
+    int64 AudioWritten = 0;
 
     void InitVideo(const uint8 *firstFrame, int firstFrameSize)
     {
@@ -65,7 +65,7 @@ private:
         auto codecpar = VideoStream->codecpar;
         codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
         codecpar->codec_id = Para.CConfig->CodecCfg.Profile >= CodecProfile::HEVC_MAIN ? AV_CODEC_ID_HEVC : AV_CODEC_ID_H264;
-        codecpar->bit_rate = Para.CConfig->CodecCfg.UseBitrateControl == BitrateControl::CBR ? Para.CConfig->CodecCfg.BitrateParameter * 1000 : 0;
+        codecpar->bit_rate = Para.CConfig->CodecCfg.UseBitrateControl == BitrateControl::CBR ? Para.CConfig->CodecCfg.BitrateParameter * 1000ull : 0;
         codecpar->width = Para.SizeX;
         codecpar->height = Para.SizeY;
         if (Para.Hdr)
@@ -123,9 +123,9 @@ private:
             AudioContext->ch_layout.u.mask = (1ull << Para.Audio.Channels) - 1;
 
             if (Para.CConfig->UseAudioCodec >= AudioCodec::MP3)
-                AudioContext->bit_rate = Clamp(Para.CConfig->AudioBitrate, 32u, 320u) * 1000;
+                AudioContext->bit_rate = Clamp(Para.CConfig->AudioBitrate, 32u, 320u) * 1000ull;
             else
-                AudioContext->bit_rate = Para.Audio.SampleRate * Para.Audio.Channels * av_get_bytes_per_sample(sampleFmt) * 8;
+                AudioContext->bit_rate = 8ull * Para.Audio.SampleRate * Para.Audio.Channels * av_get_bytes_per_sample(sampleFmt);
 
             AVERR(avcodec_open2(AudioContext, AudioCodec, 0));
 
@@ -170,7 +170,7 @@ private:
         if (len < 0) len = 0;
         buffer[len] = 0;
         if (level <= AV_LOG_WARNING)
-            Errors.PushTail(buffer);
+            Errors += buffer;
         buffer[len] = '\n';
         buffer[len+1] = 0;
         DPrintF(buffer);
@@ -313,13 +313,13 @@ public:
                         for (uint i = 0; i < Para.Audio.Channels; i++)
                         {
                             uint8* buf = ResampleBuffer + i * bytesPerChannel;
-                            memcpy(buf, buf + written * ResampleBytesPerSample, (ResampleFill - written) * ResampleBytesPerSample);
+                            memcpy(buf, buf + written * ResampleBytesPerSample, ((size_t)ResampleFill - written) * ResampleBytesPerSample);
                         }
                     }
                     else
                     {
                         uint bps = ResampleBytesPerSample * Para.Audio.Channels;
-                        memcpy(ResampleBuffer, ResampleBuffer + written * bps, (ResampleFill - written) * bps);
+                        memcpy(ResampleBuffer, ResampleBuffer + written * bps, ((size_t)ResampleFill - written) * bps);
                     }
                 }
                 ResampleFill -= written;

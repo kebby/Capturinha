@@ -133,13 +133,13 @@ String::WCharProxy String::ToWChar() const
 String StringBuilder::ToString() const
 {
     size_t len = 0;
-    for (auto s : strings)
+    for (auto &s : strings)
         len += s.Length();
 
     String out;
     out.Make((int)len);
     size_t offs = 0;
-    for (auto s : strings)
+    for (auto &s : strings)
     {
         len = s.Length();       
         memcpy(out.node->str + offs, s.node->str, len);
@@ -193,7 +193,7 @@ int64 Scanner::Decimal(int* digits)
     while (*ptr >= '0' && *ptr <= '9')
     {
         if (ret || *ptr > '0') dig++;
-        ret = 10 * ret + (*ptr - '0');
+        ret = 10 * ret + ((int64)*ptr - '0');
         ptr++;
     }
     if (digits) *digits = dig;

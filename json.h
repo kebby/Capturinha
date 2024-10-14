@@ -140,7 +140,7 @@ private:
         {
             T value;
             Read(scan, value);
-            array.PushTail(value);
+            array += value;
             scan.IfChar(',');
         }
     }

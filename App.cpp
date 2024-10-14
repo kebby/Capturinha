@@ -43,16 +43,16 @@ constexpr float aligned = -1;
 
 static int DPI = 96;
 
-inline int WithDpi(int s) { return s>=0 ? s * DPI / 96 : s; }
-inline int WithoutDpi(int s) { return s >= 0 ? s * 96 / DPI : s; }
+inline static int WithDpi(int s) { return s>=0 ? s * DPI / 96 : s; }
+inline static int WithoutDpi(int s) { return s >= 0 ? s * 96 / DPI : s; }
 
-inline RECT WithDpi(const RECT& r)
+inline static RECT WithDpi(const RECT& r)
 {
     return RECT{ .left = WithDpi(r.left), .top = WithDpi(r.top), .right = WithDpi(r.right), .bottom = WithDpi(r.bottom) };
 }
 
 
-inline RECT WithoutDpi(const RECT& r)
+inline static RECT WithoutDpi(const RECT& r)
 {
     return RECT{ .left = WithoutDpi(r.left), .top = WithoutDpi(r.top), .right = WithoutDpi(r.right), .bottom = WithoutDpi(r.bottom) };
 
@@ -118,12 +118,12 @@ public:
         child.SetFont(font);
     }
 
-    void Dropdown(CComboBox& child, const RECT& r, Array<String> &strings)
+    void Dropdown(CComboBox& child, const RECT& r, const Array<String> &strings)
     {
         RECT r2 = r;
         child.Create(m_hWnd, r2, NULL, WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS, 0);
         child.SetFont(font);
-        for (auto out : strings)
+        for (auto &out : strings)
             child.AddString(out);
         child.SetCurSel(0);
     }
@@ -152,7 +152,7 @@ public:
         r = Rect(line, aLeft, aTop, 300, line.Height(), aLeft, aTop, labelwidth);
         Child(videoOut, r, "", WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS);        
         GetVideoOutputs(strings);
-        for (auto out : strings)
+        for (auto &out : strings)
             videoOut.AddString(out);
         videoOut.SetCurSel(0);
 
@@ -248,7 +248,7 @@ public:
         r = Rect(line, aLeft, aTop, 300, line.Height(), aLeft, aTop, labelwidth);
         Child(audioOut, r, "", WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS);
         GetAudioDevices(strings);
-        for (auto out : strings)
+        for (auto &out : strings)
             audioOut.AddString(out);
         audioOut.SetCurSel(0);
 
@@ -611,7 +611,7 @@ public:
 
     static float DecibelToLinear(float dB) { return powf(10, dB / 20); };
 
-    void PaintVU(CDC& dc, const RECT& rect, const CaptureStats& stats)
+    void PaintVU(CDC& dc, const RECT& rect, const CaptureStats& stats) const
     {
         CPen pen;
         pen.CreatePen(PS_SOLID, 1, 0xc0c0c0);
@@ -682,7 +682,7 @@ public:
 
     }
 
-    void PaintGraph(CDC& dc, const RECT &rect, const Vec3& color, const char* label, const char* unitFmt, size_t nPoints, double max, double avg, Func<double(int)> getPoint)
+    void PaintGraph(CDC& dc, const RECT &rect, const Vec3& color, const char* label, const char* unitFmt, size_t nPoints, double max, double avg, Func<double(int)> getPoint) const
     {
         CPen pen;
         pen.CreatePen(PS_SOLID, 1, 0xc0c0c0);
@@ -701,10 +701,9 @@ public:
         Array<POINT> points(POINT{ .x = grapharea.left, .y = grapharea.bottom });
         for (int i = 0; i < np; i++)
         {
-            POINT point{ .x = grapharea.left + i , .y = grapharea.bottom - LONG(getPoint(i+offs)*gh/max) };
-            points.PushTail(point);
+            points += POINT {.x = grapharea.left + i, .y = grapharea.bottom - LONG(getPoint(i + offs) * gh / max) };
         }
-        points.PushTail(POINT{ .x = grapharea.left + np - 1, .y = grapharea.bottom });
+        points += POINT{ .x = grapharea.left + np - 1, .y = grapharea.bottom };
 
         CBrush green;
         Vec3 grcol = Lerp(0.75f, color, Vec3(1));
@@ -746,7 +745,7 @@ public:
         dc.DrawTextA(String::PrintF(unitFmt, max), -1, &textRect2, DT_RIGHT);
     }
 
-    void PaintText(CDC &dc, const char* left, const char* right, CRect& rect, int leftw)
+    void PaintText(CDC &dc, const char* left, const char* right, CRect& rect, int leftw) const
     {
         dc.SelectFont(font);
         dc.SetTextColor(0x000000);
@@ -791,7 +790,7 @@ public:
       
         if (Capture)
         {
-            auto stats = Capture->GetStats();
+            CaptureStats stats = Capture->GetStats();
             stat = stats.Recording ? 1 : 0;
 
             // FPS graph    
@@ -957,7 +956,7 @@ public:
 //-------------------------------------------------------------------
 //-------------------------------------------------------------------
 
-int Run(LPTSTR /*lpstrCmdLine*/ = NULL, int nCmdShow = SW_SHOWDEFAULT)
+static int Run(LPTSTR /*lpstrCmdLine*/ = NULL, int nCmdShow = SW_SHOWDEFAULT)
 {  
     CMessageLoop theLoop;
     _Module.AddMessageLoop(&theLoop);

@@ -179,7 +179,7 @@ class ScreenCapture : public IScreenCapture
                 Stats.AvgBitrate = (8. * (double)totalBytes * rateNum) / (1000. * frameCount * rateDen);
                 Stats.MaxBitrate = Max(Stats.MaxBitrate, bitrate);
                 Stats.Time = (double)frameCount * rateDen / rateNum;
-                Stats.Frames.PushTail(CaptureStats::Frame{ .FPS = fps, .AVSkew = avSkew, .Bitrate = bitrate });
+                Stats.Frames += CaptureStats::Frame{ .FPS = fps, .AVSkew = avSkew, .Bitrate = bitrate };
             }        
         }
 
