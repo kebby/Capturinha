@@ -3,7 +3,7 @@
 
   <assemblyIdentity type="win32"
                         name="org.kebby.Capturinha"
-                        version="0.4.1.0"
+                        version="0.5.0.0"
                         processorArchitecture="amd64"
                         publicKeyToken="0000000000000000"
   />
