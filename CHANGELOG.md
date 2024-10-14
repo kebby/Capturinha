@@ -1,5 +1,10 @@
 ### Capturinha change log
 
+### 0.5.0: Maintenance release 
+* Dependencies are now handled by vcpkg
+* Updated to ffmpeg 7
+* Use ffnvcodec package instead of NVIDIA Video/CUDA SDKs
+
 ### 0.4.1: Maintenance release 
 * Show recorded pixel format in statistics view
 * Fixed wrong video format in MKV EBML chunk when recording HDR

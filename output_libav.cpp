@@ -9,6 +9,7 @@
 
 extern "C"
 {
+#include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavformat/avio.h>
 #include <libavutil/avutil.h>
@@ -38,9 +39,9 @@ private:
     AVFormatContext* Context = nullptr;
 
     AVStream* VideoStream = nullptr;
-
-    AVCodec* AudioCodec = nullptr;
     AVStream* AudioStream = nullptr;
+
+    const AVCodec* AudioCodec = nullptr;
     AVCodecContext* AudioContext = nullptr;
     AVPacket* Packet = nullptr;
     AVFrame* Frame = nullptr;
@@ -117,8 +118,9 @@ private:
             AudioContext = avcodec_alloc_context3(AudioCodec);
             AudioContext->sample_fmt = sampleFmt;
             AudioContext->sample_rate = Para.Audio.SampleRate;
-            AudioContext->channels = Para.Audio.Channels;
-            AudioContext->channel_layout = av_get_default_channel_layout(Para.Audio.Channels);
+            AudioContext->ch_layout.order = AV_CHANNEL_ORDER_NATIVE;
+            AudioContext->ch_layout.nb_channels = Para.Audio.Channels;
+            AudioContext->ch_layout.u.mask = (1ull << Para.Audio.Channels) - 1;
 
             if (Para.CConfig->UseAudioCodec >= AudioCodec::MP3)
                 AudioContext->bit_rate = Clamp(Para.CConfig->AudioBitrate, 32u, 320u) * 1000;
@@ -138,10 +140,10 @@ private:
             case AudioFormat::F32: sourceFmt = AV_SAMPLE_FMT_FLT; break;
             }
 
-            Resample = swr_alloc_set_opts(nullptr, AudioContext->channel_layout, sampleFmt, Para.Audio.SampleRate, AudioContext->channel_layout, sourceFmt, Para.Audio.SampleRate, 0, nullptr);
+            AVERR(swr_alloc_set_opts2(&Resample, &AudioContext->ch_layout, sampleFmt, Para.Audio.SampleRate, &AudioContext->ch_layout, sourceFmt, Para.Audio.SampleRate, 0, nullptr));
             ResampleBufferSize = Para.Audio.SampleRate;
             ResampleBytesPerSample = av_get_bytes_per_sample(sampleFmt);
-            ResampleBuffer = new uint8[ResampleBufferSize * ResampleBytesPerSample * AudioContext->channels];
+            ResampleBuffer = new uint8[ResampleBufferSize * ResampleBytesPerSample * Para.Audio.Channels];
             AVERR(swr_init(Resample));
         }
     }
@@ -281,8 +283,7 @@ public:
                 Frame->pts = av_rescale_q(AudioWritten + written, tb, AudioContext->time_base);
                 Frame->format = AudioContext->sample_fmt;
                 Frame->nb_samples = frame;
-                Frame->channels = AudioContext->channels;
-                Frame->channel_layout = AudioContext->channel_layout;
+                Frame->ch_layout = AudioContext->ch_layout;
                 AVERR(av_frame_get_buffer(Frame, 0));
 
                 // copy audio data

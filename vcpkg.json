@@ -1,0 +1,10 @@
+{
+  "dependencies": [
+    "ffnvcodec",
+    {
+      "name": "ffmpeg",
+      "default-features": false,
+      "features": [ "avformat", "avcodec", "swresample", "mp3lame" ]
+    }
+  ]
+}

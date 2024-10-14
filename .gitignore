@@ -18,3 +18,5 @@ swscale*
 
 /packages
 /config.json
+
+/vcpkg_installed

@@ -10,28 +10,21 @@
 #pragma warning (disable: 4996) // deprecated GUIDs in nvEncodeAPI.h that are actually the only ones that work
 
 #include <d3d11.h>
-#include <nvEncodeAPI.h>
-#include <cuda.h>
-#include <cudaD3D11.h>
-#pragma comment (lib, "cuda.lib")
-#pragma comment (lib, "cudart.lib")
 
-extern "C"
-{
-    // for the VUI settings
-#include <libavutil/pixfmt.h>
-}
-
+#include <ffnvcodec/nvEncodeAPI.h>
+#include <ffnvcodec/dynlink_cuda.h>
+#include <ffnvcodec/dynlink_loader.h>
 
 static bool Inited = false;
-static NV_ENCODE_API_FUNCTION_LIST API = {};
+static NV_ENCODE_API_FUNCTION_LIST Nvenc = {};
+static CudaFunctions *Cuda;
 
 #if _DEBUG
-#define CUDAERR(x) { auto ret = (x); if(ret != CUDA_SUCCESS) { const char *err; cuGetErrorString(ret, &err); Fatal("%s(%d): CUDA call failed: %s (%d)\nCall: %s\n",__FILE__,__LINE__,err,ret,#x); } }
-#define NVERR(x) { auto _ret=(x); if(_ret!= NV_ENC_SUCCESS) Fatal("%s(%d): NVENC call failed: %s (%d)\nCall: %s\n",__FILE__,__LINE__,API.nvEncGetLastErrorString(Encoder),_ret,#x); }
+#define CUDAERR(x) { auto ret = (x); if(ret != CUDA_SUCCESS) { const char *err; Cuda->cuGetErrorString(ret, &err); Fatal("%s(%d): CUDA call failed: %s (%d)\nCall: %s\n",__FILE__,__LINE__,err,ret,#x); } }
+#define NVERR(x) { auto _ret=(x); if(_ret!= NV_ENC_SUCCESS) Fatal("%s(%d): NVENC call failed: %s (%d)\nCall: %s\n",__FILE__,__LINE__,Nvenc.nvEncGetLastErrorString(Encoder),_ret,#x); }
 #else
-#define CUDAERR(x) { auto ret = (x); if(ret != CUDA_SUCCESS) { const char *err; cuGetErrorString(ret, &err); Fatal("%s(%d): CUDA call failed: %s\n",__FILE__,__LINE__,err); } }
-#define NVERR(x) { if((x)!= NV_ENC_SUCCESS) Fatal("%s(%d): NVENC call failed: %s\n",__FILE__,__LINE__,API.nvEncGetLastErrorString(Encoder)); }
+#define CUDAERR(x) { auto ret = (x); if(ret != CUDA_SUCCESS) { const char *err; Cuda->cuGetErrorString(ret, &err); Fatal("%s(%d): CUDA call failed: %s\n",__FILE__,__LINE__,err); } }
+#define NVERR(x) { if((x)!= NV_ENC_SUCCESS) Fatal("%s(%d): NVENC call failed: %s\n",__FILE__,__LINE__,Nvenc.nvEncGetLastErrorString(Encoder)); }
 #endif
 
 
@@ -105,7 +98,7 @@ class Encode_NVENC : public IEncode
             };
 
             auto fi = GetFormatInfo(GetBufferFormat(), SizeX, SizeY);
-            CUDAERR(cuMemAlloc(&frame->Buffer, (size_t)fi.pitch * fi.lines));
+            CUDAERR(Cuda->cuMemAlloc(&frame->Buffer, (size_t)fi.pitch * fi.lines));
 
             NV_ENC_REGISTER_RESOURCE reg =
             {
@@ -118,7 +111,7 @@ class Encode_NVENC : public IEncode
                 .bufferFormat = EncodeFormat,
                 .bufferUsage = NV_ENC_INPUT_IMAGE,
             };
-            NVERR(API.nvEncRegisterResource(Encoder, &reg));
+            NVERR(Nvenc.nvEncRegisterResource(Encoder, &reg));
 
             frame->Map.version = NV_ENC_MAP_INPUT_RESOURCE_VER;
             frame->Map.registeredResource = reg.registeredResource;
@@ -126,7 +119,7 @@ class Encode_NVENC : public IEncode
 
         if (frame->Map.mappedResource)
         {
-            NVERR(API.nvEncUnmapInputResource(Encoder, frame->Map.mappedResource));
+            NVERR(Nvenc.nvEncUnmapInputResource(Encoder, frame->Map.mappedResource));
             frame->Map.mappedResource = nullptr;
         }
 
@@ -154,7 +147,7 @@ class Encode_NVENC : public IEncode
             {
                 .version = NV_ENC_CREATE_BITSTREAM_BUFFER_VER,
             };
-            NVERR(API.nvEncCreateBitstreamBuffer(Encoder, &create));
+            NVERR(Nvenc.nvEncCreateBitstreamBuffer(Encoder, &create));
 
             buffer = new OutBuffer
             {
@@ -203,7 +196,7 @@ class Encode_NVENC : public IEncode
 
         for (;;)
         {
-            auto ret = API.nvEncEncodePicture(Encoder, &pic);
+            auto ret = Nvenc.nvEncEncodePicture(Encoder, &pic);
             if (ret == NV_ENC_ERR_ENCODER_BUSY)
             {
                 Sleep(1);
@@ -220,35 +213,31 @@ class Encode_NVENC : public IEncode
     }
 
 
-public:
 
+public:
     Encode_NVENC(const VideoCodecConfig &cfg, bool isHdr) : Config(cfg), IsHDR(isHdr)
     {
         // init cuda/nvenc api on first run
         if (!Inited)
         {
+            ASSERT(!cuda_load_functions(&Cuda, nullptr));
+
             // init CUDA
-            CUDAERR(cuInit(0));
+            CUDAERR(Cuda->cuInit(0));
 
-            // init NVENC API
-            auto nvenclib = LoadLibrary("nvEncodeAPI64.dll");
-            ASSERT(nvenclib);
+            NvencFunctions *funcs{};
+            ASSERT(!nvenc_load_functions(&funcs, nullptr));
 
-            typedef NVENCSTATUS(NVENCAPI* NvEncodeAPIGetMaxSupportedVersion_Type)(uint32_t*);
-            typedef NVENCSTATUS(NVENCAPI* NvEncodeAPICreateInstance_Type)(NV_ENCODE_API_FUNCTION_LIST* functionList);
-            auto NvEncodeAPIGetMaxSupportedVersion = (NvEncodeAPIGetMaxSupportedVersion_Type)GetProcAddress(nvenclib, "NvEncodeAPIGetMaxSupportedVersion");
-            auto NvEncodeAPICreateInstance = (NvEncodeAPICreateInstance_Type)GetProcAddress(nvenclib, "NvEncodeAPICreateInstance");
-            
-            API.version = NV_ENCODE_API_FUNCTION_LIST_VER;
-            NVERR(NvEncodeAPICreateInstance(&API));
+            Nvenc.version = NV_ENCODE_API_FUNCTION_LIST_VER;
+            NVERR(funcs->NvEncodeAPICreateInstance(&Nvenc));
 
             Inited = true;
         }
 
         // init CUDA
         CUdevice cudaDevice = 0;
-        CUDAERR(cuD3D11GetDevice(&cudaDevice, (IDXGIAdapter*)GetAdapter()));
-        CUDAERR(cuCtxCreate_v2(&CudaContext, 0, cudaDevice));
+        CUDAERR(Cuda->cuD3D11GetDevice(&cudaDevice, (IDXGIAdapter*)GetAdapter()));
+        CUDAERR(Cuda->cuCtxCreate(&CudaContext, 0, cudaDevice));
 
         // Create encoder session
         NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS openparams = {
@@ -258,7 +247,7 @@ public:
             .apiVersion = NVENCAPI_VERSION,
         };
        
-        NVERR(API.nvEncOpenEncodeSessionEx(&openparams, &Encoder));
+        NVERR(Nvenc.nvEncOpenEncodeSessionEx(&openparams, &Encoder));
     }
 
     ~Encode_NVENC()
@@ -269,23 +258,22 @@ public:
         while (FreeFrames.Dequeue(f))
         {
             if (f->Map.mappedResource)
-                NVERR(API.nvEncUnmapInputResource(Encoder, f->Map.mappedResource));
-            NVERR(API.nvEncUnregisterResource(Encoder, f->Map.registeredResource));
-            cuMemFree(f->Buffer);
+                NVERR(Nvenc.nvEncUnmapInputResource(Encoder, f->Map.mappedResource));
+            NVERR(Nvenc.nvEncUnregisterResource(Encoder, f->Map.registeredResource));
+            Cuda->cuMemFree(f->Buffer);
             delete f;
         }
 
         OutBuffer* ob = nullptr;
         while (FreeBuffers.Dequeue(ob))
         {
-            API.nvEncDestroyBitstreamBuffer(Encoder, ob->buffer);
+            Nvenc.nvEncDestroyBitstreamBuffer(Encoder, ob->buffer);
             delete ob;
         }
 
-
-        API.nvEncDestroyEncoder(Encoder);
-        cuGraphicsUnregisterResource(TexResource);
-        cuCtxDestroy_v2(CudaContext);
+        Nvenc.nvEncDestroyEncoder(Encoder);
+        Cuda->cuGraphicsUnregisterResource(TexResource);
+        Cuda->cuCtxDestroy(CudaContext);
     }
 
     BufferFormat GetBufferFormat()
@@ -321,8 +309,8 @@ public:
             ASSERT0("unsupported buffer format");
         }
 
-        CUDAERR(cuGraphicsD3D11RegisterResource(&TexResource, (ID3D11Buffer*)InBuffer->GetBuffer(), CU_GRAPHICS_REGISTER_FLAGS_NONE));
-        CUDAERR(cuGraphicsResourceSetMapFlags(TexResource, CU_GRAPHICS_MAP_RESOURCE_FLAGS_READ_ONLY));
+        CUDAERR(Cuda->cuGraphicsD3D11RegisterResource(&TexResource, (ID3D11Buffer*)InBuffer->GetBuffer(), CU_GRAPHICS_REGISTER_FLAGS_NONE));
+        //CUDAERR(Cuda->cuGraphicsResourceSetMapFlags(TexResource, CU_GRAPHICS_MAP_RESOURCE_FLAGS_READ_ONLY));
 
         if (IsHDR && (Config.Profile != CodecProfile::HEVC_MAIN10 && Config.Profile != CodecProfile::HEVC_MAIN10_444))
         {
@@ -333,13 +321,13 @@ public:
 
         GUID guids[50];
         uint codecGuidCount;
-        NVERR(API.nvEncGetEncodeGUIDCount(Encoder, &codecGuidCount));
-        NVERR(API.nvEncGetEncodeGUIDs(Encoder, guids, codecGuidCount, &codecGuidCount));
+        NVERR(Nvenc.nvEncGetEncodeGUIDCount(Encoder, &codecGuidCount));
+        NVERR(Nvenc.nvEncGetEncodeGUIDs(Encoder, guids, codecGuidCount, &codecGuidCount));
         // TODO: check if our encodeGuid is in there
 
         uint presetGuidCount;
-        NVERR(API.nvEncGetEncodePresetCount(Encoder, profile.encodeGuid, &presetGuidCount));       
-        NVERR(API.nvEncGetEncodePresetGUIDs(Encoder, profile.encodeGuid, guids, 50, &presetGuidCount));
+        NVERR(Nvenc.nvEncGetEncodePresetCount(Encoder, profile.encodeGuid, &presetGuidCount));       
+        NVERR(Nvenc.nvEncGetEncodePresetGUIDs(Encoder, profile.encodeGuid, guids, 50, &presetGuidCount));
 
         GUID presetGuid;
         if (profile.encodeGuid == NV_ENC_CODEC_HEVC_GUID)
@@ -351,7 +339,7 @@ public:
         }
         else
         {
-            presetGuid = NV_ENC_PRESET_LOW_LATENCY_HQ_GUID;
+            presetGuid = NV_ENC_PRESET_P5_GUID;
         }
         bool found = false;
         for (uint i = 0; i < presetGuidCount; i++)
@@ -365,15 +353,15 @@ public:
         if (!found)
             presetGuid = guids[0];
       
-        // get preset config
         NV_ENC_PRESET_CONFIG presetConfig = 
+        // get preset config
         {
             .version = NV_ENC_PRESET_CONFIG_VER,
         };
 
         auto& enccfg = presetConfig.presetCfg;
         enccfg.version = NV_ENC_CONFIG_VER;
-        NVERR(API.nvEncGetEncodePresetConfig(Encoder, profile.encodeGuid, presetGuid, &presetConfig));
+        NVERR(Nvenc.nvEncGetEncodePresetConfigEx(Encoder, profile.encodeGuid, presetGuid, NV_ENC_TUNING_INFO_LOW_LATENCY, &presetConfig));
 
         // configure
         enccfg.profileGUID = profile.profileGuid;
@@ -398,15 +386,15 @@ public:
             vuipara.colourDescriptionPresentFlag = 1;
             if (IsHDR)
             {
-                vuipara.colourPrimaries = AVCOL_PRI_BT2020; 
-                vuipara.transferCharacteristics = AVCOL_TRC_SMPTE2084; 
-                vuipara.colourMatrix = AVCOL_SPC_BT2020_NCL;
+                vuipara.colourPrimaries = NV_ENC_VUI_COLOR_PRIMARIES_BT2020;
+                vuipara.transferCharacteristics = NV_ENC_VUI_TRANSFER_CHARACTERISTIC_SMPTE2084;
+                vuipara.colourMatrix = NV_ENC_VUI_MATRIX_COEFFS_BT2020_NCL;
             }
             else
             {
-                vuipara.colourPrimaries = AVCOL_PRI_BT709;
-                vuipara.transferCharacteristics = AVCOL_TRC_IEC61966_2_1;
-                vuipara.colourMatrix = AVCOL_SPC_BT709; 
+                vuipara.colourPrimaries = NV_ENC_VUI_COLOR_PRIMARIES_BT709;
+                vuipara.transferCharacteristics = NV_ENC_VUI_TRANSFER_CHARACTERISTIC_SRGB;
+                vuipara.colourMatrix = NV_ENC_VUI_MATRIX_COEFFS_BT709;
             }
         }
         else
@@ -415,9 +403,9 @@ public:
             auto& vuipara = enccfg.encodeCodecConfig.h264Config.h264VUIParameters;
             vuipara.videoSignalTypePresentFlag = 1;
             vuipara.colourDescriptionPresentFlag = 1;
-            vuipara.colourPrimaries = AVCOL_PRI_BT709;
-            vuipara.transferCharacteristics = AVCOL_TRC_IEC61966_2_1;
-            vuipara.colourMatrix = AVCOL_SPC_BT709;
+            vuipara.colourPrimaries = NV_ENC_VUI_COLOR_PRIMARIES_BT709;
+            vuipara.transferCharacteristics = NV_ENC_VUI_TRANSFER_CHARACTERISTIC_SRGB;
+            vuipara.colourMatrix = NV_ENC_VUI_MATRIX_COEFFS_BT709;
         }
        
         // initialize encoder
@@ -437,8 +425,7 @@ public:
             .encodeConfig = &enccfg,
         };
 
-        if (profile.encodeGuid == NV_ENC_CODEC_HEVC_GUID)
-            params.tuningInfo = NV_ENC_TUNING_INFO_LOW_LATENCY;
+        params.tuningInfo = NV_ENC_TUNING_INFO_LOW_LATENCY;
 
         switch (Config.Profile)
         {
@@ -458,7 +445,7 @@ public:
             break;
         }
 
-        NVERR(API.nvEncInitializeEncoder(Encoder, &params));
+        NVERR(Nvenc.nvEncInitializeEncoder(Encoder, &params));
 
         // prealloc a few frames and buffers
         for (int i = 0; i < 3; i++)
@@ -492,13 +479,13 @@ public:
         };
 
         size_t size = 0;
-        CUDAERR(cuGraphicsMapResources(1, &TexResource, nullptr));
-        CUDAERR(cuGraphicsResourceGetMappedPointer(&copy.srcDevice, &size, TexResource));
-        CUDAERR(cuMemcpy2DAsync(&copy, nullptr));
-        CUDAERR(cuGraphicsUnmapResources(1, &TexResource, nullptr));
+        CUDAERR(Cuda->cuGraphicsMapResources(1, &TexResource, nullptr));
+        CUDAERR(Cuda->cuGraphicsResourceGetMappedPointer(&copy.srcDevice, &size, TexResource));
+        CUDAERR(Cuda->cuMemcpy2DAsync(&copy, nullptr));
+        CUDAERR(Cuda->cuGraphicsUnmapResources(1, &TexResource, nullptr));
 
         // submit frame
-        NVERR(API.nvEncMapInputResource(Encoder, &CurrentFrame->Map));
+        NVERR(Nvenc.nvEncMapInputResource(Encoder, &CurrentFrame->Map));
 
         EncodeFrame();
     }
@@ -540,7 +527,7 @@ public:
                 .outputBitstream = CurrentBuffer->buffer,
             };
 
-            NVERR(API.nvEncLockBitstream(Encoder, &lock));
+            NVERR(Nvenc.nvEncLockBitstream(Encoder, &lock));
             data = (uint8*)lock.bitstreamBufferPtr;
             size = lock.bitstreamSizeInBytes;
             time = CurrentBuffer->frame->Time;
@@ -555,7 +542,7 @@ public:
         if (!CurrentBuffer) return;
 
         ReleaseFrame(CurrentBuffer->frame);
-        NVERR(API.nvEncUnlockBitstream(Encoder, CurrentBuffer->buffer));
+        NVERR(Nvenc.nvEncUnlockBitstream(Encoder, CurrentBuffer->buffer));
         ReleaseOutBuffer(CurrentBuffer);
     }
 
