@@ -22,8 +22,7 @@ and audio in particular, I thought "how hard can it be?"
 
 ##### Prerequisites
 * Visual Studio 2019 with desktop/game C++ workloads installed (make sure to install ATL and Direct3D support). Older VS versions might work, too.
-* vcpkg with VS integration - https://learn.microsoft.com/en-us/vcpkg/get_started/get-started-msbuild (for ffmpeg and ffnvcodec)
-* NuGet (for WTL 10.0)
+* vcpkg with MSBuild integration - https://learn.microsoft.com/en-us/vcpkg/get_started/get-started-msbuild (for ffmpeg/ffnvcodec and WTL)
 
 ##### Build
 * Press Ctrl-Shift-B, basically 
