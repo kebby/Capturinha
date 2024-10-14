@@ -1075,7 +1075,7 @@ bool CaptureFrame(int timeoutMs, CaptureInfo& ci)
     if (totalError <= -0.5)
     {
         comp--;
-        totalError -= 0.5;
+        totalError += 0.5;
     }
     fdi += comp;
 

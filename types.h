@@ -129,7 +129,7 @@ public:
     }
 
     
-    void Clear() { SetSize(0); }
+    void Clear() { while (size) Destruct(--size); }
 
     void SetSize(size_t s)
     {
