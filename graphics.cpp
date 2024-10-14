@@ -1016,7 +1016,7 @@ bool CaptureFrame(int timeoutMs, CaptureInfo& ci)
             return false;
         if (hr == DXGI_ERROR_ACCESS_LOST || hr == DXGI_ERROR_INVALID_CALL)
         {
-            DPrintF("Lost display interface!");
+            DPrintF("Lost display interface!\n");
             // we lost the interface or it has somehow become invalid, bail and try again next time
             capTex.Clear();
             Dupl.Clear();
@@ -1048,7 +1048,7 @@ bool CaptureFrame(int timeoutMs, CaptureInfo& ci)
     double t2d = ((double)t2.QuadPart / (double)qpf.QuadPart);
 
 
-    DPrintF("%5d: t1 %.3f (%.3f), t2 %.3f (%.3f), delta %.3f\n", frc++, t1d, t1d-lastt1, t2d, t2d-lastt2, delta);
+    DPrintF("%5d: t1 %.3f (%.3f), t2 %.3f (%.3f), delta %.3f ", frc++, t1d, t1d-lastt1, t2d, t2d-lastt2, delta);
 
     lastt1 = t1d;
     lastt2 = t2d;
@@ -1056,12 +1056,35 @@ bool CaptureFrame(int timeoutMs, CaptureInfo& ci)
 
     if (delta < 0)
     {
-        DPrintF("Negative delta!");
+        DPrintF("Negative delta!\n");
         ReleaseFrame();
         return false;
     }
 
-    frameCount += delta * odd.ModeDesc.RefreshRate.Numerator / odd.ModeDesc.RefreshRate.Denominator;
+    static int comp = 0;
+    double fdelta = delta * odd.ModeDesc.RefreshRate.Numerator / odd.ModeDesc.RefreshRate.Denominator;
+    double fdi = round(fdelta);
+    static double totalError = 0;
+    double error = fdelta - fdi;
+    totalError += error;
+    if (totalError >= 0.5)
+    {
+        comp++;
+        totalError -= 0.5;
+    }
+    if (totalError <= -0.5)
+    {
+        comp--;
+        totalError -= 0.5;
+    }
+    fdi += comp;
+
+    static double lastfc = 0;
+    frameCount += fdi;
+    double fci = round(frameCount);
+    DPrintF("fd %.3f (%.3f) %.3f comp %d\n", fdi, error, totalError, comp);
+    lastfc = frameCount;
+
 
     // create/invalidate texture object
     RCPtr<ID3D11Texture2D> tex = frame;
@@ -1076,7 +1099,7 @@ bool CaptureFrame(int timeoutMs, CaptureInfo& ci)
     ci.isHdr = (outdesc.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020);
     ci.rateNum = odd.ModeDesc.RefreshRate.Numerator;
     ci.rateDen = odd.ModeDesc.RefreshRate.Denominator;
-    ci.frameCount = (uint64)round(frameCount);
+    ci.frameCount = (uint64)fci;
     ci.time = (double)info.LastPresentTime.QuadPart / (double)qpf.QuadPart;
     return true;
 }
