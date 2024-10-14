@@ -232,7 +232,7 @@ struct Texture::Priv
 Texture::Texture() : P(new Priv) {}
 Texture::~Texture() { delete P; }
 
-RCPtr<ID3D11Texture2D> Texture::GetTex2D() { return P->tex; }
+RCPtr<ID3D11Texture2D> Texture::GetTex2D() const { return P->tex; }
 
 ShaderResource::SR& Texture::GetSR(bool write) 
 {
@@ -242,7 +242,7 @@ ShaderResource::SR& Texture::GetSR(bool write)
     return P->sr;
 }
 
-void Texture::CopyFrom(RCPtr<Texture> tex)
+void Texture::CopyFrom(RCPtr<Texture> tex) const
 {
     Ctx->CopyResource(P->tex, tex->P->tex);
 }
@@ -309,9 +309,9 @@ RCPtr<Shader> CompileShader(Shader::Type type, const Buffer *buffer, const char*
     }
 
     Array<D3D_SHADER_MACRO> d3dmacros;
-    for (auto m: macros)
-        d3dmacros.PushTail(D3D_SHADER_MACRO { m.name, m.value });
-    d3dmacros.PushTail(D3D_SHADER_MACRO { NULL, NULL });
+    for (auto& m : macros)
+        d3dmacros += D3D_SHADER_MACRO{ m.name, m.value };
+    d3dmacros += D3D_SHADER_MACRO{ NULL, NULL };
 
     UINT flags = D3DCOMPILE_OPTIMIZATION_LEVEL3;
 #if _DEBUG
@@ -449,11 +449,11 @@ ShaderResource::SR& GpuBuffer::GetSR(bool write, uint count)
     return P->sr;
 }
 
-RCPtr<ID3D11Buffer> GpuBuffer::GetBuffer() { return P->buf; }
+RCPtr<ID3D11Buffer> GpuBuffer::GetBuffer() const { return P->buf; }
 
 template<typename T> uint MakeLayout(D3D11_INPUT_ELEMENT_DESC* desc);
 
-D3D11_INPUT_ELEMENT_DESC MakeVBDesc(const char* semantic, uint index, DXGI_FORMAT format, uint offset, uint slot = 0)
+static constexpr D3D11_INPUT_ELEMENT_DESC MakeVBDesc(const char* semantic, uint index, DXGI_FORMAT format, uint offset, uint slot = 0)
 {
     return D3D11_INPUT_ELEMENT_DESC {
         .SemanticName = semantic,
@@ -511,13 +511,13 @@ template <typename TV> void SetVertexLayout(RCPtr<Shader> vs)
         Shader::Priv::Layout cl;
         cl.key = key;
         cl.layout = layout;
-        vs->P->Layouts.PushTail(cl);
+        vs->P->Layouts += cl;
     }
     
     Ctx->IASetInputLayout(layout);
 }
 
-int GetSRVs(ShaderResource* const sr[], int n, ID3D11ShaderResourceView** srv)
+static int GetSRVs(ShaderResource* const sr[], int n, ID3D11ShaderResourceView** srv)
 {
     int maxpst = -1;
     for (int i = 0; i < n; i++)
@@ -792,13 +792,35 @@ static Array<Texture::Priv> lastRTPool;
 
 RenderTarget::~RenderTarget() {
     if (!P->noPool)
-        RTPool.PushTail(*P);
+        RTPool += *P;
 }
 
 
 void GfxInit()
 {
     CreateDXGIFactory1(__uuidof(IDXGIFactory6), Factory);
+
+    Array<DISPLAYCONFIG_PATH_INFO> dcPaths;
+    Array<DISPLAYCONFIG_MODE_INFO> dcModes;
+
+    {
+        // enumerate all display paths
+        // Determine how many path and mode structures to allocate
+        uint flags = QDC_ONLY_ACTIVE_PATHS | QDC_VIRTUAL_MODE_AWARE;
+        UINT32 pathCount, modeCount;
+        GetDisplayConfigBufferSizes(flags, &pathCount, &modeCount);
+
+        // Allocate the path and mode arrays
+        dcPaths.SetSize(pathCount);
+        dcModes.SetSize(modeCount);
+
+        // Get all active paths and their modes
+        QueryDisplayConfig(flags, &pathCount, &dcPaths[0], &modeCount, &dcModes[0], nullptr);
+
+        // The function may have returned fewer paths/modes than estimated
+        dcPaths.SetSize(pathCount);
+        dcModes.SetSize(modeCount);
+    }
 
     // enumerate all adapters and outputs
     RCPtr<IDXGIAdapter4> adapter;
@@ -818,11 +840,44 @@ void GfxInit()
             DXGI_OUTPUT_DESC1 odesc;
             output->GetDesc1(&odesc);
 
-            String name = odesc.DeviceName;
-            DISPLAY_DEVICE dd = { .cb = sizeof(dd) } ;
-            if (EnumDisplayDevices(name, 0, &dd, 0))
-                name = dd.DeviceString;
-            
+            String name;
+
+            for (auto& path : dcPaths)
+            {
+                // Find the target (monitor) friendly name
+                DISPLAYCONFIG_SOURCE_DEVICE_NAME srcName = { 
+                    .header = {
+                        .type = DISPLAYCONFIG_DEVICE_INFO_GET_SOURCE_NAME,
+                        .size = sizeof(srcName),
+                        .adapterId = path.sourceInfo.adapterId,
+                        .id = path.sourceInfo.id,
+                    }
+                };
+                DisplayConfigGetDeviceInfo(&srcName.header);
+
+                if (!wcscmp(srcName.viewGdiDeviceName, odesc.DeviceName))
+                {
+                    DISPLAYCONFIG_TARGET_DEVICE_NAME targetName = {
+                        .header = {
+                            .type = DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME,
+                            .size = sizeof(targetName),
+                            .adapterId = path.targetInfo.adapterId,
+                            .id = path.targetInfo.id,
+                        }
+                    };
+                    DisplayConfigGetDeviceInfo(&targetName.header);
+                    name = targetName.monitorFriendlyDeviceName;
+                    break;
+                }
+            }
+
+            if (!name)
+            {
+                DISPLAY_DEVICEW dd = { .cb = sizeof(dd) };
+                if (EnumDisplayDevicesW(odesc.DeviceName, 0, &dd, 0))
+                    name = dd.DeviceString;
+            }
+
             name = String::PrintF("%d: %s (%s)", oi+1, (const char*)name, (const char*)adapterName);
             AllOutputs += OutputDef{ .DisplayName = name, .Adapter = adapter, .Output = output, };
         }

@@ -50,7 +50,7 @@ public:
 
     SR& GetSR(bool write) override { return GetSR(write, 0); }
 
-    RCPtr<ID3D11Buffer> GetBuffer();
+    RCPtr<ID3D11Buffer> GetBuffer() const;
 
     struct Priv;
     Priv* P = nullptr;
@@ -195,9 +195,9 @@ public:
     Texture();
     virtual ~Texture();
 
-    void CopyFrom(RCPtr<Texture> texture);
+    void CopyFrom(RCPtr<Texture> texture) const;
 
-    RCPtr<ID3D11Texture2D> GetTex2D();
+    RCPtr<ID3D11Texture2D> GetTex2D() const;
 
 protected:
     SR& GetSR(bool write) override;
