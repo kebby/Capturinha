@@ -22,10 +22,8 @@ and audio in particular, I thought "how hard can it be?"
 
 ##### Prerequisites
 * Visual Studio 2019 with desktop/game C++ workloads installed (make sure to install ATL and Direct3D support). Older VS versions might work, too.
-* FFmpeg 4.0 or later - http://ffmpeg.org/download.html or in binary form https://github.com/BtbN/FFmpeg-Builds/releases (you'll need the win64 shared LGPL build) - Copy the libavcodec, -format and -util, and swresample libs and DLLs into the project directory, as well as the respective contents of the include/ folder.
-* NVIDIA CUDA Toolkit - https://developer.nvidia.com/cuda-downloads?target_os=Windows&target_arch=x86_64 
-* NVIDIA Video Codec SDK 11 or later - https://developer.nvidia.com/nvidia-video-codec-sdk - copy nvEncodeAPI.h and nvencodeapi.lib into the project directory
-* WTL 10.0 - included as NuGet package, please restore packages before build.
+* vcpkg with VS integration - https://learn.microsoft.com/en-us/vcpkg/get_started/get-started-msbuild (for ffmpeg and ffnvcodec)
+* NuGet (for WTL 10.0)
 
 ##### Build
 * Press Ctrl-Shift-B, basically 
