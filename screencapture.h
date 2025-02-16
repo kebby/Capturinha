@@ -24,11 +24,11 @@ enum class Container { Mp4, Mov, Mkv };
 enum class AudioCodec { PCM_S16, PCM_F32, MP3, AAC };
 enum class FrameConfig { I, IP, /* IBP, IBBP, */ };
 
-JSON_DEFINE_ENUM(CodecProfile,   ("h264_main", "h264_high", "h264_high_444", "hevc_main", "hevc_main10", "hevc_main_444", "hevc_main10_444" ))
-JSON_DEFINE_ENUM(BitrateControl, ("cbr", "constqp"))
-JSON_DEFINE_ENUM(Container,      ("mp4", "mov", "mkv"))
-JSON_DEFINE_ENUM(AudioCodec,     ("pcm_s16", "pcm_f32", "mp3", "aac"))
-JSON_DEFINE_ENUM(FrameConfig,    ("i", "ip"/* ,"ibp", "ibbp", */))
+JSON_DEFINE_ENUM(CodecProfile, "h264_main", "h264_high", "h264_high_444", "hevc_main", "hevc_main10", "hevc_main_444", "hevc_main10_444" )
+JSON_DEFINE_ENUM(BitrateControl, "cbr", "constqp")
+JSON_DEFINE_ENUM(Container, "mp4", "mov", "mkv")
+JSON_DEFINE_ENUM(AudioCodec, "pcm_s16", "pcm_f32", "mp3", "aac")
+JSON_DEFINE_ENUM(FrameConfig, "i", "ip" )
 
 struct VideoCodecConfig
 {

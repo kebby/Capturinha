@@ -361,7 +361,7 @@ public:
 
         auto& enccfg = presetConfig.presetCfg;
         enccfg.version = NV_ENC_CONFIG_VER;
-        NVERR(Nvenc.nvEncGetEncodePresetConfigEx(Encoder, profile.encodeGuid, presetGuid, NV_ENC_TUNING_INFO_LOW_LATENCY, &presetConfig));
+        NVERR(Nvenc.nvEncGetEncodePresetConfigEx(Encoder, profile.encodeGuid, presetGuid, NV_ENC_TUNING_INFO_ULTRA_LOW_LATENCY, &presetConfig));
 
         // configure
         enccfg.profileGUID = profile.profileGuid;
@@ -425,7 +425,7 @@ public:
             .encodeConfig = &enccfg,
         };
 
-        params.tuningInfo = NV_ENC_TUNING_INFO_LOW_LATENCY;
+        params.tuningInfo = NV_ENC_TUNING_INFO_ULTRA_LOW_LATENCY;
 
         switch (Config.Profile)
         {

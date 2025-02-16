@@ -277,13 +277,14 @@ class ScreenCapture : public IScreenCapture
                     outBuffer = new GpuByteBuffer(fi.lines * fi.pitch, GpuBuffer::Usage::GpuOnly);
                    
                     auto source = LoadResource(IDR_COLORCONVERT, TEXTFILE);
-                    Array<ShaderDefine> defines =
+                    ShaderDefine defines[] =
                     {
-                        ShaderDefine { "OUTFORMAT", String::PrintF("%d", (int)fmt) },
-                        ShaderDefine { "UPSCALE", upscale > 1 ? "1":"0" },
-                        ShaderDefine { "HDR", (isHdr && pixfmt == PixelFormat::RGBA16F) ? "1" : "0"  },
+                        "OUTFORMAT", String::PrintF("%d", (int)fmt),
+                        "UPSCALE", upscale > 1 ? "1":"0",
+                        "HDR", (isHdr && pixfmt == PixelFormat::RGBA16F) ? "1" : "0",
                     };
-                    Shader = CompileShader(Shader::Type::Compute, source, "csc", defines, "colorconvert.hlsl");
+                 
+                    Shader = CompileShader(Shader::Type::Compute, source.Cast<char>(), "csc", "colorconvert.hlsl", defines);
 
                     switch (fmt)
                     {

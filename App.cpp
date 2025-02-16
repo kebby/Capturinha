@@ -43,7 +43,7 @@ constexpr float aligned = -1;
 
 static int DPI = 96;
 
-inline static int WithDpi(int s) { return s>=0 ? s * DPI / 96 : s; }
+inline static int WithDpi(int s) { return s >= 0 ? s * DPI / 96 : s; }
 inline static int WithoutDpi(int s) { return s >= 0 ? s * 96 / DPI : s; }
 
 inline static RECT WithDpi(const RECT& r)
@@ -57,7 +57,7 @@ inline static RECT WithoutDpi(const RECT& r)
     return RECT{ .left = WithoutDpi(r.left), .top = WithoutDpi(r.top), .right = WithoutDpi(r.right), .bottom = WithoutDpi(r.bottom) };
 
 }
-static RECT Rect (const RECT &ref, float refAnchorX, float refAnchorY, int width, int height, float anchorX = aligned, float anchorY = aligned, int offsX = 0, int offsY = 0)
+static RECT Rect(const RECT& ref, float refAnchorX, float refAnchorY, int width, int height, float anchorX = aligned, float anchorY = aligned, int offsX = 0, int offsY = 0)
 {
     float ax = Lerp<float>(refAnchorX, (float)ref.left, (float)ref.right);
     float ay = Lerp<float>(refAnchorY, (float)ref.top, (float)ref.bottom);
@@ -118,12 +118,12 @@ public:
         child.SetFont(font);
     }
 
-    void Dropdown(CComboBox& child, const RECT& r, const Array<String> &strings)
+    void Dropdown(CComboBox& child, const RECT& r, ReadOnlySpan<String> strings)
     {
         RECT r2 = r;
         child.Create(m_hWnd, r2, NULL, WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS, 0);
         child.SetFont(font);
-        for (auto &out : strings)
+        for (auto& out : strings)
             child.AddString(out);
         child.SetCurSel(0);
     }
@@ -142,7 +142,7 @@ public:
         Array<String> strings;
         GetClientRect(&cr);
         cr = WithoutDpi(cr);
-        cr.InflateRect(-10,-10);
+        cr.InflateRect(-10, -10);
         CRect line = WithoutDpi(Rect(cr, 0, 0, cr.Width(), 20));
 
         //------------- OutputIndex
@@ -150,9 +150,9 @@ public:
         Child(label, r, "Capture screen");
 
         r = Rect(line, aLeft, aTop, 300, line.Height(), aLeft, aTop, labelwidth);
-        Child(videoOut, r, "", WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS);        
+        Child(videoOut, r, "", WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS);
         GetVideoOutputs(strings);
-        for (auto &out : strings)
+        for (auto& out : strings)
             videoOut.AddString(out);
         videoOut.SetCurSel(0);
 
@@ -183,8 +183,7 @@ public:
         r = Rect(line, 0, 0, labelwidth, line.Height(), 0, 0, 0, 4);
         Child(label2, r, "Video codec");
 
-        Array<String> codecs = 
-        { 
+        String codecs[] = {
             "H.264 Main profile",
             "H.264 High profile",
             "H.264 4:4:4 High profile",
@@ -193,6 +192,7 @@ public:
             "HEVC 4:4:4 Main profile",
             "HEVC 4:4:4 Main10 profile",
         };
+
         r = Rect(line, aLeft, aTop, 300, line.Height(), aLeft, aTop, labelwidth);
         Dropdown(videoCodec, r, codecs);
         line.OffsetRect(0, 25);
@@ -202,14 +202,13 @@ public:
         CStatic label3;
         Child(label3, r, "Rate control");
 
-        Array<String> rateStrs = { "CBR", "Const QP" };
         r = Rect(line, aLeft, aTop, 100, line.Height(), aLeft, aTop, labelwidth);
-        Dropdown(rateControl, r, rateStrs );
+        Dropdown(rateControl, r, { { "CBR", "Const QP" } });
 
         r = Rect(line, aLeft, aTop, 100, line.Height(), aLeft, aTop, 240, 4);
         Child(rateParamLabel, r, "");
 
-        r = Rect(line, aLeft, aTop, 60, line.Height(), aLeft, aTop, 325);       
+        r = Rect(line, aLeft, aTop, 60, line.Height(), aLeft, aTop, 325);
         Child(rateParam, r, "", ES_RIGHT | ES_NUMBER | WS_BORDER);
 
         line.OffsetRect(0, 25);
@@ -219,9 +218,8 @@ public:
         CStatic label5;
         Child(label5, r, "Frame layout");
 
-        Array<String> layoutStrs = { "I only", "I+P", /* "I+B+P", "I+B+B+P" */};
         r = Rect(line, aLeft, aTop, 100, line.Height(), aLeft, aTop, labelwidth);
-        Dropdown(frameLayout, r, layoutStrs);
+        Dropdown(frameLayout, r, { { "I only", "I+P", /* "I+B+P", "I+B+B+P" */ } });
         frameLayout.SetCurSel(1);
 
         r = Rect(line, aLeft, aTop, 80, line.Height(), aLeft, aTop, 240, 4);
@@ -248,7 +246,7 @@ public:
         r = Rect(line, aLeft, aTop, 300, line.Height(), aLeft, aTop, labelwidth);
         Child(audioOut, r, "", WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS);
         GetAudioDevices(strings);
-        for (auto &out : strings)
+        for (auto& out : strings)
             audioOut.AddString(out);
         audioOut.SetCurSel(0);
 
@@ -259,9 +257,8 @@ public:
         CStatic label7;
         Child(label7, r, "Audio Codec");
 
-        Array<String> acodecStrs = { "PCM, 16bit", "PCM, float", "MP3", "AAC" };
         r = Rect(line, aLeft, aTop, 100, line.Height(), aLeft, aTop, labelwidth);
-        Dropdown(audioCodec, r, acodecStrs);
+        Dropdown(audioCodec, r, { { "PCM, 16bit", "PCM, float", "MP3", "AAC" } });
 
         r = Rect(line, aLeft, aTop, 100, line.Height(), aLeft, aTop, 240, 4);
         CStatic label8;
@@ -292,7 +289,7 @@ public:
         r = Rect(line, 0, 0, labelwidth, line.Height(), 0, 0, 0, 4);
         CStatic label10;
         Child(label10, r, "Name prefix");
-       
+
         r = Rect(line, aLeft, aTop, 150, line.Height(), aLeft, aTop, labelwidth);
         Child(prefix, r, "capture", ES_LEFT | WS_BORDER);
 
@@ -301,8 +298,7 @@ public:
         Child(label11, r, "Container");
 
         r = Rect(line, aLeft, aTop, 60, line.Height(), aLeft, aTop, 325);
-        Array<String> containerStrs = { "mp4", "mov", "mkv" };
-        Dropdown(container, r, containerStrs);
+        Dropdown(container, r, { { "mp4", "mov", "mkv" } });
 
 
         line.OffsetRect(0, 25);
@@ -315,8 +311,8 @@ public:
         r = Rect(cr, aRight, aBottom, 130, 25, aRight, aBottom);
         startCapture.Create(m_hWnd, r, "Start", WS_TABSTOP | WS_CHILD | WS_VISIBLE, 0);
         startCapture.SetFont(font);
-       
-        tooltips.Create(*this);        
+
+        tooltips.Create(*this);
         TOOLINFO toolInfo = {
             .cbSize = sizeof(toolInfo),
             .uFlags = TTF_IDISHWND | TTF_SUBCLASS,
@@ -485,7 +481,7 @@ public:
             rateParam.SetWindowTextA(String::PrintF("%d", Config.CodecCfg.BitrateParameter));
         }
 
-       
+
         if (force || lastConfig.CodecCfg.FrameCfg != Config.CodecCfg.FrameCfg)
         {
             gopSize.EnableWindow(Config.CodecCfg.FrameCfg != FrameConfig::I);
@@ -527,7 +523,7 @@ public:
     int stat = -1;
     int lastStat = -1;
 
-    DECLARE_WND_CLASS_EX("StatsForm",0, COLOR_MENU);
+    DECLARE_WND_CLASS_EX("StatsForm", 0, COLOR_MENU);
 
     BEGIN_MSG_MAP(StatsForm)
         MESSAGE_HANDLER(WM_PAINT, OnPaint)
@@ -545,7 +541,7 @@ public:
     }
 
     LRESULT OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
-    {        
+    {
         font.CreateFontA(WithDpi(16), 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH, "Segoe UI");
         smallFont.CreateFontA(WithDpi(11), 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH, "Segoe UI");
         bigFont.CreateFontA(WithDpi(24), 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH, "Bahnschrift");
@@ -601,7 +597,7 @@ public:
 
     static COLORREF CRef(const Vec3& color)
     {
-        return (int(255 * color.x)) | (int(255 * color.y ) << 8) | (int(255 * color.z ) << 16);
+        return (int(255 * color.x)) | (int(255 * color.y) << 8) | (int(255 * color.z) << 16);
     }
 
     static float VUToScreen(float vu)
@@ -637,13 +633,13 @@ public:
         {
             if (db > 50 && db % 10) continue;
             if (db > 20 && db % 2) continue;
-            float v = VUToScreen(DecibelToLinear((float)-db));                   
+            float v = VUToScreen(DecibelToLinear((float)-db));
             int x = area.left + int(v * area.Width() + 1);
-                       
-            if ((db >= 30 && db <= 60 && !(db % 10)) || (db<30 && !(db % 6)))
+
+            if ((db >= 30 && db <= 60 && !(db % 10)) || (db < 30 && !(db % 6)))
             {
-                CRect textRect(x-d10, area.bottom, x+d10, area.bottom+d10);
-                dc.DrawTextA(String::PrintF("-%d",db), -1, &textRect, DT_CENTER);
+                CRect textRect(x - d10, area.bottom, x + d10, area.bottom + d10);
+                dc.DrawTextA(String::PrintF("-%d", db), -1, &textRect, DT_CENTER);
                 dc.SelectPen(pen2);
             }
             else
@@ -651,9 +647,9 @@ public:
             dc.MoveTo(x, area.top);
             dc.LineTo(x, area.bottom);
         }
-        CRect textRect2(area.left, area.bottom, area.left+WithDpi(d20), area.bottom + d10);
+        CRect textRect2(area.left, area.bottom, area.left + WithDpi(d20), area.bottom + d10);
         dc.DrawTextA("dBFS", -1, &textRect2, DT_LEFT);
-        CRect textRect3(area.right-d20, area.bottom, area.right, area.bottom + d10);
+        CRect textRect3(area.right - d20, area.bottom, area.right, area.bottom + d10);
         dc.DrawTextA("0", -1, &textRect3, DT_RIGHT);
 
         CBrush peak;
@@ -662,18 +658,18 @@ public:
         dc.SelectBrush(peak);
 
         int nch;
-        for (nch = 0; nch<32 && stats.VU[nch] >= 0; nch++) {}
-       
+        for (nch = 0; nch < 32 && stats.VU[nch] >= 0; nch++) {}
+
         for (int ch = 0; ch < nch; ch++)
         {
             float v = VUToScreen(Clamp(stats.VU[ch], 0.0f, 1.0f));
             int t = area.top + ch * area.Height() / nch;
-            int b = area.top + (ch + 1) * area.Height() / nch +1;
+            int b = area.top + (ch + 1) * area.Height() / nch + 1;
             int l = area.left;
-            int r = area.left + int(v * area.Width()+1);
+            int r = area.left + int(v * area.Width() + 1);
             Vec3 ca(0, 0.5, 0);
             Vec3 cb = Lerp(v, ca, Vec3(1, 0.5, 0));
-            
+
             dc.GradientFillRect(*CRect(l, t, r, b), CRef(ca), CRef(cb), TRUE);
 
             int px = area.left + int(VUToScreen(stats.VUPeak[ch]) * area.Width() + 1);
@@ -682,7 +678,7 @@ public:
 
     }
 
-    void PaintGraph(CDC& dc, const RECT &rect, const Vec3& color, const char* label, const char* unitFmt, size_t nPoints, double max, double avg, Func<double(int)> getPoint) const
+    void PaintGraph(CDC& dc, const RECT& rect, const Vec3& color, const char* label, const char* unitFmt, size_t nPoints, double max, double avg, Func<double(int)> getPoint) const
     {
         CPen pen;
         pen.CreatePen(PS_SOLID, 1, 0xc0c0c0);
@@ -701,7 +697,7 @@ public:
         Array<POINT> points(POINT{ .x = grapharea.left, .y = grapharea.bottom });
         for (int i = 0; i < np; i++)
         {
-            points += POINT {.x = grapharea.left + i, .y = grapharea.bottom - LONG(getPoint(i + offs) * gh / max) };
+            points += POINT{ .x = grapharea.left + i, .y = grapharea.bottom - LONG(getPoint(i + offs) * gh / max) };
         }
         points += POINT{ .x = grapharea.left + np - 1, .y = grapharea.bottom };
 
@@ -715,7 +711,7 @@ public:
         dc.Polygon(&points[0], np + 2);
 
         CPen darkgreen;
-        
+
         darkgreen.CreatePen(PS_SOLID, 1, CRef(color));
 
         dc.SelectPen(darkgreen);
@@ -741,11 +737,11 @@ public:
         dc.SetBkMode(TRANSPARENT);
         dc.DrawTextA(label, -1, &textRect, DT_LEFT);
 
-        CRect textRect2(grapharea.right - d5 - 2*d100, grapharea.top + 1, grapharea.right - d5, grapharea.top + 1 + d10);        
+        CRect textRect2(grapharea.right - d5 - 2 * d100, grapharea.top + 1, grapharea.right - d5, grapharea.top + 1 + d10);
         dc.DrawTextA(String::PrintF(unitFmt, max), -1, &textRect2, DT_RIGHT);
     }
 
-    void PaintText(CDC &dc, const char* left, const char* right, CRect& rect, int leftw) const
+    void PaintText(CDC& dc, const char* left, const char* right, CRect& rect, int leftw) const
     {
         dc.SelectFont(font);
         dc.SetTextColor(0x000000);
@@ -757,7 +753,7 @@ public:
         CRect r1 = WithDpi(rect); r1.right = r1.left + leftw; r1.bottom = r1.top + d20;
         CRect r2 = WithDpi(rect); ; r2.left = r2.left + leftw; r2.bottom = r2.top + d20;
         dc.DrawTextA(left, -1, &r1, DT_LEFT);
-        dc.DrawTextA(right, -1, &r2, DT_RIGHT|DT_PATH_ELLIPSIS);
+        dc.DrawTextA(right, -1, &r2, DT_RIGHT | DT_PATH_ELLIPSIS);
 
         rect.OffsetRect(0, 20);
     }
@@ -765,7 +761,7 @@ public:
     LRESULT OnPaint(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/)
     {
         RECT cr;
-        GetClientRect(&cr);      
+        GetClientRect(&cr);
         cr = WithoutDpi(cr);
         auto w = cr.right - cr.left - 20;
         auto h = cr.bottom - cr.top - 60;
@@ -787,7 +783,7 @@ public:
         dc.Rectangle(&clr);
 
         area.InflateRect(-10, -10);
-      
+
         if (Capture)
         {
             CaptureStats stats = Capture->GetStats();
@@ -795,22 +791,22 @@ public:
 
             // FPS graph    
             CRect graph(area.left, area.top, area.right, area.top + 62);
-            PaintGraph(dc, WithDpi(graph), Vec3(0, 0.5, 0), "FPS", "%.2f", stats.Frames.Count(), stats.FPS, -1, [&](int i)
-            {
-                return stats.Frames[i].FPS;
-            });
-           
-            while (stats.MaxBitrate < (maxRate-5000))
+            PaintGraph(dc, WithDpi(graph), Vec3(0, 0.5, 0), "FPS", "%.2f", stats.Frames.Len(), stats.FPS, -1, [&](int i)
+                {
+                    return stats.Frames[i].FPS;
+                });
+
+            while (stats.MaxBitrate < (maxRate - 5000))
                 maxRate = maxRate - 5000;
             while (stats.MaxBitrate > maxRate)
                 maxRate = maxRate + 5000;
 
             // Bitrate graph
             graph.OffsetRect(0, 70);
-            PaintGraph(dc, WithDpi(graph), Vec3(0.0, 0, 0.5), "Bit rate", "%.0f kbits/s", stats.Frames.Count(), maxRate, stats.AvgBitrate, [&](int i)
-            {
-                return stats.Frames[i].Bitrate;
-            });
+            PaintGraph(dc, WithDpi(graph), Vec3(0.0, 0, 0.5), "Bit rate", "%.0f kbits/s", stats.Frames.Len(), maxRate, stats.AvgBitrate, [&](int i)
+                {
+                    return stats.Frames[i].Bitrate;
+                });
 
             // VU meter
             CRect vumeter(area.left, graph.bottom + 10, area.right, graph.bottom + 10 + 26);
@@ -822,14 +818,14 @@ public:
             int lw = 80;
             PaintText(dc, "Current file", stats.Filename, line, lw);
 
-            PaintText(dc, "Resolution", String::PrintF("%dx%d @ %.4g fps, %s%s", stats.SizeX, stats.SizeY, stats.FPS, stats.HDR?" HDR ":"", formats[(int)stats.Fmt]), line, lw);
+            PaintText(dc, "Resolution", String::PrintF("%dx%d @ %.4g fps, %s%s", stats.SizeX, stats.SizeY, stats.FPS, stats.HDR ? " HDR " : "", formats[(int)stats.Fmt]), line, lw);
 
             int s = (int)stats.Time;
             int m = s / 60; s = s % 60;
             int h = m / 60; m = m % 60;
-            PaintText(dc, "Length", String::PrintF("%d:%02d:%02d",h,m,s), line, lw);
+            PaintText(dc, "Length", String::PrintF("%d:%02d:%02d", h, m, s), line, lw);
 
-            PaintText(dc, "Bitrate", String::PrintF("avg %d, max %d kbits/s", (int)stats.AvgBitrate,(int)stats.MaxBitrate), line, lw);
+            PaintText(dc, "Bitrate", String::PrintF("avg %d, max %d kbits/s", (int)stats.AvgBitrate, (int)stats.MaxBitrate), line, lw);
         }
 
         int d10 = WithDpi(10);
@@ -872,10 +868,10 @@ public:
 //-------------------------------------------------------------------
 //-------------------------------------------------------------------
 
-class MainFrame : public CFrameWindowImpl<MainFrame>, public CUpdateUI<MainFrame>  
+class MainFrame : public CFrameWindowImpl<MainFrame>, public CUpdateUI<MainFrame>
 {
 public:
-     
+
     SetupForm setupForm;
     StatsForm statsForm;
 
@@ -946,7 +942,7 @@ public:
             Delete(Capture);
             setupForm.ShowWindow(SW_SHOW);
             statsForm.KillTimer(1);
-            statsForm.ShowWindow(SW_HIDE);            
+            statsForm.ShowWindow(SW_HIDE);
             UpdateWindow();
         }
         return 1;
@@ -956,12 +952,13 @@ public:
 //-------------------------------------------------------------------
 //-------------------------------------------------------------------
 
+
 static int Run(LPTSTR /*lpstrCmdLine*/ = NULL, int nCmdShow = SW_SHOWDEFAULT)
-{  
+{
     CMessageLoop theLoop;
     _Module.AddMessageLoop(&theLoop);
 
-    wchar_t *videosPath = nullptr;
+    wchar_t* videosPath = nullptr;
     if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_Videos, 0, 0, &videosPath)))
         Config.Directory = videosPath;
 
@@ -969,7 +966,7 @@ static int Run(LPTSTR /*lpstrCmdLine*/ = NULL, int nCmdShow = SW_SHOWDEFAULT)
     {
         String json = ReadFileUTF8("config.json");
         Array<String> errors;
-        if (json.Length()>0 && !Json::Deserialize(json, Config, errors))
+        if (json.Length() > 0 && !Json::Deserialize(json, Config, errors))
         {
             String allerrors = String::Join(errors, "\n");
             Fatal(String("Could not read config.json: \n\n") + allerrors);
@@ -979,9 +976,9 @@ static int Run(LPTSTR /*lpstrCmdLine*/ = NULL, int nCmdShow = SW_SHOWDEFAULT)
     MainFrame wndMain;
 
     DPI = GetDpiForSystem();
-    RECT winRect = { .left = CW_USEDEFAULT , .top = CW_USEDEFAULT, .right = CW_USEDEFAULT+WithDpi(420), .bottom = CW_USEDEFAULT+WithDpi(420) };
+    RECT winRect = { .left = CW_USEDEFAULT , .top = CW_USEDEFAULT, .right = CW_USEDEFAULT + WithDpi(420), .bottom = CW_USEDEFAULT + WithDpi(420) };
 
-    if (wndMain.CreateEx(0, &winRect, WS_DLGFRAME|WS_SYSMENU|WS_MINIMIZEBOX) == NULL)
+    if (wndMain.CreateEx(0, &winRect, WS_DLGFRAME | WS_SYSMENU | WS_MINIMIZEBOX) == NULL)
     {
         ATLTRACE(_T("Main window creation failed!\n"));
         return 0;
@@ -1002,7 +999,7 @@ extern const char* AppName;
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR lpstrCmdLine, int nCmdShow)
 {
-    HRESULT hRes = ::CoInitializeEx(NULL, COINIT_MULTITHREADED);  
+    HRESULT hRes = ::CoInitializeEx(NULL, COINIT_MULTITHREADED);
     ATLASSERT(SUCCEEDED(hRes));
 
     static char appName[2048];

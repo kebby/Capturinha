@@ -46,155 +46,272 @@ constexpr double Smoothstep(double v, double min, double max) { return Smooth(Cl
 // basic helper stuff 
 // -------------------------------------------------------------------------------
 
-// returns the number of supplied arguments
-constexpr int NumArgs() { return 0; }
-template<typename a1, typename ... args> constexpr int NumArgs(a1, args... a) { return NumArgs(a...) + 1; }
-
 template<typename T> void Delete(T*& ptr) { delete ptr; ptr = nullptr; }
 
 // containers
 // -------------------------------------------------------------------------------
 
-template<typename T> class Array
+template<typename T> class Span
 {
-private:
-    T* mem = nullptr;
-    size_t size = 0;
-    size_t capacity = 0;
+protected:
+    T* mem;
+    size_t size;
 
-    void Construct(size_t at) { new(&mem[at]) T(); }
-    void Construct(size_t at, const T& value) { new(&mem[at]) T(value); }
-    void Construct(size_t at, T&& value) { new(&mem[at]) T(value); }
-    template<class Tv> void Construct(size_t at, Tv value) { new(&mem[at]) T(value); }
-    template<class Tv, class ... args> void Construct(size_t at, Tv v, args ...a) { Construct(at, v); Construct(at + 1, a...); }
-    void Destruct(size_t at) { mem[at].T::~T(); }
-    
-    void Grow(size_t to)
+public:
+    constexpr Span() : mem(nullptr), size(0) {}
+    constexpr Span(const Span& sp) : mem(sp.mem), size(sp.size) {}
+    constexpr Span(T* ptr, size_t len) : mem(ptr), size(len) {}
+    constexpr Span(T* begin, T* end) : mem(begin), size(end - begin) {}
+    constexpr Span(T& ref) : mem(&ref), size(1) {}
+
+    template<size_t len> constexpr Span(T(&arr)[len]) : mem(arr), size(len) {}
+
+    constexpr Span operator=(const Span& sp) { mem = sp.mem; size = sp.size; return *this; }
+    template<size_t len> Span operator=(T(&arr)[len]) { mem = arr; size = len; }
+
+    constexpr T& Get(size_t i) const { ASSERT(i < size); return ((T*)mem)[i]; }
+    constexpr T& operator[](size_t i) const { return Get(i); }
+
+    constexpr size_t Len() const { return size; }
+    constexpr bool operator ! () const { return !size; }
+    constexpr T* Ptr() const { return mem; }
+
+    template<typename Tto> constexpr Span<Tto> Cast() const
     {
-        if (to <= capacity) return;
-        T* oldptr = mem;
-        capacity = Max(2*capacity, to);
-        if (!capacity) capacity = 1;
-        mem = (T*)new uint8[capacity * sizeof(T)];
-        for (size_t i = 0; i < size; i++)
-        {
-            T& elem = ((T*)oldptr)[i];
-            Construct(i, (T&&)elem);
-            elem.T::~T();
-        }
-        delete[] (uint8*)oldptr;
+        size_t bsize = size * sizeof(T);
+        ASSERT(bsize % sizeof(Tto) == 0);
+        return Span<Tto>((Tto*)mem, bsize / sizeof(Tto));
     }
-    
+
+    constexpr const Span Slice(size_t start) const {
+        ASSERT(start <= size);
+        return Span(mem + start, size - start);
+    }
+
+    constexpr const Span Slice(size_t start, size_t len) const {
+        ASSERT(start + len <= size);
+        return Span(mem + start, len);
+    }
+
+    constexpr bool operator == (const Span& span) const
+    {
+        if (size != span.size) return false;
+        for (int i = 0; i < size; i++)
+            if (mem[i] != span.mem[i])
+                return false;
+        return true;
+    }
+
+    constexpr bool operator != (const Span& span) const { return !(*this == span); }
+
+    template<typename TPred> constexpr ptrdiff_t IndexOf(TPred pred, const size_t start = 0) const
+    {
+        for (size_t i = start; i < size; i++)
+            if (pred(mem[i]))
+                return i;
+        return -1;
+    }
+
+    constexpr ptrdiff_t IndexOf(const T& value, const size_t start = 0) const
+    {
+        return IndexOf([&](const T& x) { return x == value; }, start);
+    }
+
+    constexpr void CopyTo(const Span& dest) const
+    {
+        ASSERT(dest.size >= size);
+        if (dest.mem == mem)
+            return;
+
+        if (dest.mem < mem || dest.mem >= mem + size)
+            for (size_t i = 0; i < size; i++)
+                dest.mem[i] = mem[i];
+        else
+            for (size_t i = size; i-- > 0;)
+                dest.mem[i] = mem[i];
+    }
+
+    constexpr void Fill(const T& value) const
+    {
+        for (size_t i = 0; i < size; i++)
+            mem[i] = value;
+    }
+
+    constexpr void Clear() const { Fill({}); }
+};
+
+template<typename T> constexpr T* begin(const Span<T>& span) { return span.Len() ? span.Ptr() : nullptr; }
+template<typename T> constexpr T* end(const Span<T>& span) { return span.Len() ? span.Ptr() + span.Len() : nullptr; }
+
+template<typename T> T Read(Span<uint8>& span, bool advance = true)
+{
+    ASSERT(span.Len() >= sizeof(T));
+    T ret = *(T*)span.Ptr();
+    if (advance) span = span.Slice(sizeof(T));
+    return ret;
+}
+
+template<typename T> void Write(Span<uint8>& span, const T& value, bool advance = true)
+{
+    ASSERT(span.Len() >= sizeof(T));
+    *(T*)span.Ptr() = value;
+    if (advance) span = span.Slice(sizeof(T));
+}
+
+
+template<class T> class ReadOnlySpan : public Span<const T>
+{
+public:
+    constexpr ReadOnlySpan() : Span<const T>() {}
+    constexpr ReadOnlySpan(const Span<const T>& sp) : Span<const T>(sp) {}
+    constexpr ReadOnlySpan(const Span<T>& sp) : Span<const T>(sp.Ptr(), sp.Len()) {}
+    constexpr ReadOnlySpan(const T* ptr, size_t len) : Span<const T>(ptr, len) {}
+    constexpr ReadOnlySpan(const T* begin, const T* end) : Span<const T>(begin, end) {}
+    constexpr ReadOnlySpan(T& ref) : Span<const T>(ref) {}
+
+    template<size_t len> constexpr ReadOnlySpan(const T(&arr)[len]) : Span<const T>(arr, len) {};
+
+    constexpr ReadOnlySpan operator=(const Span<T>& sp) { Span<const T>::mem = sp.Ptr(); Span<const T>::size = sp.Len(); return *this; }
+
+    template<typename Tto> constexpr ReadOnlySpan<Tto> Cast() const
+    {
+        size_t bsize = Span<const T>::size * sizeof(T);
+        ASSERT(bsize % sizeof(Tto) == 0);
+        return ReadOnlySpan<Tto>((const Tto*)Span<const T>::mem, bsize / sizeof(Tto));
+    }
+};
+
+
+template<typename T> T Read(ReadOnlySpan<uint8>& span, bool advance = true)
+{
+    ASSERT(span.Len() >= sizeof(T));
+    T ret = *(T*)span.Ptr();
+    if (advance) span = span.Slice(sizeof(T));
+    return ret;
+}
+
+template<typename T, typename TA> class ArrayBase : public Span<T>
+{
+protected:
+    ArrayBase(T* m = nullptr, size_t s = 0) : Span<T>(m, s) {}
+
+    void Construct(size_t at) { new(&this->mem[at]) T(); }
+    template<typename Tv> void Construct(size_t at, Tv value) { new(&this->mem[at]) T(value); }
+    template<typename Tv, typename ... args> void Construct(size_t at, Tv v, args ...a) { Construct(at, v); Construct(at + 1, a...); }
+    void Construct(size_t at, const Span<T>& span) { for (const T& v : span) Construct(at++, v); }
+    void Construct(size_t at, const ReadOnlySpan<T>& span) { for (const T& v : span) Construct(at++, v); }
+    void Destruct(size_t at) { this->mem[at].T::~T(); }
+
     void PrepareInsert(size_t at, size_t count)
     {
-        ASSERT(at <= size);
-        Grow(at + count);
-        for (size_t i = size-at; i --> 0;)
+        ASSERT(at <= this->size);
+        ((TA*)this)->Grow(at + count);
+        for (size_t i = this->size - at; i-- > 0;)
         {
-            if (at + i + count >= size)
-                Construct(at + i + count, (T&&)mem[at + i]);
+            if (at + i + count >= this->size)
+                Construct(at + i + count, (T&&)this->mem[at + i]);
             else
-                mem[at + i + count] = (T&&)mem[at + i];
+                this->mem[at + i + count] = (T&&)this->mem[at + i];
             Destruct(at + i);
         }
-        size += count;
+        this->size += count;
     }
 
 public:
-    Array() {}
-    explicit Array(size_t cap) { Grow(cap); }
-    template<class ... args> Array(args ...a) { PushTail(a...); }
-
-    Array(const Array& a)
-    {
-        Grow(a.capacity);
-        for (size_t i = 0; i < a.size; i++)
-            PushTail(a[i]);
-    }
-
-    Array(Array&& a) : mem(a.mem),size(a.size), capacity(a.capacity)
-    {
-        a.size = a.capacity = 0;
-        a.mem = nullptr;            
-    }
-    ~Array() { Clear(); delete[] (uint8*)mem; }
-
-    Array& operator = (const Array &arr)
+    ArrayBase& operator = (const ReadOnlySpan<T> &arr)
     {
         Clear();
-        Grow(arr.capacity);
-        for (size_t i = 0; i < arr.size; i++)
-            PushTail(arr[i]);
+        ((TA*)this)->Grow(arr.size);
+        PushTail(arr);
         return *this;
     }
 
-    
-    void Clear() { while (size) Destruct(--size); }
+    ArrayBase& operator = (const Span<T> &arr)
+    {
+        Clear();
+        ((TA*)this)->Grow(arr.size);
+        PushTail(arr);
+        return *this;
+    }
+
+
+    void Clear() 
+    { 
+        while (this->size) 
+            Destruct(--this->size); 
+    }
 
     void SetSize(size_t s)
     {
-        Grow(s);
-        while (size < s)
-            Construct(size++);
-        while (size > s)
-            Destruct(--size);
+        ((TA*)this)->Grow(s);
+        while (this->size < s)
+            Construct(this->size++);
+        while (this->size > s)
+            Destruct(--this->size);
     }
-  
-    template<class ... args> void Insert(size_t at, args ...a) { PrepareInsert(at, NumArgs(a...)); Construct(at, a...); }
-    template<class ... args> void PushHead(args ...a) { Insert(0, a...); }
-    template<class ... args> void PushTail(args ...a) { Insert(size, a...); }
-    template<class Ta> Array& operator += (Ta arg) { Insert(size, arg); return *this; }
+
+    template<typename ... args> void Insert(size_t at, args ...a) { PrepareInsert(at, sizeof...(a)); Construct(at, a...); }
+    void Insert(size_t at, const Span<T>&span) { PrepareInsert(at, span.Len()); Construct(at, span); }
+    void Insert(size_t at, const ReadOnlySpan<T>& span) { PrepareInsert(at, span.Len()); Construct(at, span); }
+    template<typename ... args> void PushHead(args ...a) { Insert(0, a...); }
+    void PushHead(const Span<T>& span) { Insert(0, span); }
+    void PushHead(const ReadOnlySpan<T>& span) { Insert(0, span); }
+    template<typename ... args> void PushTail(args ...a) { Insert(this->size, a...); }
+    void PushTail(const Span<T>& span) { Insert(this->size, span); }
+    void PushTail(const ReadOnlySpan<T>& span) { Insert(this->size, span); }
+    template<typename Ta> ArrayBase& operator += (Ta arg) { Insert(this->size, arg); return *this; }
+    ArrayBase& operator += (const Span<T>& span) { Insert(this->size, span); return *this; }
+    ArrayBase& operator += (const ReadOnlySpan<T>& span) { Insert(this->size, span); return *this; }
 
     T RemAtUnordered(size_t index)
     {
-        T ret = Get(index);
-        size--;
-        if (index<size)
-            mem[index] = (T&&)mem[size];
-        Destruct(size);
+        T ret = this->Get(index);
+        this->size--;
+        if (index < this->size)
+            this->mem[index] = (T&&)this->mem[this->size];
+        Destruct(this->size);
         return ret;
     }
 
     T RemAt(size_t index)
     {
-        T ret = Get(index);
-        size--;
-        while (index < size)
+        T ret = this->Get(index);
+        this->size--;
+        while (index < this->size)
         {
-            mem[index] = (T&&)mem[index + 1];
+            this->mem[index] = (T&&)this->mem[index + 1];
             index++;
         }
-        Destruct(size);
+        Destruct(this->size);
         return ret;
     }
 
     T PopHead() { return RemAt(0); }
-    T PopTail() { return RemAt(size-1); }
+    T PopTail() { return RemAt(this->size - 1); }
 
-    template<class TPred> void RemIf(TPred pred)
+    template<typename TPred> void RemIf(TPred pred)
     {
-        int di = 0;
-        for (int i = 0; i < size; i++)
-            if (!pred(mem[i]))
+        size_t di = 0;
+        for (int i = 0; i < this->size; i++)
+            if (!pred(this->mem[i]))
             {
                 if (di != i)
-                    mem[di] = (T&&)mem[i];
+                    this->mem[di] = (T&&)this->mem[i];
                 di++;
             }
-        for (int i = di; i < size; i++)
-            Destruct(i);
-        size = di;
+        while (this->size > di)
+            Destruct(--this->size);
     }
 
-    template<class TPred> void RemIfUnordered(TPred pred)
+    template<typename TPred> void RemIfUnordered(TPred pred)
     {
-        for (int i = 0; i < size; )
-            if (pred(mem[i]))
+        for (size_t i = 0; i < this->size; )
+            if (pred(this->mem[i]))
             {
-                size--;
-                if (i != size)
-                    mem[i] = (T&&)mem[size];
-                Destruct(size);
+                this->size--;
+                if (i != this->size)
+                    this->mem[i] = (T&&)this->mem[this->size];
+                Destruct(this->size);
             }
             else
                 i++;
@@ -202,34 +319,108 @@ public:
 
     void Rem(const T& v) { RemIf([&](const T& x) { return x == v; }); }
     void RemUnordered(const T& v) { RemIfUnordered([&](const T& x) { return x == v; }); }
-
-    const T& Get(size_t i) const { ASSERT(i < size); return ((T*)mem)[i]; }
-    T& Get(size_t i) { ASSERT(i < size); return ((T*)mem)[i]; }
-
-    T& operator[](size_t i) { return Get(i); }
-    const T& operator[](size_t i) const { return Get(i); }
-    size_t Count() const { return size; }
-    bool operator ! () const { return !size; }
-
-    bool operator == (const Array& arr) const
-    {
-        if (size != arr.size) return false;
-        for (int i = 0; i < size; i++)
-            if (mem[i] != arr.mem[i])
-                return false;
-        return true;
-    }
-
-    bool operator != (const Array& arr) const { return !(*this == arr); }
 };
 
-// for..in support
-template<typename T> T* begin(Array<T> &arr) { return arr.Count() ? &arr[0] : nullptr; }
-template<typename T> T* end(Array<T> &arr) { return arr.Count() ? (&arr[0])+arr.Count() : nullptr; }
-template<typename T> const T* begin(const Array<T>& arr) { return arr.Count() ? &arr[0] : nullptr; }
-template<typename T> const T* end(const Array<T>& arr) { return arr.Count() ? (&arr[0]) + arr.Count() : nullptr; }
+template<typename TP, typename Ta> void DeleteAll(ArrayBase<TP*, Ta>& array) { for (TP* p : array) delete p; array.Clear(); }
 
-template<typename TP> void DeleteAll(Array<TP*>& array) { for (TP* p : array) delete p; array.Clear(); }
+template<typename T> class Array : public ArrayBase<T, Array<T>>
+{
+    typedef ArrayBase<T, Array<T>> TBase;
+    size_t capacity = 0;
+
+public:
+    Array() { }
+
+    explicit Array(size_t Capacity) { Grow(Capacity); }
+    template<typename ... args> explicit Array(args ...a) { this->PushTail(a...); }
+
+    Array(const Array& a) { Grow(a.Len()); this->PushTail((Span<T>)a); }
+
+    Array(Array&& a) : TBase(a.mem, a.size, a.capacity)
+    {
+        a.size = a.capacity = 0;
+        a.mem = nullptr;
+    }
+
+    Array(const Span<T>& a) { Grow(a.Len()); this->PushTail(a); }
+    Array(const ReadOnlySpan<T>& a) { Grow(a.Len()); this->PushTail(a); }
+
+    ~Array() 
+    { 
+        this->Clear(); 
+        delete[](uint8*)this->mem; 
+    }
+
+    void Grow(size_t to)
+    {
+        if (to <= this->capacity) return;
+        T* oldptr = this->mem;
+        this->capacity = Max(2 * this->capacity, to);
+        if (!this->capacity) this->capacity = 1;
+        ArrayBase<T, Array<T>>::mem = (T*)new uint8[this->capacity * sizeof(T)];
+        for (size_t i = 0; i < this->size; i++)
+        {
+            T& elem = ((T*)oldptr)[i];
+            this->Construct(i, (T&&)elem);
+            elem.T::~T();
+        }
+        if (oldptr) delete[](uint8*)oldptr;
+    }
+
+    Array& operator= (const Array& arr)
+    {
+        this->Clear();
+        Grow(arr.Len());
+        this->PushTail((Span<T>)arr);
+        return *this;
+    }
+
+    Array& operator= (Array&& arr)
+    {
+        this->Clear();
+        this->mem = arr.mem;
+        this->size = arr.size;
+        this->capacity = arr.capacity;
+        arr.mem = nullptr;
+        arr.size = 0;
+        arr.capacity = 0;
+        return *this;
+    }
+
+};
+
+
+
+template<typename T, int Capacity> class StaticArray : public ArrayBase<T, StaticArray<T, Capacity>>
+{
+    typedef ArrayBase<T, StaticArray<T, Capacity>> TBase;
+    friend TBase;
+
+    uint8 staticMem[Capacity * sizeof(T)];
+
+    void Grow(size_t to) { ASSERT(to <= Capacity); }
+
+public:
+
+    enum { capacity = Capacity };
+
+    StaticArray() : TBase((T*)staticMem, 0) {}
+    template<typename ... args> StaticArray(args ...a) : TBase((T*)staticMem, 0) { this->PushTail(a...); }
+    StaticArray(const StaticArray& a) : TBase((T*)staticMem, 0) { this->PushTail((Span<T>)a); }
+    StaticArray(const Span<T>& a) : TBase((T*)staticMem, 0) { this->PushTail(a); }
+    StaticArray(const ReadOnlySpan<T>& a) : TBase((T*)staticMem, 0) { this->PushTail(a); }
+
+    ~StaticArray() { this->Clear(); }
+
+    StaticArray operator=(const StaticArray& a)
+    {
+        this->Clear();
+        this->PushTail((Span<T>)a);
+    }
+
+
+};
+
 
 // Atomics
 //----------------------------------------------------------------------------------------------
@@ -270,16 +461,16 @@ public:
 
     RCPtr& operator = (const RCPtr& p) { Clear(); ptr = p.ptr; if (ptr) ptr->AddRef(); return *this; }
     RCPtr& operator = (RCPtr&& p) noexcept { Clear(); ptr = p.ptr; p.ptr = nullptr; return *this; }
-    template <typename T2> RCPtr & operator =  (const RCPtr<T2>& pp)
+    template <typename T2> RCPtr& operator =(const RCPtr<T2>& pp)
     {
         Clear();
         if (pp.IsValid()) pp->QueryInterface<T>(&ptr);
         return *this;
     }
-     
+
     void Clear() { if (ptr) { ptr->Release(); ptr = 0; } }
     constexpr bool IsValid() const { return ptr != nullptr; }
-    constexpr bool operator !() const { return !IsValid();  }
+    constexpr bool operator !() const { return !IsValid(); }
 
     T* operator -> () const { ASSERT(ptr); return ptr; }
     T& Ref() const { ASSERT(ptr); return *ptr; }
@@ -342,7 +533,7 @@ template<typename RetT, typename ...ArgT> class Func<RetT(ArgT...)>
         F Obj;
         CallProxy(F obj) : Obj(obj) {}
         RetT operator()(ArgT... args) override { return Obj(args...); }
-    };    
+    };
 
     RCPtr<ICallable> ptr;
 
@@ -351,7 +542,7 @@ public:
 
     // constructors from other Funcs or callable stuff
     constexpr Func(const Func& f) : ptr(f.ptr) {}
-    constexpr Func(Func &&f) : ptr(static_cast<RCPtr<ICallable>&&>(f.ptr)) {}
+    constexpr Func(Func&& f) : ptr(static_cast<RCPtr<ICallable>&&>(f.ptr)) {}
     template<typename F> Func(F func) : ptr(new CallProxy<F>(func)) {}
 
     // the same but as assignment
@@ -360,7 +551,7 @@ public:
     template<typename F> Func& operator = (F func) { ptr = new CallProxy<F>(func); return *this; }
 
     // call
-    RetT operator() (ArgT... args) const { return ptr.Ref()(args...);  }
+    RetT operator() (ArgT... args) const { return ptr.Ref()(args...); }
 
     // helper stuff
     constexpr bool IsValid() const { return ptr.IsValid(); }
@@ -371,20 +562,17 @@ public:
 // Buffers
 // -------------------------------------------------------------------------------
 
-class Buffer : public RCObj
+class Buffer : public RCObj, public Span<uint8>
 {
+    Buffer() = delete;
+    Buffer(const Buffer&) = delete;
+    Buffer& operator = (const Buffer&) = delete;
+
 public:
-    uint8* const ptr;
-    const uint64 size;
-
-    virtual ~Buffer() {};
-
-    static RCPtr<Buffer> New(uint64 size);
-    static RCPtr<Buffer> FromMemory(void* ptr, uint64 size, bool transferOwnership);
-    static RCPtr<Buffer> Part(const RCPtr<Buffer> buffer, uint64 offset, uint64 size);
-
-protected:
-    Buffer(uint8* p, uint64 s) : ptr(p), size(s) { }
+    ~Buffer() { delete[] mem; };
+    Buffer(Buffer&& b) noexcept : Span<uint8>(b.mem, b.size) { b.mem = nullptr; b.size = 0; }
+    Buffer(size_t size) : Span<uint8>(new uint8[size], size) { }
+    Buffer(const void* ptr, size_t size);
 };
 
 // Strings
@@ -397,31 +585,36 @@ class String
 {
 public:
     String() {};
-    String(const char* p, int len=-1) { Make(p, len); }
-    String(const wchar_t* p, int len = -1) { Make(p, len); }
+    String(const char* p) { Make(p); }
+    String(const wchar_t* p) { Make(p); }
     String(const String& s) { node = s.node; }
     String(String&& s) noexcept { node = static_cast<RCPtr<Node>&&>(s.node); }
+    String(ReadOnlySpan<char> str) { Make(str.Ptr(), str.Len()); }
+    String(ReadOnlySpan<wchar_t> str) { Make(str.Ptr(), str.Len()); }
 
     static String PrintF(const char* format, ...);
     static String Concat(const String& s1, const String& s2);
     static String Repeat(char chr, int count);
-    static String Join(const Array<String> &strings, const String &separator);
+    static String Join(const ReadOnlySpan<String>& strings, const String& separator);
 
     String& operator = (const char* p) { Make(p); return *this; }
     String& operator = (const wchar_t* p) { Make(p); return *this; }
     String& operator = (const String& s) { node = s.node; return *this; }
     String& operator = (String&& s) noexcept { node = static_cast<RCPtr<Node>&&>(s.node); return *this; }
+    String& operator = (ReadOnlySpan<char> str) { Make(str.Ptr(), str.Len()); return *this; }
+    String& operator = (ReadOnlySpan<wchar_t> str) { Make(str.Ptr(), str.Len()); return *this; }
 
     size_t Length() const { return node.IsValid() ? node->len : 0; }
     operator const char* () const { return node.IsValid() ? node->str : ""; }
 
-    static int Compare(const String& a, const String &b, bool ignoreCase = false);
-    static int Compare(const String& a, const char *b, bool ignoreCase = false);
+    static int Compare(const String& a, const String& b, bool ignoreCase = false);
+    static int Compare(const String& a, const char* b, bool ignoreCase = false);
     static int CompareLen(const String& a, const char* b, bool ignoreCase = false);
     template<typename Ts> int Compare(const Ts& s, bool ignoreCase = false) const { return Compare(*this, s, ignoreCase); }
 
     bool operator! () const { return !node; }
     String operator + (const String& s) const { return Concat(*this, s); }
+    String operator += (const String& s) { return *this = Concat(*this, s); }
 
     template<typename Ts> bool operator < (const Ts& s) const { return Compare(s) < 0; }
     template<typename Ts> bool operator <= (const Ts& s) const { return Compare(s) <= 0; }
@@ -429,6 +622,8 @@ public:
     template<typename Ts> bool operator >= (const Ts& s) const { return Compare(s) >= 0; }
     template<typename Ts> bool operator > (const Ts& s) const { return Compare(s) > 0; }
     template<typename Ts> bool operator != (const Ts& s) const { return Compare(s) != 0; }
+
+    operator ReadOnlySpan<char>() const { return node.IsValid() ? ReadOnlySpan<char>(node->str, node->len) : ReadOnlySpan<char>(); }
 
     // wrapper to UTF-16 string
     // Beware object lifetimes (using ToWChar() as function argument is fine)
@@ -444,7 +639,7 @@ public:
         operator const wchar_t* () const { return ptr ? ptr : L""; }
     } ToWChar() const;
 
-    char *Make(int len); // HERE BE DRAGONS, you need to fill the string aftewards
+    char* Make(size_t len); // HERE BE DRAGONS, you need to fill the string aftewards
 
 private:
     friend class StringBuilder;
@@ -452,8 +647,8 @@ private:
     struct Node : RCObj { size_t len = 0; char str[1] = {}; }; // variable size!
     RCPtr<Node> node;
 
-    void Make(const char* p, int len=-1);
-    void Make(const wchar_t* p, int len = -1);    
+    void Make(const char* p, size_t len = -1);
+    void Make(const wchar_t* p, size_t len = -1);
 };
 
 // StringBuilder class, just append strings and get the result at the end
@@ -465,7 +660,7 @@ public:
     void Clear() { strings.Clear(); }
 
     void Append(const String& str) { if (firstInLine) CheckIndent(); if (str.Length()) strings.PushTail(str); }
-    template<class ... args> void Append(const String &str, args ...a) { Append(str); Append(a...); }
+    template<class ... args> void Append(const String& str, args ...a) { Append(str); Append(a...); }
     void operator += (const String& str) { Append(str); }
 
     String ToString() const;
@@ -491,13 +686,13 @@ class Scanner
 public:
     Scanner(const char* text) : ptr(text), line(text) {}
 
-    bool If(const String& str);    
-    bool IfChar(char c);   
+    bool If(const String& str);
+    bool IfChar(char c);
     bool Char(char c);
     int64 Decimal(int* digits = nullptr);
     String QuotedString();
 
-    bool operator!() const { return errors.Count() > 0; }
+    bool operator!() const { return errors.Len() > 0; }
 
     void Error(const String& err);
     const Array<String>& Errors() const { return errors; }

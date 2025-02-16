@@ -101,37 +101,6 @@ SystemTime GetSystemTime()
     };
 }
 
-// buffers
-// -------------------------------------------------------------------------------
-
-struct MemBuffer : Buffer
-{
-    MemBuffer(uint8 *p, uint64 l, bool o) : Buffer(p, l), own(o) {}
-    ~MemBuffer() override { if (own) delete ptr; }
-    bool own;
-};
-
-RCPtr<Buffer> Buffer::New(uint64 size)
-{
-    return RCPtr<Buffer>(new MemBuffer(new uint8[size], size, true));
-}
-
-RCPtr<Buffer> Buffer::FromMemory(void* ptr, uint64 size, bool transferOwnership)
-{
-    return RCPtr<Buffer>(new MemBuffer((uint8*)ptr, size, transferOwnership));
-}
-
-
-RCPtr<Buffer> Buffer::Part(const RCPtr<Buffer> buffer, uint64 offset, uint64 size)
-{
-    struct BufferPart : Buffer
-    {
-        BufferPart(const RCPtr<Buffer>& buffer, uint64 o, uint64 s) : Buffer(buffer->ptr + o, s), ref(buffer) {}
-        RCPtr<Buffer> ref;
-    };
-
-    return RCPtr<Buffer>(new BufferPart(buffer, offset, size));
-}
 
 // debug output
 // -------------------------------------------------------------------------------
@@ -215,16 +184,16 @@ struct BufferStream : Stream
 
     uint64 Read(void* ptr, uint64 len) override
     {
-        len = Min(len, buffer->size - pos);
-        memcpy(ptr, buffer->ptr + pos, len);
+        len = Min(len, buffer->Len() - pos);
+        memcpy(ptr, buffer->Ptr() + pos, len);
         pos += len;
         return len;
     };
 
     uint64 Write(const void* ptr, uint64 len) override
     {
-        len = Min(len, buffer->size - pos);
-        memcpy(buffer->ptr + pos, ptr, len);
+        len = Min(len, buffer->Len() - pos);
+        memcpy(buffer->Ptr() + pos, ptr, len);
         pos += len;
         return len;
     };
@@ -232,16 +201,16 @@ struct BufferStream : Stream
     bool CanSeek() const override { return true; }
     bool CanRead() const override { return true; }
     bool CanWrite() const override { return true; }
-    uint64 Length() const override { return buffer->size; }
+    uint64 Length() const override { return buffer->Len(); }
 
     uint64 Seek(int64 p, From from) override
     {
         switch (from)
         {
         case From::Current: p += pos; break;
-        case From::End: p += buffer->size; break;
+        case From::End: p += buffer->Len(); break;
         }
-        return pos = (uint64)Clamp<int64>(p, 0ll, buffer->size);
+        return pos = (uint64)Clamp<int64>(p, 0ll, buffer->Len());
     }
 
     RCPtr<Buffer> Map() override { return buffer; }
@@ -299,8 +268,8 @@ struct FileStream : Stream
     RCPtr<Buffer> Map() override
     {
         // TODO: proper memory mapping
-        auto buf = Buffer::New(size);
-        /*uint64 read = */ Read(buf->ptr, size);
+        RCPtr<Buffer> buf = (new Buffer(size));
+        /*uint64 read = */ Read(buf->Ptr(), size);
         return buf;
     }
 };
@@ -390,14 +359,15 @@ void WriteFileUTF8(const String& text, const char* path)
     delete str;
 }
 
-RCPtr<Buffer> LoadResource(int name, int type)
+ReadOnlySpan<uint8> LoadResource(int name, int type)
 {
     HMODULE handle = ::GetModuleHandle(NULL);
     HRSRC rc = ::FindResource(handle, MAKEINTRESOURCE(name), MAKEINTRESOURCE(type));
+    ASSERT(rc);
     HGLOBAL rcData = ::LoadResource(handle, rc);
     DWORD size = ::SizeofResource(handle, rc);
     void *data = ::LockResource(rcData);
-    return Buffer::FromMemory(data, size, false);
+    return { (uint8*)data, size };
 }
 
 //----------------------------------------------------------------------------------------------

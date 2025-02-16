@@ -267,21 +267,20 @@ struct Shader::Priv
     Array<Layout> Layouts;
 };
 
-Shader::Shader(Type t, const void* buf, size_t size)
+Shader::Shader(Type t, RCPtr<Buffer> code)
 {
     P = new Priv();
-    P->code = Buffer::New(size);
-    memcpy(P->code->ptr, buf, size);
+    P->code = code;
     P->type = t;
 
     switch (t)
     {
-    case Type::Vertex: DXERR(Dev->CreateVertexShader(P->code->ptr, P->code->size, NULL, P->vs)); break;
-    case Type::Hull: DXERR(Dev->CreateHullShader(P->code->ptr, P->code->size, NULL, P->hs)); break;
-    case Type::Domain: DXERR(Dev->CreateDomainShader(P->code->ptr, P->code->size, NULL, P->ds)); break;
-    case Type::Geometry: DXERR(Dev->CreateGeometryShader(P->code->ptr, P->code->size, NULL, P->gs)); break;
-    case Type::Pixel: DXERR(Dev->CreatePixelShader(P->code->ptr, P->code->size, NULL, P->ps)); break;
-    case Type::Compute: DXERR(Dev->CreateComputeShader(P->code->ptr, P->code->size, NULL, P->cs)); break;
+    case Type::Vertex: DXERR(Dev->CreateVertexShader(P->code->Ptr(), P->code->Len(), NULL, P->vs)); break;
+    case Type::Hull: DXERR(Dev->CreateHullShader(P->code->Ptr(), P->code->Len(), NULL, P->hs)); break;
+    case Type::Domain: DXERR(Dev->CreateDomainShader(P->code->Ptr(), P->code->Len(), NULL, P->ds)); break;
+    case Type::Geometry: DXERR(Dev->CreateGeometryShader(P->code->Ptr(), P->code->Len(), NULL, P->gs)); break;
+    case Type::Pixel: DXERR(Dev->CreatePixelShader(P->code->Ptr(), P->code->Len(), NULL, P->ps)); break;
+    case Type::Compute: DXERR(Dev->CreateComputeShader(P->code->Ptr(), P->code->Len(), NULL, P->cs)); break;
     }    
 }
 
@@ -290,9 +289,7 @@ Shader::~Shader()
     delete P;
 }
 
-static const Array<ShaderDefine> emptyMacros;
-
-RCPtr<Shader> CompileShader(Shader::Type type, const Buffer *buffer, const char* entryPoint, const Array<ShaderDefine> &macros, const char* name)
+RCPtr<Shader> CompileShader(Shader::Type type, ReadOnlySpan<char> source, const char* entryPoint, const char* name, ReadOnlySpan<ShaderDefine> macros)
 {
     const char* target = nullptr;
     if (!name) name = entryPoint;
@@ -308,7 +305,7 @@ RCPtr<Shader> CompileShader(Shader::Type type, const Buffer *buffer, const char*
     default: ASSERT0("unknown shader type");
     }
 
-    Array<D3D_SHADER_MACRO> d3dmacros;
+    Array<D3D_SHADER_MACRO> d3dmacros(macros.Len());
     for (auto& m : macros)
         d3dmacros += D3D_SHADER_MACRO{ m.name, m.value };
     d3dmacros += D3D_SHADER_MACRO{ NULL, NULL };
@@ -319,7 +316,7 @@ RCPtr<Shader> CompileShader(Shader::Type type, const Buffer *buffer, const char*
 #endif
 
     RCPtr<ID3DBlob> code, errors;
-    HRESULT hr = D3DCompile(buffer->ptr, buffer->size, name, &d3dmacros[0], NULL, entryPoint, target, flags, 0, code, errors);
+    HRESULT hr = D3DCompile(source.Ptr(), source.Len(), name, &d3dmacros[0], NULL, entryPoint, target, flags, 0, code, errors);
 
     if (errors.IsValid())
         DPrintF("\n%s\n", errors->GetBufferPointer());
@@ -327,24 +324,12 @@ RCPtr<Shader> CompileShader(Shader::Type type, const Buffer *buffer, const char*
     if (FAILED(hr))
         Fatal("Shader compilation of %s failed", name);
 
-    RCPtr<Shader> shader(new Shader(type, code->GetBufferPointer(), code->GetBufferSize()));
+    RCPtr<Buffer> buffer = new Buffer(code->GetBufferPointer(), code->GetBufferSize());
+    RCPtr<Shader> shader(new Shader(type, buffer));
+
     return shader;
 }
 
-RCPtr<Shader> CompileShader(Shader::Type type, const String& code, const char* entryPoint, const Array<ShaderDefine> &macros,  const char* name)
-{
-    return CompileShader(type, Buffer::FromMemory((void*)(const char*)code, code.Length(), false), entryPoint, macros, name);    
-}
-
-RCPtr<Shader> CompileShader(Shader::Type type, const Buffer *code, const char* entryPoint, const char* name)
-{
-    return CompileShader(type, code, entryPoint, emptyMacros, name);
-}
-
-RCPtr<Shader> CompileShader(Shader::Type type, const String& code, const char* entryPoint, const char* name)
-{
-    return CompileShader(type, Buffer::FromMemory((void*)(const char*)code, code.Length(), false), entryPoint, emptyMacros, name);
-}
 
 struct GpuBuffer::Priv
 {
@@ -507,7 +492,7 @@ template <typename TV> void SetVertexLayout(RCPtr<Shader> vs)
     }
     if (!layout)
     {
-        DXERR(Dev->CreateInputLayout(iedesc, niedesc, vs->P->code->ptr, vs->P->code->size, layout));
+        DXERR(Dev->CreateInputLayout(iedesc, niedesc, vs->P->code->Ptr(), vs->P->code->Len(), layout));
         Shader::Priv::Layout cl;
         cl.key = key;
         cl.layout = layout;
@@ -629,10 +614,10 @@ template <class TV> void Geometry<TV>::Draw(GState& state, const GBindings& bind
 
     SetVertexLayout<TV>(state.VS);
 
-    if (ib.Count())
+    if (ib.Len())
         Ctx->IASetIndexBuffer(*ib.P, DXGI_FORMAT_R16_UINT, 0);
 
-    DrawInternal(state, binds, instances, vb.Count(), ib.Count());
+    DrawInternal(state, binds, instances, vb.Len(), ib.Len());
 }
 
 
@@ -773,7 +758,7 @@ RCPtr<Texture> CreateTexture(const TexturePara& para, const void* data)
         .MipLevels = 1,
         .ArraySize = 1,
         .Format = GetDXGIFormat(para.format),
-        .SampleDesc = {. Count = 1 },
+        .SampleDesc = { .Count = 1 },
         .Usage = D3D11_USAGE_IMMUTABLE,
         .BindFlags = D3D11_BIND_SHADER_RESOURCE,
     };
@@ -1125,7 +1110,7 @@ RCPtr<RenderTarget> AcquireRenderTarget(const TexturePara &para)
     //if (!para.sizeY) para.sizeY = screenMode.height;
 
     Texture::Priv tex;
-    for (int i = 0; i < RTPool.Count(); i++)
+    for (int i = 0; i < RTPool.Len(); i++)
         if (GetTexPara(RTPool[i].tex) == para)
         {
             tex = RTPool.RemAtUnordered(i);
@@ -1133,7 +1118,7 @@ RCPtr<RenderTarget> AcquireRenderTarget(const TexturePara &para)
         }
 
     if (!tex.tex)
-        for (int i = 0; i < lastRTPool.Count(); i++)
+        for (int i = 0; i < lastRTPool.Len(); i++)
             if (GetTexPara(lastRTPool[i].tex) == para)
             {
                 tex = lastRTPool.RemAtUnordered(i);
@@ -1148,7 +1133,7 @@ RCPtr<RenderTarget> AcquireRenderTarget(const TexturePara &para)
             .MipLevels = para.mipmaps,
             .ArraySize = 1,
             .Format = GetDXGIFormat(para.format),
-            .SampleDesc = {.Count = 1, },
+            .SampleDesc = { .Count = 1, },
             .Usage = D3D11_USAGE_DEFAULT,
             .BindFlags = (uint)((para.format > PixelFormat::MAX_FMT) ? D3D11_BIND_DEPTH_STENCIL : D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET | D3D11_BIND_UNORDERED_ACCESS),
         };
