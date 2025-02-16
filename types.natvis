@@ -1,51 +1,61 @@
-<?xml version="1.0" encoding="utf-8"?> 
+<?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
 
-  <Type Name="String">
-    <DisplayString Condition="node.ptr == 0" >(empty)</DisplayString>
-    <DisplayString Condition="node.ptr != 0" >{*node.ptr}</DisplayString>
-  </Type>
-  
-  <Type Name="String::Node">
-    <DisplayString>{str,s8}</DisplayString>
-  </Type>
+	<Type Name="String">
+		<DisplayString Condition="node.ptr == 0" >(empty)</DisplayString>
+		<DisplayString Condition="node.ptr != 0" >{*node.ptr}</DisplayString>
+	</Type>
 
-  <Type Name="Array&lt;*&gt;">
-    <DisplayString>{{len={size} capacity={capacity}}}</DisplayString>
-    <Expand>
-      <ArrayItems>
-        <Size>size</Size>
-        <ValuePointer>mem</ValuePointer>
-      </ArrayItems>
-    </Expand>
-  </Type>
+	<Type Name="String::Node">
+		<DisplayString>{str,s8}</DisplayString>
+	</Type>
 
-  <Type Name="Vec2">
-    <DisplayString>({x,g}, {y,g})</DisplayString>
-  </Type>
+	<Type Name="Span&lt;*&gt;">
+		<DisplayString>{{len={size}}</DisplayString>
+		<Expand>
+			<ArrayItems>
+				<Size>size</Size>
+				<ValuePointer>mem</ValuePointer>
+			</ArrayItems>
+		</Expand>
+	</Type>
 
-  <Type Name="Vec3">
-    <DisplayString>({x,g}, {y,g}, {z,g})</DisplayString>
-  </Type>
+	<Type Name="ArrayBase&lt;*,*&gt;">
+		<DisplayString>{{len={size} capacity={capacity}}}</DisplayString>
+		<Expand>
+			<ArrayItems>
+				<Size>size</Size>
+				<ValuePointer>mem</ValuePointer>
+			</ArrayItems>
+		</Expand>
+	</Type>
 
-  <Type Name="Vec3P">
-    <DisplayString>P ({x,g}, {y,g}, {z,g})</DisplayString>
-  </Type>
+	<Type Name="Vec2">
+		<DisplayString>({x,g}, {y,g})</DisplayString>
+	</Type>
 
-  <Type Name="Vec4">
-    <DisplayString>({x,g}, {y,g}, {z,g}, {w,g})</DisplayString>
-  </Type>
+	<Type Name="Vec3">
+		<DisplayString>({x,g}, {y,g}, {z,g})</DisplayString>
+	</Type>
 
-  <Type Name="Mat22">
-    <DisplayString>({i}, {j})</DisplayString>
-  </Type>
+	<Type Name="Vec3P">
+		<DisplayString>P ({x,g}, {y,g}, {z,g})</DisplayString>
+	</Type>
 
-  <Type Name="Mat33">
-    <DisplayString>({i}, {j}, {k})</DisplayString>
-  </Type>
-  
-  <Type Name="Mat44">
-    <DisplayString>({i}, {j}, {k}, {l})</DisplayString>
-  </Type>
+	<Type Name="Vec4">
+		<DisplayString>({x,g}, {y,g}, {z,g}, {w,g})</DisplayString>
+	</Type>
+
+	<Type Name="Mat22">
+		<DisplayString>({i}, {j})</DisplayString>
+	</Type>
+
+	<Type Name="Mat33">
+		<DisplayString>({i}, {j}, {k})</DisplayString>
+	</Type>
+
+	<Type Name="Mat44">
+		<DisplayString>({i}, {j}, {k}, {l})</DisplayString>
+	</Type>
 
 </AutoVisualizer>

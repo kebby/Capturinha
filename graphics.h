@@ -22,7 +22,7 @@ class Shader : public RCObj
 public:
     enum class Type { None, Compute, Domain, Geometry, Hull, Pixel, Vertex };
     
-    Shader(Type t, const void* buf, size_t size);
+    Shader(Type t, RCPtr<Buffer> code);
     ~Shader();
 
     struct Priv;
@@ -87,10 +87,10 @@ public:
         Reset();
     }
 
-    T* BeginLoad()
+    Span<T> BeginLoad()
     {
         if (!data && num) data = new T[num];
-        return data + cur;
+        return { data + cur, num - cur };
     }
 
     uint EndLoad(int n=-1)
@@ -104,7 +104,7 @@ public:
     }
 
     uint Stride() const { return sizeof(T); }
-    uint Count() const { return cur; }
+    uint Len() const { return cur; }
 
     SR& GetSR(bool write) override { return GpuBuffer::GetSR(write,num); }
 
@@ -324,10 +324,7 @@ struct ShaderDefine
     String name, value;
 };
 
-RCPtr<Shader> CompileShader(Shader::Type type, const Buffer* code, const char* entryPoint, const char* name = nullptr);
-RCPtr<Shader> CompileShader(Shader::Type type, const String& code, const char* entryPoint, const char* name = nullptr);
-RCPtr<Shader> CompileShader(Shader::Type type, const Buffer* code, const char* entryPoint, const Array<ShaderDefine> &macros, const char* name = nullptr);
-RCPtr<Shader> CompileShader(Shader::Type type, const String& code, const char* entryPoint, const Array<ShaderDefine> &macros, const char* name = nullptr);
+RCPtr<Shader> CompileShader(Shader::Type type, ReadOnlySpan<char> source, const char* entryPoint, const char* name, ReadOnlySpan<ShaderDefine> macros = {});
 
 RCPtr<RenderTarget> AcquireRenderTarget(const TexturePara &para);
 RCPtr<RenderTarget> AcquireBackBuffer();

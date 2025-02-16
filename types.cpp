@@ -12,7 +12,13 @@
 #include <windows.h>
 #include <stringapiset.h>
 
-char *String::Make(int len)
+Buffer::Buffer(const void* ptr, size_t size) : Span<uint8>(new uint8[size], size)
+{
+    memcpy(mem, ptr, size);
+}
+
+
+char *String::Make(size_t len)
 {
     void* mem = new uint8[sizeof(Node) + len];
     node = RCPtr<Node>(new (mem) Node);
@@ -21,20 +27,20 @@ char *String::Make(int len)
     return node->str;
 }
 
-void String::Make(const char* p, int len)
+void String::Make(const char* p, size_t len)
 {
     if (!p || !p[0]) return;
-    if (len<0) len = (int)strlen(p);
+    if (len == -1) len = strlen(p);
     char *ptr = Make(len);
     memcpy(ptr, p, len);
 }
 
-void String::Make(const wchar_t* p, int len)
+void String::Make(const wchar_t* p, size_t len)
 {
     if (!p || !p[0]) return;
-    int bytes = WideCharToMultiByte(CP_UTF8, WC_NO_BEST_FIT_CHARS, p, len, NULL, 0, NULL, NULL);
+    int bytes = WideCharToMultiByte(CP_UTF8, WC_NO_BEST_FIT_CHARS, p, (int)len, NULL, 0, NULL, NULL);
     char *ptr = Make(bytes);
-    WideCharToMultiByte(CP_UTF8, WC_NO_BEST_FIT_CHARS, p, len, ptr, bytes, NULL, NULL);
+    WideCharToMultiByte(CP_UTF8, WC_NO_BEST_FIT_CHARS, p, (int)len, ptr, bytes, NULL, NULL);
 }
 
 
@@ -46,7 +52,7 @@ String String::Concat(const String &s1, const String &s2)
     auto& n2 = s2.node;
     size_t len = n1->len + n2->len;
     String str;
-    char *ptr = str.Make((int)len);
+    char *ptr = str.Make(len);
     memcpy(ptr, n1->str, n1->len);
     memcpy(ptr + n1->len, n2->str, n2->len);
     return str;
@@ -77,9 +83,9 @@ String String::PrintF(const char* format, ...)
     return str;
 }
 
-String String::Join(const Array<String> &strings, const String &separator)
+String String::Join(const ReadOnlySpan<String> &strings, const String &separator)
 {
-    size_t count = strings.Count();
+    size_t count = strings.Len();
     if (!count) return String();
     if (count == 1) return strings[0];
     StringBuilder sb;
@@ -137,7 +143,7 @@ String StringBuilder::ToString() const
         len += s.Length();
 
     String out;
-    out.Make((int)len);
+    out.Make(len);
     size_t offs = 0;
     for (auto &s : strings)
     {

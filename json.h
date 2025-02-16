@@ -7,9 +7,9 @@
 
 #include "types.h"
 
-// Usage: JSON_DEFINE_ENUM(MyEnum, ("My", "Enum", "Values"))
-#define JSON_DEFINE_ENUM(type, strings) template<> struct JsonEnumDef<type> { \
-    static const Array<String> &GetValues() { static const Array<String> strs##strings; return strs; } \
+// Usage: JSON_DEFINE_ENUM(MyEnum, "My", "Enum", "Values")
+#define JSON_DEFINE_ENUM(type, ...) template<> struct JsonEnumDef<type> { \
+    static inline const String Values[] { __VA_ARGS__ }; \
     JsonEnumDef(const type & r) : ref(r) { } \
     const type & ref; \
 };
@@ -121,8 +121,8 @@ private:
     template<class T> static void Read(Scanner& scan, JsonEnumDef<T>& def)
     {
         String value = scan.QuotedString();
-        auto strs = def.GetValues();
-        for (int i = 0; i < strs.Count(); i++)
+        ReadOnlySpan<String> strs(def.Values);
+        for (int i = 0; i < strs.Len(); i++)
             if (!value.Compare(strs[i], true))
             {
                 const_cast<T&>(def.ref) = (T)i;
@@ -252,7 +252,7 @@ private:
 
     template<class T> static void Write(StringBuilder& sb, const JsonEnumDef<T>& value) 
     {
-        Write(sb, JsonEnumDef<T>::GetValues()[(size_t)value.ref]);
+        Write(sb, JsonEnumDef<T>::Values[(size_t)value.ref]);
     }
 
     template<class T> static void Write(StringBuilder& sb, const Array<T> &array)

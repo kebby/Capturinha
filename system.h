@@ -73,7 +73,7 @@ RCPtr<Buffer> LoadFile(const char* path);
 String ReadFileUTF8(const char* path);
 void WriteFileUTF8(const String& str, const char* path);
 
-RCPtr<Buffer> LoadResource(int name, int type);
+ReadOnlySpan<uint8> LoadResource(int name, int type);
 
 // debug output
 // -------------------------------------------------------------------------------
@@ -194,7 +194,7 @@ public:
         return true;
     }
 
-    int  Count() { ScopeLock lock(Lock);  return (int)(Write - Read); }
+    int  Len() { ScopeLock lock(Lock);  return (int)(Write - Read); }
     bool IsEmpty() { ScopeLock lock(Lock); return Write == Read; }
     bool IsFull() { ScopeLock lock(Lock); return Write - Read == SIZE; }
 
