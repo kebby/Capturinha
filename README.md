@@ -51,7 +51,7 @@ The codecs currently supported by NVENC are h.264 and HEVC (also known as h.265)
 performance_, so if you haven't got a good reason to use h.264 (for example you want to encode for a device
 that only supports that), choose HEVC.
 
-The 4:4:4 and Main10 profiles are choices for high quality encoding - 4:4:4 means no chroma subsampling and 
+The 4:4:4, Main10 and Lossless profiles are choices for high quality encoding - 4:4:4 means no chroma subsampling and 
 will result in a less washed out image when there's a lot of colorful high resolution detail, and the Main10 
 profiles will encode in 10 bits per color channel instead of 8. This even helps for 8 bit screens, as there 
 is some slight loss of precision when converting from the screen's RGB into the YCbCr color space that the encoded video 

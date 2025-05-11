@@ -3,12 +3,6 @@ x64
 *.user
 *.aps
 
-libavcodec/
-libavformat/
-libavutil/
-libswresample/
-libswscale/
-
 avcodec*
 avformat*
 avutil*
