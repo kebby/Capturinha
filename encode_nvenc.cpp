@@ -42,6 +42,7 @@ static const ProfileDef Profiles[] =
     { NV_ENC_CODEC_HEVC_GUID, NV_ENC_HEVC_PROFILE_MAIN10_GUID },
     { NV_ENC_CODEC_HEVC_GUID, NV_ENC_HEVC_PROFILE_MAIN_GUID },
     { NV_ENC_CODEC_HEVC_GUID, NV_ENC_HEVC_PROFILE_MAIN10_GUID },
+    { NV_ENC_CODEC_HEVC_GUID, NV_ENC_HEVC_PROFILE_MAIN10_GUID },
 };
 
 
@@ -284,7 +285,7 @@ public:
             return BufferFormat::YUV444_8;
         case CodecProfile::HEVC_MAIN10:
             return BufferFormat::YUV420_16;
-        case CodecProfile::HEVC_MAIN10_444:
+        case CodecProfile::HEVC_MAIN10_444: case CodecProfile::HEVC_LOSSLESS:
             return BufferFormat::YUV444_16;
         default:
             return BufferFormat::NV12;
@@ -330,7 +331,7 @@ public:
         NVERR(Nvenc.nvEncGetEncodePresetGUIDs(Encoder, profile.encodeGuid, guids, 50, &presetGuidCount));
 
         GUID presetGuid;
-        if (profile.encodeGuid == NV_ENC_CODEC_HEVC_GUID)
+        if (profile.encodeGuid == NV_ENC_CODEC_HEVC_GUID && Config.Profile != CodecProfile::HEVC_LOSSLESS)
         {
             if (sizeX <= 1920 && sizeY <= 1080)
                 presetGuid = NV_ENC_PRESET_P5_GUID;
@@ -439,6 +440,11 @@ public:
         case CodecProfile::HEVC_MAIN_444:
             enccfg.encodeCodecConfig.hevcConfig.chromaFormatIDC = 3;
             break;
+        case CodecProfile::HEVC_LOSSLESS:
+            params.tuningInfo = NV_ENC_TUNING_INFO_LOSSLESS;
+            enccfg.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP;
+            enccfg.rcParams.constQP.qpIntra = enccfg.rcParams.constQP.qpInterB = enccfg.rcParams.constQP.qpInterP = 0;
+            [[fallthrough]];
         case CodecProfile::HEVC_MAIN10_444:
             enccfg.encodeCodecConfig.hevcConfig.pixelBitDepthMinus8 = 2;
             enccfg.encodeCodecConfig.hevcConfig.chromaFormatIDC = 3;
