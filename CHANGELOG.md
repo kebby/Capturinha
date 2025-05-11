@@ -1,5 +1,9 @@
 ### Capturinha change log
 
+### 0.5.1: The Pixel Perfect update
+* Added lossless HEVC profile
+* Frame timing fixes when the primary monitor's refresh rate is wonky
+
 ### 0.5.0: Maintenance release 
 * Dependencies are now handled by vcpkg
 * Updated to ffmpeg 7
