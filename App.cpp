@@ -191,6 +191,7 @@ public:
             "HEVC Main10 profile",
             "HEVC 4:4:4 Main profile",
             "HEVC 4:4:4 Main10 profile",
+            "HEVC Lossless profile",
         };
 
         r = Rect(line, aLeft, aTop, 300, line.Height(), aLeft, aTop, labelwidth);
@@ -460,8 +461,9 @@ public:
 
         if (force || lastConfig.CodecCfg.Profile != Config.CodecCfg.Profile)
         {
-            rateControl.EnableWindow(true);
-            rateParam.EnableWindow(true);
+            bool rcEna = Config.CodecCfg.Profile != CodecProfile::HEVC_LOSSLESS;
+            rateControl.EnableWindow(rcEna);
+            rateParam.EnableWindow(rcEna);
         }
 
         if (force || lastConfig.CodecCfg.UseBitrateControl != Config.CodecCfg.UseBitrateControl)
