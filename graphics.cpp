@@ -66,6 +66,9 @@ D3D_FEATURE_LEVEL FeatureLevel;
 
 RCPtr<ID3D11SamplerState> SmplWrap;
 
+static double captureFrameCount = 0;
+static int64 lastFrameTime = 0;
+
 static DXGI_FORMAT GetDXGIFormat(PixelFormat fmt)
 {
     switch (fmt)
@@ -894,6 +897,8 @@ void InitD3D(int outputIndex)
     Dev = dev0;
     Ctx = ctx0;
 
+    captureFrameCount = 0;
+    lastFrameTime = 0;
     
     /*
     // window description
@@ -948,11 +953,10 @@ void ExitD3D()
 
 RCPtr<IDXGIAdapter> GetAdapter() { return Output.Adapter; }
 
-static int64 lastFrameTime = 0;
 static RCPtr<Texture> capTex;
 static DXGI_OUTPUT_DESC1 outdesc;
 static DXGI_OUTDUPL_DESC odd;
-static double frameCount = 0;
+static double totalError = 0;
 
 static const DXGI_FORMAT scanoutFormats[] = {
     DXGI_FORMAT_R16G16B16A16_UINT,
@@ -983,6 +987,7 @@ bool CaptureFrame(int timeoutMs, CaptureInfo& ci)
 
         Dupl->GetDesc(&odd);
         Output.Output->GetDesc1(&outdesc);
+        totalError = 0;
         //printf("new dupl %dx%d @ %d:%d\n", odd.ModeDesc.Width, odd.ModeDesc.Height, odd.ModeDesc.RefreshRate.Numerator, odd.ModeDesc.RefreshRate.Denominator);
     }
 
@@ -1027,16 +1032,15 @@ bool CaptureFrame(int timeoutMs, CaptureInfo& ci)
     double delta = (double)(info.LastPresentTime.QuadPart - lastFrameTime) / (double)qpf.QuadPart;
     lastFrameTime = info.LastPresentTime.QuadPart;
 
+#ifdef _DEBUG    
     static int frc = 0;
     static double lastt1 = 0, lastt2 = 0;
     double t1d = ((double)t1.QuadPart / (double)qpf.QuadPart);
     double t2d = ((double)t2.QuadPart / (double)qpf.QuadPart);
-
-
     DPrintF("%5d: t1 %.3f (%.3f), t2 %.3f (%.3f), delta %.3f ", frc++, t1d, t1d-lastt1, t2d, t2d-lastt2, delta);
-
     lastt1 = t1d;
     lastt2 = t2d;
+#endif
     t1.QuadPart = 0;
 
     if (delta < 0)
@@ -1046,30 +1050,24 @@ bool CaptureFrame(int timeoutMs, CaptureInfo& ci)
         return false;
     }
 
-    static int comp = 0;
     double fdelta = delta * odd.ModeDesc.RefreshRate.Numerator / odd.ModeDesc.RefreshRate.Denominator;
     double fdi = round(fdelta);
-    static double totalError = 0;
     double error = fdelta - fdi;
     totalError += error;
-    if (totalError >= 0.5)
+    int comp = 0;
+    if (totalError >= 0.75)
     {
-        comp++;
-        totalError -= 0.5;
+        comp = 1;
+        totalError -= 1;
     }
-    if (totalError <= -0.5)
+    if (totalError <= -0.75)
     {
-        comp--;
-        totalError += 0.5;
+        comp = -1;
+        totalError += 1;
     }
-    fdi += comp;
+    captureFrameCount += fdi + comp;
 
-    static double lastfc = 0;
-    frameCount += fdi;
-    double fci = round(frameCount);
-    DPrintF("fd %.3f (%.3f) %.3f comp %d\n", fdi, error, totalError, comp);
-    lastfc = frameCount;
-
+    DPrintF("fd %.3f (%.3f, total %.3f) comp %d\n", fdi, error, totalError, comp);
 
     // create/invalidate texture object
     RCPtr<ID3D11Texture2D> tex = frame;
@@ -1084,7 +1082,7 @@ bool CaptureFrame(int timeoutMs, CaptureInfo& ci)
     ci.isHdr = (outdesc.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020);
     ci.rateNum = odd.ModeDesc.RefreshRate.Numerator;
     ci.rateDen = odd.ModeDesc.RefreshRate.Denominator;
-    ci.frameCount = (uint64)fci;
+    ci.frameCount = (uint64)round(captureFrameCount);
     ci.time = (double)info.LastPresentTime.QuadPart / (double)qpf.QuadPart;
     return true;
 }
