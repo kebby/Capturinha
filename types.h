@@ -454,7 +454,7 @@ public:
     // this works with COM or if your class implements it manually
     template <typename T2> RCPtr(const RCPtr<T2>& pp) : ptr(nullptr)
     {
-        if (pp.IsValid()) pp->QueryInterface<T>(&ptr);
+        if (pp.IsValid()) pp->QueryInterface(__uuidof(T), (void**)&ptr);
     }
 
     ~RCPtr() { Clear(); }
@@ -464,7 +464,7 @@ public:
     template <typename T2> RCPtr& operator =(const RCPtr<T2>& pp)
     {
         Clear();
-        if (pp.IsValid()) pp->QueryInterface<T>(&ptr);
+        if (pp.IsValid()) pp->QueryInterface(__uuidof(T), (void**)&ptr);
         return *this;
     }
 
