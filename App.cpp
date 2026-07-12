@@ -1021,8 +1021,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR lpstr
     dll = LoadLibrary("nvcuda.dll");
     if (!dll)
     {
-        char directory[MAX_PATH + 1];
-        GetCurrentDirectory(MAX_PATH + 1, directory);
         Fatal("CUDA must be installed - Capturinha currently only works on NVIDIA GPUs, sorry for that.");
     }
 

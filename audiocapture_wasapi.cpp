@@ -169,7 +169,7 @@ public:
 
     AudioInfo GetInfo() const override
     {
-        return AudioInfo
+        return 
         {
             .Format = AudioFormat::F32,
             .Channels = Format->Format.nChannels,
