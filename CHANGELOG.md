@@ -1,5 +1,8 @@
 ### Capturinha change log
 
+### 0.5.2: Maintenance release
+* Updated to ffmpeg 9
+
 ### 0.5.1: The Pixel Perfect update
 * Added lossless HEVC profile
 * Frame timing fixes when the primary monitor's refresh rate is wonky
