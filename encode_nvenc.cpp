@@ -435,7 +435,8 @@ public:
             //enccfg.encodeCodecConfig.h264Config.separateColourPlaneFlag = 1;
             break;
         case CodecProfile::HEVC_MAIN10:
-            enccfg.encodeCodecConfig.hevcConfig.pixelBitDepthMinus8 = 2;
+            enccfg.encodeCodecConfig.hevcConfig.outputBitDepth = NV_ENC_BIT_DEPTH_10;
+            enccfg.encodeCodecConfig.hevcConfig.outputBitDepth = NV_ENC_BIT_DEPTH_10;
             break;
         case CodecProfile::HEVC_MAIN_444:
             enccfg.encodeCodecConfig.hevcConfig.chromaFormatIDC = 3;
@@ -446,7 +447,8 @@ public:
             enccfg.rcParams.constQP.qpIntra = enccfg.rcParams.constQP.qpInterB = enccfg.rcParams.constQP.qpInterP = 0;
             [[fallthrough]];
         case CodecProfile::HEVC_MAIN10_444:
-            enccfg.encodeCodecConfig.hevcConfig.pixelBitDepthMinus8 = 2;
+            enccfg.encodeCodecConfig.hevcConfig.outputBitDepth = NV_ENC_BIT_DEPTH_10;
+            enccfg.encodeCodecConfig.hevcConfig.outputBitDepth = NV_ENC_BIT_DEPTH_10;
             enccfg.encodeCodecConfig.hevcConfig.chromaFormatIDC = 3;
             break;
         }

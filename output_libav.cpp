@@ -108,7 +108,9 @@ private:
             return;
 
         // find suitable sample format
-        const AVSampleFormat sampleFmt = AudioCodec->sample_fmts[0];
+        const AVSampleFormat* smpFormats = {};
+        avcodec_get_supported_config(NULL, AudioCodec, AV_CODEC_CONFIG_SAMPLE_FORMAT, 0, (const void**)&smpFormats, NULL);
+        const AVSampleFormat sampleFmt = smpFormats[0];
         if (sampleFmt == AV_SAMPLE_FMT_NONE)
             return;
 

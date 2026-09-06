@@ -5,7 +5,12 @@
     {
       "name": "ffmpeg",
       "default-features": false,
-      "features": [ "avformat", "avcodec", "swresample", "mp3lame" ]
+      "features": [
+        "avformat",
+        "avcodec",
+        "swresample",
+        "mp3lame"
+      ]
     }
   ]
 }

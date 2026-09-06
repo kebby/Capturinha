@@ -637,7 +637,9 @@ public:
         ~WCharProxy() { delete[] ptr; }
         WCharProxy(WCharProxy&& p) noexcept { ptr = p.ptr; p.ptr = nullptr; }
         operator const wchar_t* () const { return ptr ? ptr : L""; }
-    } ToWChar() const;
+    };
+    
+    WCharProxy ToWChar() const;
 
     char* Make(size_t len); // HERE BE DRAGONS, you need to fill the string aftewards
 
